@@ -1,19 +1,24 @@
-name: snaplockrascunho
-description: "A new Flutter project."
+name: snaplock
+description: "SnapLock - App Mobile e Web (CyberSisters SENAI)"
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
-  sdk: ^3.12.2
+  sdk: ^3.0.0
 
 dependencies:
   flutter:
     sdk: flutter
+  http: ^1.2.0
+  image_picker: ^1.0.7
+  shared_preferences: ^2.2.2
+  intl: ^0.19.0
+  google_fonts: ^6.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
