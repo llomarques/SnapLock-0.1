@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/login_page.dart';
 
 void main() {
-	runApp(const HelloWorldApp());
+	runApp(const SnapLockApp());
 }
 
-class HelloWorldApp extends StatelessWidget {
-	const HelloWorldApp({super.key});
+class SnapLockApp extends StatelessWidget {
+	const SnapLockApp({super.key});
 
 	@override
 	Widget build(BuildContext context) {
-		return const MaterialApp(
-			home: Scaffold(
-				body: Center(
-					child: Text('Hello World'),
-				),
-			),
-		);
+		return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'SnapLock',
+      theme: ThemeData(
+        colorSchemeSeed: Colors.blue,
+        useMaterial3: true
+      ),
+      home: const LoginPage(),
+    );
 	}
 }
