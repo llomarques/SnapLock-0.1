@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'cadastro_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -32,6 +33,13 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void abrirCadastro(){
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CadastroPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             const SizedBox(height: 20),
             Image.asset(
-              'assets/images/Logo.png',
+              'assets/images/logo.png',
               width: 300,
               height: 300,
             ),
@@ -117,7 +125,7 @@ class _LoginPageState extends State<LoginPage> {
               text: TextSpan(
                 style: TextStyle(
                     color: Colors.black,
-                    fontSize: 16), // Estilo para todo o texto
+                    fontSize: 16), 
                 children: [
                   TextSpan(
                     text: 'Não tem uma conta? ',
@@ -132,8 +140,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () {
-                        // Ação específica para o clique em "Cadastre-se"
-                        print('Ir para a tela de cadastro!');
+                        abrirCadastro();
                       },
                   ),
                 ],

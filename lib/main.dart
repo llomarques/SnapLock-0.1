@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/inicio_page.dart';
+import 'package:snaplock/frontend/login_page.dart';
 
 void main() {
 	runApp(const HelloWorldApp());
@@ -10,11 +12,8 @@ class HelloWorldApp extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return const MaterialApp(
-			home: Scaffold(
-				body: Center(
-					child: Text('Hello World'),
-				),
-			),
+      debugShowCheckedModeBanner: false,
+			home: const InicioPage(),
 		);
 	}
 }
