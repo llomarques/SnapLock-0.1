@@ -36,7 +36,7 @@ class InicioPage extends StatelessWidget {
                 height: 300,
               ),
             ),
-            const SizedBox(height: 24),
+            // const SizedBox(height: 9),
             const Text(
               'Seja bem-vindo!',
               textAlign: TextAlign.center,

@@ -72,7 +72,7 @@ class _CadastroPageState extends State<CadastroPage> {
             const SizedBox(height: 20),
             Image.asset(
               'assets/images/logo.png',
-              width: 300,
+              width: 150,
               height: 300,
             ),
             const SizedBox(height: 15),
