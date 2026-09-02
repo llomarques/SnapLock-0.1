@@ -63,7 +63,7 @@ class _CadastroPageState extends State<CadastroPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4EFE9),
+      backgroundColor: Color(0xFFF3E9DC),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -76,32 +76,47 @@ class _CadastroPageState extends State<CadastroPage> {
               height: 300,
             ),
             const SizedBox(height: 15),
-            TextField(
+              TextField(
               controller: nomeController,
-              decoration: const InputDecoration(
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
                 filled: true,
-                fillColor: Color(0xFFD7CBBD),
+                fillColor: const Color(0xFFD7CBBD),
                 hintText: 'Digite seu nome',
-                prefixIcon: Icon(
-                  Icons.person, 
+                prefixIcon: const Icon(
+                  Icons.person,
                   color: Color(0xFF5E3023),
-                  ),
-                border: OutlineInputBorder(),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
             const SizedBox(height: 15),
             TextField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 filled: true,
-                fillColor: Color(0xFFD7CBBD),
+                fillColor: const Color(0xFFD7CBBD),
                 hintText: 'Digite seu e-mail',
-                prefixIcon: Icon(
+                prefixIcon: const Icon(
                   Icons.email,
                   color: Color(0xFF5E3023),
                 ),
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
             const SizedBox(height: 15),
@@ -115,19 +130,25 @@ class _CadastroPageState extends State<CadastroPage> {
                 prefixIcon: const Icon(
                   Icons.lock,
                   color: Color(0xFF5E3023),
-                  ),
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      esconderSenha = !esconderSenha;
-                    });
-                  },
-                  icon: Icon(
-                    esconderSenha ? Icons.visibility_off : Icons.visibility,
-                    color: Color(0xFF5E3023),
-                  ),
                 ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        esconderSenha = !esconderSenha;
+                      });
+                    },
+                    icon: Icon(
+                      esconderSenha ? Icons.visibility : Icons.visibility_off,
+                      color: Color(0xFF5E3023),
+                    )),
               ),
             ),
             const SizedBox(height: 15),
@@ -142,7 +163,14 @@ class _CadastroPageState extends State<CadastroPage> {
                   Icons.lock_outline,
                   color: Color(0xFF5E3023),
                   ),
-                border: const OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
                 suffixIcon: IconButton(
                   onPressed: () {
                     setState(() {
@@ -163,7 +191,6 @@ class _CadastroPageState extends State<CadastroPage> {
                   backgroundColor: const Color(0xFF895737),
                   foregroundColor: Colors.white,
                 ),
-              icon: const Icon(Icons.person_add, size: 18),
               label: const Text('Cadastrar', style: TextStyle(fontSize: 14)),
               
               
@@ -176,6 +203,10 @@ class _CadastroPageState extends State<CadastroPage> {
                 },
                 child: Text(
                   'Já tenho uma conta',
+                  style: TextStyle(
+                      color: Color(0xFF895737),
+                      fontWeight: FontWeight.bold, // Opcional: sublinha a palavra
+                    ),
                 )),
             const SizedBox(
               height: 25,
