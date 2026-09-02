@@ -43,7 +43,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4EFE9),
+      backgroundColor: Color(0xFFF3E9DC),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -59,15 +59,22 @@ class _LoginPageState extends State<LoginPage> {
             TextField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 filled: true,
-                fillColor: Color(0xFFD7CBBD),
+                fillColor: const Color(0xFFD7CBBD),
                 hintText: 'Digite seu e-mail',
-                prefixIcon: Icon(
+                prefixIcon: const Icon(
                   Icons.email,
                   color: Color(0xFF5E3023),
                 ),
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
             const SizedBox(
@@ -84,7 +91,14 @@ class _LoginPageState extends State<LoginPage> {
                   Icons.lock,
                   color: Color(0xFF5E3023),
                 ),
-                border: const OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
                 suffixIcon: IconButton(
                     onPressed: () {
                       setState(() {
@@ -100,11 +114,18 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(
               height: 10,
             ),
-            GestureDetector(
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
                 onTap: () {},
-                child: Text(
+                child: const Text(
                   'Esqueceu a senha?',
-                )),
+                  style: TextStyle(
+                    color: Color(0xFF895737),
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(
               height: 25,
             ),
@@ -112,11 +133,8 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: entrar,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF895737),
-                  foregroundColor: Colors.white,
+                  foregroundColor: Color(0xFFF3E9DC),
                 ),
-                icon: carregando
-                    ? const CircularProgressIndicator()
-                    : const Icon(Icons.login),
                 label: const Text('Entrar')),
             const SizedBox(
               height: 10,
@@ -133,7 +151,7 @@ class _LoginPageState extends State<LoginPage> {
                   TextSpan(
                     text: 'Cadastre-se',
                     style: TextStyle(
-                      color: Colors.blue,
+                      color: Color(0xFF895737),
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration
                           .underline, // Opcional: sublinha a palavra

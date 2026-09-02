@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/frontend/inicio_page.dart';
-import 'package:snaplock/frontend/login_page.dart';
 
 void main() {
 	runApp(const HelloWorldApp());

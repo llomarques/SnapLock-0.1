@@ -137,7 +137,7 @@ class _CadastroPageState extends State<CadastroPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Color(0xFFD7CBBD),
-                hintText: 'Digite sua senha novamente',
+                hintText: 'Confirme sua senha',
                 prefixIcon: const Icon(
                   Icons.lock_outline,
                   color: Color(0xFF5E3023),
