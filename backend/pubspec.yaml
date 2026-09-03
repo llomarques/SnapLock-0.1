@@ -1,4 +1,4 @@
-jname: snaplock_backend
+name: snaplock_backend
 description: API Dart do SnapLock
 publish_to: none
 
