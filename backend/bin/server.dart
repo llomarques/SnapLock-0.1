@@ -27,12 +27,13 @@ Future<void> main() async {
       if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
 
       final nome = (dados['nome'] as String? ?? '').trim();
+      final username = (dados['username'] as String? ?? '').trim().toLowerCase();
       final email = (dados['email'] as String? ?? '').trim().toLowerCase();
       final senha = dados['senha'] as String? ?? '';
       final confirmacaoSenha = dados['confirmacao_senha'] as String? ?? '';
       final dataNascimento = dados['data_nascimento'] as String? ?? '';
 
-      if (nome.isEmpty || nome.length > 100 || !_emailValido(email) || email.length > 150 || !_senhaValida(senha) || senha != confirmacaoSenha || !_dataValida(dataNascimento)) {
+      if (nome.isEmpty || nome.length > 100 || !_usernameValido(username) || !_emailValido(email) || email.length > 150 || !_senhaValida(senha) || senha != confirmacaoSenha || !_dataValida(dataNascimento)) {
         return _json(422, {'erro': 'Confira os dados informados.'});
       }
       if (!_idadeMinimaValida(dataNascimento)) {
@@ -40,10 +41,19 @@ Future<void> main() async {
       }
 
       try {
+        final usernameExistente = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE username = :username LIMIT 1',
+          {'username': username},
+        );
+        if (usernameExistente.rows.isNotEmpty) {
+          return _json(409, {'erro': 'Este username já está em uso.'});
+        }
+
         final result = await connection.execute(
-          'INSERT INTO usuario (nome, email, senha_hash, data_nascimento) VALUES (:nome, :email, :senha_hash, :data_nascimento)',
+          'INSERT INTO usuario (nome, username, email, senha_hash, data_nascimento) VALUES (:nome, :username, :email, :senha_hash, :data_nascimento)',
           {
             'nome': nome,
+            'username': username,
             'email': email,
             'senha_hash': BCrypt.hashpw(senha, BCrypt.gensalt()),
             'data_nascimento': dataNascimento,
@@ -55,6 +65,9 @@ Future<void> main() async {
         print('Erro ao cadastrar usuário: $mensagem');
         print(stackTrace);
         if (mensagem.toLowerCase().contains('duplicate') || mensagem.toLowerCase().contains('1062')) {
+          if (mensagem.toLowerCase().contains('username')) {
+            return _json(409, {'erro': 'Este username já está em uso.'});
+          }
           return _json(409, {'erro': 'Este e-mail já está cadastrado.'});
         }
         return _json(500, {'erro': 'Erro interno ao salvar o usuário.'});
@@ -146,6 +159,8 @@ Response _json(int status, Map<String, Object?> body) => Response(status, body: 
 
 bool _emailValido(String email) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
 
+bool _usernameValido(String username) => RegExp(r'^[a-z0-9_]{3,30}$').hasMatch(username);
+
 bool _senhaValida(String senha) => RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$').hasMatch(senha);
 
 String _gerarToken() => (100000 + Random.secure().nextInt(900000)).toString();
@@ -164,7 +179,21 @@ Future<void> _enviarToken(String email, String token) async {
     ..from = Address(username, 'SnapLock')
     ..recipients.add(email)
     ..subject = 'Token para redefinir sua senha'
-    ..text = 'Seu token é $token. Ele expira em 15 minutos.';
+    // ..text = 'Seu token é $token. Ele expira em 15 minutos.';
+    ..text = '''Olá, $username!
+
+Você solicitou a redefinição da sua senha. Use o código abaixo para continuar:
+
+$token
+
+⏱️ O código expira em 15 minutos.
+
+Não compartilhe este código com ninguém.
+
+Caso você não tenha feito essa solicitação, pode ignorar este e-mail com segurança.
+
+\u00A9 2026 SnapLock. Todos os direitos reservados.''';
+
   await send(message, smtpServer);
 }
 
