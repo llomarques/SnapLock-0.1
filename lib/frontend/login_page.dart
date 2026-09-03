@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'cadastro_page.dart';
+import 'esqueceuSenha_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -33,10 +34,17 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void abrirCadastro(){
+  void abrirCadastro() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const CadastroPage()),
+    );
+  }
+
+  void abrirEsqueceuSenha() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const esqueceuSenhaPage()),
     );
   }
 
@@ -117,7 +125,9 @@ class _LoginPageState extends State<LoginPage> {
             Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  abrirEsqueceuSenha();
+                },
                 child: const Text(
                   'Esqueceu a senha?',
                   style: TextStyle(
@@ -141,9 +151,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             RichText(
               text: TextSpan(
-                style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 16), 
+                style: TextStyle(color: Colors.black, fontSize: 16),
                 children: [
                   TextSpan(
                     text: 'Não tem uma conta? ',
@@ -153,8 +161,7 @@ class _LoginPageState extends State<LoginPage> {
                     style: TextStyle(
                       color: Color(0xFF895737),
                       fontWeight: FontWeight.bold,
-                      decoration: TextDecoration
-                          .underline, // Opcional: sublinha a palavra
+                      decoration: TextDecoration.underline,
                     ),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () {
@@ -163,6 +170,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ],
               ),
+              textAlign: TextAlign.center,
             )
           ],
         ),

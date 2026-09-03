@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:snaplock/frontend/login_page.dart';
 import 'cadastro_page.dart';
 import 'package:snaplock/frontend/carrossel.dart';
+import 'package:snaplock/theme/app_fonts.dart';
 
 class InicioPage extends StatelessWidget {
   const InicioPage({super.key});
@@ -32,24 +33,24 @@ class InicioPage extends StatelessWidget {
             Center(
               child: Image.asset(
                 'assets/images/logo.png',
-                width: 200,
-                height: 200,
+                width: 150,
+                height: 150,
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            const SizedBox(height: 43),
+            Text(
               'Seja bem-vindo!',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: AppFonts.cormorantBold.copyWith(
                 fontSize: 24,
-                fontWeight: FontWeight.bold,
                 color: Color(0xFF3E3A36),
+                fontWeight: FontWeight.w800
               ),
             ),
             const CarrosselDeInformacoes(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 65),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 77),
               decoration: BoxDecoration(
                 color: Color(0xFFF3E9DC),
                 borderRadius: BorderRadius.circular(27),

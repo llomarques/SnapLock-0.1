@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:snaplock/theme/app_fonts.dart';
 
 class CarrosselDeInformacoes extends StatefulWidget {
   const CarrosselDeInformacoes({super.key});
@@ -26,7 +27,8 @@ class _CarrosselDeInformacoesState extends State<CarrosselDeInformacoes> {
           options: CarouselOptions(
             height: 76,
             autoPlay: true,
-            enlargeCenterPage: true,
+            viewportFraction: 1.0,
+            enlargeCenterPage: false,
             aspectRatio: 16 / 9,
             autoPlayInterval: const Duration(seconds: 3),
             onPageChanged: (index, reason) {
@@ -36,7 +38,7 @@ class _CarrosselDeInformacoesState extends State<CarrosselDeInformacoes> {
           items: CarrosselDeInformacoes.listaDeTexto.map((itemText) {
             return Container(
               width: MediaQuery.of(context).size.width,
-              margin: const EdgeInsets.symmetric(horizontal: 5.0),
+              margin: EdgeInsets.zero,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16.0),
               ),
@@ -46,10 +48,9 @@ class _CarrosselDeInformacoesState extends State<CarrosselDeInformacoes> {
                   child: Text(
                     itemText,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: AppFonts.poppinsRegular.copyWith(
                       color: Color(0xFF3E3A36),
                       fontSize: 16.0,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),

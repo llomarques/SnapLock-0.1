@@ -28,7 +28,10 @@ class _CadastroPageState extends State<CadastroPage> {
     String senha = senhaController.text;
     String confirmaSenha = confirmaSenhaController.text;
 
-    if (nome.isEmpty || email.isEmpty || senha.isEmpty || confirmaSenha.isEmpty) {
+    if (nome.isEmpty ||
+        email.isEmpty ||
+        senha.isEmpty ||
+        confirmaSenha.isEmpty) {
       mostrarMensagem('Preencha todos os campos');
       return;
     }
@@ -72,11 +75,11 @@ class _CadastroPageState extends State<CadastroPage> {
             const SizedBox(height: 20),
             Image.asset(
               'assets/images/logo.png',
-              width: 150,
-              height: 300,
+              width: 130,
+              height: 130,
             ),
-            const SizedBox(height: 15),
-              TextField(
+            const SizedBox(height: 40),
+            TextField(
               controller: nomeController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
@@ -160,9 +163,9 @@ class _CadastroPageState extends State<CadastroPage> {
                 fillColor: Color(0xFFD7CBBD),
                 hintText: 'Confirme sua senha',
                 prefixIcon: const Icon(
-                  Icons.lock_outline,
+                  Icons.lock,
                   color: Color(0xFF5E3023),
-                  ),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
@@ -178,7 +181,7 @@ class _CadastroPageState extends State<CadastroPage> {
                     });
                   },
                   icon: Icon(
-                    esconderAfirmacao ? Icons.visibility_off : Icons.visibility,
+                    esconderAfirmacao ? Icons.visibility : Icons.visibility_off,
                     color: Color(0xFF5E3023),
                   ),
                 ),
@@ -188,14 +191,11 @@ class _CadastroPageState extends State<CadastroPage> {
             ElevatedButton.icon(
               onPressed: cadastrar,
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF895737),
-                  foregroundColor: Colors.white,
-                ),
-              label: const Text('Cadastrar', style: TextStyle(fontSize: 14)),
-              
-              
+                backgroundColor: const Color(0xFF895737),
+                foregroundColor: Colors.white,
               ),
-            
+              label: const Text('Cadastrar', style: TextStyle(fontSize: 14)),
+            ),
             const SizedBox(height: 10),
             GestureDetector(
                 onTap: () {
@@ -204,9 +204,10 @@ class _CadastroPageState extends State<CadastroPage> {
                 child: Text(
                   'Já tenho uma conta',
                   style: TextStyle(
-                      color: Color(0xFF895737),
-                      fontWeight: FontWeight.bold, // Opcional: sublinha a palavra
-                    ),
+                    color: Color(0xFF895737),
+                    fontWeight: FontWeight.bold, // Opcional: sublinha a palavra
+                  ),
+                  textAlign: TextAlign.center,
                 )),
             const SizedBox(
               height: 25,
