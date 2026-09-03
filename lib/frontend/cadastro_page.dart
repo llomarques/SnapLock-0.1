@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'personalizarPerfil_page.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -52,6 +53,13 @@ class _CadastroPageState extends State<CadastroPage> {
     }
 
     // Aqui pode adicionar a lógica real de cadastro.
+  }
+
+  void personalizarPerfil() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const personalizarPerfilPage()),
+    );
   }
 
   @override
@@ -189,7 +197,9 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 25),
             ElevatedButton.icon(
-              onPressed: cadastrar,
+              onPressed: () {
+                personalizarPerfil();
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: Colors.white,
