@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
-
 import 'package:snaplock/frontend/feed_page.dart';
 
 class personalizarPerfilPage extends StatefulWidget {
@@ -38,12 +37,12 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
     });
   }
 
-  // void abrirFeed() {
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(builder: (context) => const feedPage()),
-  //   );
-  // }
+  void abrirFeed() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const FeedPage()),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,7 +110,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               alignment: Alignment.center,
               child: GestureDetector(
                 onTap: () {
-                  // abrirFeed();
+                  abrirFeed();
                 },
                 child: const Text(
                   'Deixar para mais tarde',
@@ -125,7 +124,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                // abrirFeed();
+                abrirFeed();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
