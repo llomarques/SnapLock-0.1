@@ -81,6 +81,19 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   KEY `idx_usuario_ativo` (`ativo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+CREATE TABLE IF NOT EXISTS `recuperacao_senha` (
+  `id_recuperacao` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expira_em` datetime NOT NULL,
+  `enviado_em` datetime NOT NULL DEFAULT current_timestamp(),
+  `usado_em` datetime DEFAULT NULL,
+  PRIMARY KEY (`id_recuperacao`),
+  KEY `idx_recuperacao_usuario` (`id_usuario`),
+  KEY `idx_recuperacao_token` (`token_hash`),
+  CONSTRAINT `fk_recuperacao_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
 -- Copiando dados para a tabela snaplock_db.usuario: ~0 rows (aproximadamente)
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;

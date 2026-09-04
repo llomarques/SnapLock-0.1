@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/theme/app_fonts.dart';
 
+import '../controller/controller.cadastrar.dart';
+
 class esqueceuSenhaPage extends StatefulWidget {
   const esqueceuSenhaPage({super.key});
 
@@ -10,11 +12,30 @@ class esqueceuSenhaPage extends StatefulWidget {
 
 class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
   final TextEditingController confirmaEmailController = TextEditingController();
+  final CadastroController cadastroController = CadastroController();
+  bool carregando = false;
 
   void mostrarMensagem(String mensagem) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(mensagem)),
     );
+  }
+
+  Future<void> solicitarToken() async {
+    final email = confirmaEmailController.text.trim();
+    if (email.isEmpty) {
+      mostrarMensagem('Digite seu e-mail');
+      return;
+    }
+    setState(() => carregando = true);
+    try {
+      await cadastroController.solicitarToken(email);
+      if (mounted) mostrarMensagem('Confira seu e-mail e a pasta Spam.');
+    } catch (error) {
+      if (mounted) mostrarMensagem(error.toString());
+    } finally {
+      if (mounted) setState(() => carregando = false);
+    }
   }
 
   @override
@@ -68,13 +89,15 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
               child: Column(
                 children: [
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: carregando ? null : solicitarToken,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF895737),
                       foregroundColor: Color(0xFFF3E9DC),
                       minimumSize: const Size.fromHeight(50),
                     ),
-                    child: const Text('Enviar Link'),
+                    child: carregando
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Enviar Link'),
                   ),
                   ],
             ),

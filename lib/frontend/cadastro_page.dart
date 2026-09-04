@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'personalizarPerfil_page.dart';
+
+import '../controller/controller.cadastrar.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -13,9 +14,12 @@ class _CadastroPageState extends State<CadastroPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController senhaController = TextEditingController();
   final TextEditingController confirmaSenhaController = TextEditingController();
+  final CadastroController cadastroController = CadastroController();
 
   bool esconderSenha = true;
   bool esconderAfirmacao = true;
+  bool carregando = false;
+  DateTime? dataNascimento;
 
   void mostrarMensagem(String mensagem) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -42,8 +46,8 @@ class _CadastroPageState extends State<CadastroPage> {
       return;
     }
 
-    if (senha.length < 4) {
-      mostrarMensagem('A senha deve ter no mínimo 4 caracteres');
+    if (dataNascimento == null) {
+      mostrarMensagem('Selecione sua data de nascimento');
       return;
     }
 
@@ -52,14 +56,35 @@ class _CadastroPageState extends State<CadastroPage> {
       return;
     }
 
-    // Aqui pode adicionar a lógica real de cadastro.
+    setState(() => carregando = true);
+    try {
+      await cadastroController.cadastrarUsuario(
+        nome: nome,
+        email: email,
+        senha: senha,
+        confirmacaoSenha: confirmaSenha,
+        dataNascimento: dataNascimento!,
+      );
+      if (mounted) {
+        mostrarMensagem('Usuário cadastrado com sucesso');
+        Navigator.pop(context);
+      }
+    } catch (error) {
+      if (mounted) mostrarMensagem(error.toString());
+    } finally {
+      if (mounted) setState(() => carregando = false);
+    }
   }
 
-  void personalizarPerfil() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const personalizarPerfilPage()),
+  Future<void> selecionarData() async {
+    final hoje = DateTime.now();
+    final escolhida = await showDatePicker(
+      context: context,
+      initialDate: dataNascimento ?? DateTime(hoje.year - 16, hoje.month, hoje.day),
+      firstDate: DateTime(1900),
+      lastDate: hoje,
     );
+    if (escolhida != null) setState(() => dataNascimento = escolhida);
   }
 
   @override
@@ -107,6 +132,14 @@ class _CadastroPageState extends State<CadastroPage> {
                   borderSide: BorderSide.none,
                 ),
               ),
+            ),
+            const SizedBox(height: 15),
+            OutlinedButton.icon(
+              onPressed: carregando ? null : selecionarData,
+              icon: const Icon(Icons.cake_outlined),
+              label: Text(dataNascimento == null
+                  ? 'Selecione sua data de nascimento'
+                  : 'Nascimento: ${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}'),
             ),
             const SizedBox(height: 15),
             TextField(
@@ -197,14 +230,14 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 25),
             ElevatedButton.icon(
-              onPressed: () {
-                personalizarPerfil();
-              },
+              onPressed: carregando ? null : cadastrar,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: Colors.white,
               ),
-              label: const Text('Cadastrar', style: TextStyle(fontSize: 14)),
+                label: carregando
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Cadastrar', style: TextStyle(fontSize: 14)),
             ),
             const SizedBox(height: 10),
             GestureDetector(
