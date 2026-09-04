@@ -78,10 +78,16 @@ Future<void> main() async {
       final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
       if (!_emailValido(email)) return _json(422, {'erro': 'Informe um e-mail válido.'});
 
-      final usuarios = await connection.execute('SELECT id_usuario FROM usuario WHERE email = :email AND ativo = 1 LIMIT 1', {'email': email});
+      final usuarios = await connection.execute(
+        'SELECT id_usuario, nome FROM usuario WHERE email = :email AND ativo = 1 LIMIT 1',
+        {'email': email},
+      );
       if (usuarios.rows.isEmpty) return _json(200, {'mensagem': 'Se o e-mail existir, um token será enviado.'});
 
-      final idUsuario = int.parse(usuarios.rows.first.assoc()['id_usuario']!);
+      final linhaUsuario = usuarios.rows.first.assoc();
+      final idUsuario = int.parse(linhaUsuario['id_usuario']!);
+      final nomeUsuario = linhaUsuario['nome'] ?? 'usuário';
+
       final recentes = await connection.execute(
         'SELECT enviado_em FROM recuperacao_senha WHERE id_usuario = :id_usuario AND enviado_em > DATE_SUB(NOW(), INTERVAL 30 SECOND) ORDER BY enviado_em DESC LIMIT 1',
         {'id_usuario': idUsuario},
@@ -89,11 +95,21 @@ Future<void> main() async {
       if (recentes.rows.isNotEmpty) return _json(429, {'erro': 'Aguarde 30 segundos para solicitar outro token.'});
 
       final token = _gerarToken();
-      await connection.execute(
-        'INSERT INTO recuperacao_senha (id_usuario, token_hash, expira_em) VALUES (:id_usuario, :token_hash, DATE_ADD(NOW(), INTERVAL 15 MINUTE))',
-        {'id_usuario': idUsuario, 'token_hash': _hashToken(token)},
-      );
-      await _enviarToken(email, token);
+      try {
+        await connection.execute(
+          'INSERT INTO recuperacao_senha (id_usuario, token_hash, expira_em) VALUES (:id_usuario, :token_hash, DATE_ADD(NOW(), INTERVAL 15 MINUTE))',
+          {'id_usuario': idUsuario, 'token_hash': _hashToken(token)},
+        );
+        await _enviarToken(email, nomeUsuario, token);
+      } catch (error, stackTrace) {
+        await connection.execute(
+          'DELETE FROM recuperacao_senha WHERE id_usuario = :id_usuario AND token_hash = :token_hash',
+          {'id_usuario': idUsuario, 'token_hash': _hashToken(token)},
+        );
+        print('Erro ao enviar token: $error');
+        print(stackTrace);
+        return _json(502, {'erro': 'Não foi possível enviar o e-mail. Confira as configurações SMTP.'});
+      }
       return _json(200, {'mensagem': 'Se o e-mail existir, um token será enviado.'});
     })
     ..post('/api/recuperacao/redefinir', (Request request) async {
@@ -167,32 +183,47 @@ String _gerarToken() => (100000 + Random.secure().nextInt(900000)).toString();
 
 String _hashToken(String token) => sha256.convert(utf8.encode(token)).toString();
 
-Future<void> _enviarToken(String email, String token) async {
+Future<void> _enviarToken(String email, String nomeUsuario, String token) async {
   final host = Platform.environment['SMTP_HOST'];
   final username = Platform.environment['SMTP_USER'];
   final password = Platform.environment['SMTP_PASSWORD'];
   if (host == null || username == null || password == null) {
     throw StateError('Configure SMTP_HOST, SMTP_USER e SMTP_PASSWORD para enviar tokens.');
   }
-  final smtpServer = SmtpServer(host, username: username, password: password, port: int.tryParse(Platform.environment['SMTP_PORT'] ?? '587') ?? 587, ssl: Platform.environment['SMTP_SSL'] == 'true');
+  final smtpServer = SmtpServer(
+    host,
+    username: username,
+    password: password,
+    port: int.tryParse(Platform.environment['SMTP_PORT'] ?? '587') ?? 587,
+    ssl: Platform.environment['SMTP_SSL'] == 'true',
+  );
+
   final message = Message()
     ..from = Address(username, 'SnapLock')
     ..recipients.add(email)
     ..subject = 'Token para redefinir sua senha'
-    // ..text = 'Seu token é $token. Ele expira em 15 minutos.';
-    ..text = '''Olá, $username!
-
-Você solicitou a redefinição da sua senha. Use o código abaixo para continuar:
-
-$token
-
-⏱️ O código expira em 15 minutos.
-
-Não compartilhe este código com ninguém.
-
-Caso você não tenha feito essa solicitação, pode ignorar este e-mail com segurança.
-
-\u00A9 2026 SnapLock. Todos os direitos reservados.''';
+    ..html = '''
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background-color: #f4f4f7;">
+        <div style="background-color: #ffffff; border-radius: 8px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <h2 style="color: #1a1a1a; margin-top: 0;">Olá, $nomeUsuario!</h2>
+          <p style="color: #444; font-size: 15px; line-height: 1.5;">
+            Você solicitou a redefinição da sua senha. Use o código abaixo para continuar:
+          </p>
+          <div style="background-color: #f0f0f5; border-radius: 6px; padding: 16px; text-align: center; margin: 24px 0;">
+            <span style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #2b2b2b;">$token</span>
+          </div>
+          <p style="color: #666; font-size: 14px;">⏱️ O código expira em <strong>15 minutos</strong>.</p>
+          <p style="color: #666; font-size: 14px;">Não compartilhe este código com ninguém.</p>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">
+            Caso você não tenha feito essa solicitação, pode ignorar este e-mail com segurança.
+          </p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+          <p style="color: #bbb; font-size: 12px; text-align: center;">
+            &copy; 2026 SnapLock. Todos os direitos reservados.
+          </p>
+        </div>
+      </div>
+    ''';
 
   await send(message, smtpServer);
 }
