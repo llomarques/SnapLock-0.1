@@ -11,6 +11,36 @@ class FeedPage extends StatefulWidget {
   State<FeedPage> createState() => _FeedPage();
 }
 
+class FeedConteudoPage extends StatelessWidget {
+  const FeedConteudoPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3E9DC),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.menu),
+        ),
+        toolbarHeight: 130,
+        centerTitle: true,
+        title: Image.asset(
+          'assets/images/logo.png',
+          height: 80,
+          width: 80,
+        ),
+        actions: [
+          IconButton(onPressed: (){}, icon: Icon(Icons.person_search))
+        ],
+        backgroundColor: const Color(0xFFD7CBBD),
+      ),
+      body: const Center(),
+    );
+  }
+}
+
 class _FeedPage extends State<FeedPage> {
   int indice = 0;
 
@@ -36,8 +66,7 @@ class _FeedPage extends State<FeedPage> {
         selectedIndex: indice,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home), label: ''),
-          NavigationDestination(
-              icon: Icon(Icons.notifications), label: ''),
+          NavigationDestination(icon: Icon(Icons.notifications), label: ''),
           NavigationDestination(icon: Icon(Icons.add_a_photo), label: ''),
           NavigationDestination(
               icon: const ImageIcon(
@@ -51,17 +80,6 @@ class _FeedPage extends State<FeedPage> {
               label: ''),
         ],
       ),
-    );
-  }
-}
-
-class FeedConteudoPage extends StatelessWidget {
-  const FeedConteudoPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Feed'),
     );
   }
 }

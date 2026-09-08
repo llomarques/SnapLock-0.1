@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/personalizarPerfil_page.dart';
 
 import '../controller/controller.cadastrar.dart';
 
@@ -36,7 +37,7 @@ class _CadastroPageState extends State<CadastroPage> {
     String confirmaSenha = confirmaSenhaController.text;
 
     if (nome.isEmpty ||
-      username.isEmpty ||
+        username.isEmpty ||
         email.isEmpty ||
         senha.isEmpty ||
         confirmaSenha.isEmpty) {
@@ -71,7 +72,12 @@ class _CadastroPageState extends State<CadastroPage> {
       );
       if (mounted) {
         mostrarMensagem('Usuário cadastrado com sucesso');
-        Navigator.pop(context);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const personalizarPerfilPage(),
+          ),
+        );
       }
     } catch (error) {
       if (mounted) mostrarMensagem(error.toString());
@@ -159,7 +165,8 @@ class _CadastroPageState extends State<CadastroPage> {
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
                 hintText: 'Digite seu username',
-                prefixIcon: const Icon(Icons.alternate_email, color: Color(0xFF5E3023)),
+                prefixIcon:
+                    const Icon(Icons.alternate_email, color: Color(0xFF5E3023)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,

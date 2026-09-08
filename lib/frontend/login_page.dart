@@ -70,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite seu e-mail',
+                hintText: 'Digite seu e-mail ou usuário',
                 prefixIcon: const Icon(
                   Icons.email,
                   color: Color(0xFF5E3023),
