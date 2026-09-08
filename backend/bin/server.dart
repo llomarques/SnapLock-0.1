@@ -22,6 +22,39 @@ Future<void> main() async {
   await connection.connect();
 
   final router = Router()
+    ..post('/api/login', (Request request) async {
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
+
+      final login = (dados['login'] ?? dados['email'] ?? dados['username'] ?? '').toString().trim().toLowerCase();
+      final senha = dados['senha'] as String? ?? '';
+      if (login.isEmpty || senha.isEmpty) {
+        return _json(422, {'erro': 'Informe o e-mail ou username e a senha.'});
+      }
+
+      final usuarios = await connection.execute(
+        '''SELECT id_usuario, nome, username, email, senha_hash
+           FROM usuario
+           WHERE (email = :email OR username = :username) AND ativo = 1
+           LIMIT 1''',
+        {'email': login, 'username': login},
+      );
+      if (usuarios.rows.isEmpty) {
+        return _json(401, {'erro': 'E-mail/usuário ou senha incorretos.'});
+      }
+
+      final usuario = usuarios.rows.first.assoc();
+      if (!BCrypt.checkpw(senha, usuario['senha_hash']!)) {
+        return _json(401, {'erro': 'E-mail/usuário ou senha incorretos.'});
+      }
+
+      return _json(200, {
+        'id_usuario': int.parse(usuario['id_usuario']!),
+        'nome': usuario['nome'],
+        'username': usuario['username'],
+        'email': usuario['email'],
+      });
+    })
     ..post('/api/usuarios', (Request request) async {
       final dados = await _lerJson(request);
       if (dados == null) return _json(400, {'erro': 'JSON inválido.'});

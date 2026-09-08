@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'cadastro_page.dart';
 import 'esqueceuSenha_page.dart';
+import 'feed_page.dart';
+import '../controller/controller.login.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,8 +13,9 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController emailController = TextEditingController();
+  final TextEditingController loginControllerTexto = TextEditingController();
   final TextEditingController senhaController = TextEditingController();
+  final LoginController loginController = LoginController();
 
   bool esconderSenha = true;
   bool carregando = false;
@@ -23,14 +26,28 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> entrar() async {
-    String email = emailController.text.trim();
+    String login = loginControllerTexto.text.trim();
     String senha = senhaController.text;
 
-    if (email.isEmpty || senha.isEmpty) {
+    if (login.isEmpty || senha.isEmpty) {
       mostrarMensagem(
-        'Preencha o e-mail e a senha.',
+        'Preencha o e-mail/username e a senha.',
       );
       return;
+    }
+
+    setState(() => carregando = true);
+    try {
+      await loginController.entrar(login: login, senha: senha);
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const FeedPage()),
+      );
+    } catch (error) {
+      if (mounted) mostrarMensagem(error.toString());
+    } finally {
+      if (mounted) setState(() => carregando = false);
     }
   }
 
@@ -46,6 +63,13 @@ class _LoginPageState extends State<LoginPage> {
       context,
       MaterialPageRoute(builder: (context) => const esqueceuSenhaPage()),
     );
+  }
+
+  @override
+  void dispose() {
+    loginControllerTexto.dispose();
+    senhaController.dispose();
+    super.dispose();
   }
 
   @override
@@ -65,8 +89,8 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 20),
             TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
+              controller: loginControllerTexto,
+              keyboardType: TextInputType.text,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
@@ -141,12 +165,14 @@ class _LoginPageState extends State<LoginPage> {
               height: 25,
             ),
             ElevatedButton.icon(
-                onPressed: entrar,
+                onPressed: carregando ? null : entrar,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF895737),
                   foregroundColor: Color(0xFFF3E9DC),
                 ),
-                label: const Text('Entrar')),
+                label: carregando
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Entrar')),
             const SizedBox(
               height: 10,
             ),
