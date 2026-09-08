@@ -32,11 +32,15 @@ class CadastroController {
 
 	Future<void> cadastrarUsuario({
 		required String nome,
+		required String username,
 		required String email,
 		required String senha,
 		required String confirmacaoSenha,
 		required DateTime dataNascimento,
 	}) async {
+		if (!_usernameValido(username)) {
+			throw const CadastroException('O username deve ter de 3 a 30 caracteres: letras, números ou _.');
+		}
 		if (!_senhaValida(senha)) {
 			throw const CadastroException(
 				'A senha deve ter 8 caracteres, uma maiúscula, uma minúscula, um número e um caractere especial.',
@@ -57,6 +61,7 @@ class CadastroController {
 			headers: const {'Content-Type': 'application/json'},
 			body: jsonEncode({
 				'nome': nome.trim(),
+				'username': username.trim().toLowerCase(),
 				'email': email.trim().toLowerCase(),
 				'senha': senha,
 				'confirmacao_senha': confirmacaoSenha,
@@ -113,8 +118,12 @@ class CadastroController {
 		);
 		Map<String, dynamic>? body;
 		if (response.body.isNotEmpty) {
-			final decoded = jsonDecode(response.body);
-			if (decoded is Map<String, dynamic>) body = decoded;
+			try {
+				final decoded = jsonDecode(response.body);
+				if (decoded is Map<String, dynamic>) body = decoded;
+			} on FormatException {
+				body = {'erro': 'A API retornou uma resposta inválida.'};
+			}
 		}
 		if (response.statusCode < 200 || response.statusCode >= 300) {
 			throw CadastroException(body?['erro']?.toString() ?? 'Não foi possível concluir a operação.');
@@ -122,6 +131,8 @@ class CadastroController {
 	}
 
 	bool _senhaValida(String senha) => RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$').hasMatch(senha);
+
+	bool _usernameValido(String username) => RegExp(r'^[a-z0-9_]{3,30}$').hasMatch(username.trim().toLowerCase());
 
 	String _formatarData(DateTime data) {
 		final mes = data.month.toString().padLeft(2, '0');

@@ -83,6 +83,12 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   KEY `idx_usuario_ativo` (`ativo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+-- Migração para bancos criados antes da coluna username.
+-- Execute uma vez se a tabela usuario já existir sem essa coluna.
+ALTER TABLE `usuario`
+  ADD COLUMN IF NOT EXISTS `username` varchar(30) NOT NULL AFTER `nome`,
+  ADD UNIQUE KEY IF NOT EXISTS `username` (`username`);
+
 CREATE TABLE IF NOT EXISTS `recuperacao_senha` (
   `id_recuperacao` int(11) NOT NULL AUTO_INCREMENT,
   `id_usuario` int(11) NOT NULL,

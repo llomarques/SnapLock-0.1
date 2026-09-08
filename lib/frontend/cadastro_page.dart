@@ -11,6 +11,7 @@ class CadastroPage extends StatefulWidget {
 
 class _CadastroPageState extends State<CadastroPage> {
   final TextEditingController nomeController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController senhaController = TextEditingController();
   final TextEditingController confirmaSenhaController = TextEditingController();
@@ -29,11 +30,13 @@ class _CadastroPageState extends State<CadastroPage> {
 
   Future<void> cadastrar() async {
     String nome = nomeController.text.trim();
+    String username = usernameController.text.trim();
     String email = emailController.text.trim();
     String senha = senhaController.text;
     String confirmaSenha = confirmaSenhaController.text;
 
     if (nome.isEmpty ||
+      username.isEmpty ||
         email.isEmpty ||
         senha.isEmpty ||
         confirmaSenha.isEmpty) {
@@ -60,6 +63,7 @@ class _CadastroPageState extends State<CadastroPage> {
     try {
       await cadastroController.cadastrarUsuario(
         nome: nome,
+        username: username,
         email: email,
         senha: senha,
         confirmacaoSenha: confirmaSenha,
@@ -104,6 +108,7 @@ class _CadastroPageState extends State<CadastroPage> {
   @override
   void dispose() {
     nomeController.dispose();
+    usernameController.dispose();
     emailController.dispose();
     senhaController.dispose();
     confirmaSenhaController.dispose();
@@ -137,6 +142,24 @@ class _CadastroPageState extends State<CadastroPage> {
                   Icons.person,
                   color: Color(0xFF5E3023),
                 ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              controller: usernameController,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFFD7CBBD),
+                hintText: 'Digite seu username',
+                prefixIcon: const Icon(Icons.alternate_email, color: Color(0xFF5E3023)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
