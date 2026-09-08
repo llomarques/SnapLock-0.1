@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/feed_page.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
