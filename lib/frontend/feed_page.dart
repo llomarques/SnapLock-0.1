@@ -35,7 +35,7 @@ class FeedHeader extends StatelessWidget {
             toolbarHeight: 110,
             leading: IconButton(
               onPressed: onMenuPressed,
-              icon: const Icon(Icons.menu),
+              icon: const Icon(Icons.menu, size: 35.0, color: Colors.black),
             ),
             centerTitle: true,
             title: Image.asset(
@@ -46,7 +46,7 @@ class FeedHeader extends StatelessWidget {
             actions: [
               IconButton(
                 onPressed: () {},
-                icon: const Icon(Icons.person_search),
+                icon: const Icon(Icons.person_search, size: 35.0, color: Colors.black),
               ),
             ],
             backgroundColor: const Color(0xFFD7CBBD),
@@ -155,6 +155,7 @@ class _FeedPage extends State<FeedPage> {
       ),
       bottomNavigationBar: NavigationBar(
         backgroundColor: const Color(0xFFD7CBBD),
+        indicatorColor: const Color(0xFFC08552),
         onDestinationSelected: (valor) {
           setState(() {
             indice = valor;
@@ -163,30 +164,34 @@ class _FeedPage extends State<FeedPage> {
         selectedIndex: indice,
         destinations: const [
           NavigationDestination(
-              icon: Icon(Icons.home, size: 40.0, color: Colors.black),
+              icon: Icon(Icons.home, size: 33.0, color: Colors.black),
               label: ''),
           NavigationDestination(
               icon: Icon(
                 Icons.notifications,
-                size: 37.0,
+                size: 33.0,
+                color: Colors.black,
               ),
               label: ''),
           NavigationDestination(
               icon: Icon(
                 Icons.add_a_photo,
-                size: 34.0,
+                size: 33.0,
+                color: Colors.black,
               ),
               label: ''),
           NavigationDestination(
               icon: const ImageIcon(
                 AssetImage('assets/images/dump.png'),
-                size: 40.0,
+                size: 33.0,
+                color: Colors.black,
               ),
               label: ''),
           NavigationDestination(
               icon: const ImageIcon(
                 AssetImage('assets/images/monalisaPerfil.png'),
-                size: 41.0,
+                size: 33.0,
+                color: Colors.black,
               ),
               label: ''),
         ],

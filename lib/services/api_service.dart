@@ -423,4 +423,6 @@ class ApiService {
       throw Exception(data['message'] ?? 'Erro ao gerar dump.');
     }
   }
+
+  static Future<Object?> getFotos() async {}
 }

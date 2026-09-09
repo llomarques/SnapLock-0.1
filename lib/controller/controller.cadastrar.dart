@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -115,6 +116,11 @@ class CadastroController {
 			Uri.parse('$apiBaseUrl$caminho'),
 			headers: const {'Content-Type': 'application/json'},
 			body: jsonEncode(dados),
+		).timeout(
+			const Duration(seconds: 15),
+			onTimeout: () => throw const CadastroException(
+				'A API não respondeu. Verifique se o backend está aberto e se o SMTP está configurado.',
+			),
 		);
 		Map<String, dynamic>? body;
 		if (response.body.isNotEmpty) {

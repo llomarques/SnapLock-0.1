@@ -55,18 +55,30 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
             const SizedBox(
               height: 60,
             ),
-            Text('Personalizar perfil'),
+            Text('Personalizar Perfil'),
             const SizedBox(
               height: 30,
             ),
-            CircleAvatar(
-              radius: 60,
-              backgroundColor:
-                  Colors.transparent, // Ajuste a cor de fundo se necessário
-              backgroundImage: fotoPerfil != null
-                  ? MemoryImage(fotoPerfil!)
-                  : const AssetImage('assets/images/monalisaPerfil.png')
-                      as ImageProvider,
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: const Color(0xFF895737),
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image(
+                  image: fotoPerfil != null
+                      ? MemoryImage(fotoPerfil!)
+                      : const AssetImage('assets/images/monalisaPerfil.png')
+                          as ImageProvider,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
             const SizedBox(
               height: 25,
