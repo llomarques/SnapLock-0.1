@@ -89,7 +89,7 @@ class _FeedPage extends State<FeedPage> {
           padding: EdgeInsets.zero,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 24, bottom: 12),
+              padding: const EdgeInsets.only(top: 60, bottom: 12),
               child: Image.asset(
                 'assets/images/logo.png',
                 height: 80,
@@ -162,17 +162,31 @@ class _FeedPage extends State<FeedPage> {
         },
         selectedIndex: indice,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: ''),
-          NavigationDestination(icon: Icon(Icons.notifications), label: ''),
-          NavigationDestination(icon: Icon(Icons.add_a_photo), label: ''),
+          NavigationDestination(
+              icon: Icon(Icons.home, size: 40.0, color: Colors.black),
+              label: ''),
+          NavigationDestination(
+              icon: Icon(
+                Icons.notifications,
+                size: 37.0,
+              ),
+              label: ''),
+          NavigationDestination(
+              icon: Icon(
+                Icons.add_a_photo,
+                size: 34.0,
+              ),
+              label: ''),
           NavigationDestination(
               icon: const ImageIcon(
                 AssetImage('assets/images/dump.png'),
+                size: 40.0,
               ),
               label: ''),
           NavigationDestination(
               icon: const ImageIcon(
                 AssetImage('assets/images/monalisaPerfil.png'),
+                size: 41.0,
               ),
               label: ''),
         ],
