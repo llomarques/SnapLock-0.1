@@ -70,7 +70,6 @@ CREATE TABLE IF NOT EXISTS `foto` (
 CREATE TABLE IF NOT EXISTS `usuario` (
   `id_usuario` int(11) NOT NULL AUTO_INCREMENT,
   `nome` varchar(100) NOT NULL,
-  `username` varchar(30) NOT NULL,
   `email` varchar(150) NOT NULL,
   `senha_hash` varchar(255) NOT NULL,
   `foto_perfil` varchar(255) DEFAULT NULL,
@@ -78,28 +77,8 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   `ativo` tinyint(1) NOT NULL DEFAULT 1,
   `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_usuario`),
-  UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`),
   KEY `idx_usuario_ativo` (`ativo`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Migração para bancos criados antes da coluna username.
--- Execute uma vez se a tabela usuario já existir sem essa coluna.
-ALTER TABLE `usuario`
-  ADD COLUMN IF NOT EXISTS `username` varchar(30) NOT NULL AFTER `nome`,
-  ADD UNIQUE KEY IF NOT EXISTS `username` (`username`);
-
-CREATE TABLE IF NOT EXISTS `recuperacao_senha` (
-  `id_recuperacao` int(11) NOT NULL AUTO_INCREMENT,
-  `id_usuario` int(11) NOT NULL,
-  `token_hash` char(64) NOT NULL,
-  `expira_em` datetime NOT NULL,
-  `enviado_em` datetime NOT NULL DEFAULT current_timestamp(),
-  `usado_em` datetime DEFAULT NULL,
-  PRIMARY KEY (`id_recuperacao`),
-  KEY `idx_recuperacao_usuario` (`id_usuario`),
-  KEY `idx_recuperacao_token` (`token_hash`),
-  CONSTRAINT `fk_recuperacao_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Copiando dados para a tabela snaplock_db.usuario: ~0 rows (aproximadamente)

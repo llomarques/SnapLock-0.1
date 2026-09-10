@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:snaplock/frontend/inicio_page.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 void main() {
 	runApp(const HelloWorldApp());
@@ -11,12 +9,12 @@ class HelloWorldApp extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return MaterialApp(
-      debugShowCheckedModeBanner: false,
-			theme: ThemeData(
-				textTheme: GoogleFonts.poppinsTextTheme(),
+		return const MaterialApp(
+			home: Scaffold(
+				body: Center(
+					child: Text('Hello World'),
+				),
 			),
-			home: const InicioPage(),
 		);
 	}
 }
