@@ -147,6 +147,25 @@ Future<void> main() async {
       }
       return _json(200, {'mensagem': 'Se o e-mail existir, um token será enviado.'});
     })
+    ..post('/api/recuperacao/validar-token', (Request request) async {
+      final dados = await _lerJson(request);
+      final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
+      final token = dados?['token'] as String? ?? '';
+      if (!_emailValido(email) || token.length != 6) {
+        return _json(422, {'erro': 'Token inválido ou expirado.'});
+      }
+
+      final resultados = await connection.execute(
+        '''SELECT r.id_recuperacao
+           FROM recuperacao_senha r JOIN usuario u ON u.id_usuario = r.id_usuario
+           WHERE u.email = :email AND r.token_hash = :token_hash
+             AND r.usado_em IS NULL AND r.expira_em > NOW()
+           ORDER BY r.id_recuperacao DESC LIMIT 1''',
+        {'email': email, 'token_hash': _hashToken(token)},
+      );
+      if (resultados.rows.isEmpty) return _json(422, {'erro': 'Token inválido ou expirado.'});
+      return _json(200, {'mensagem': 'Token válido.'});
+    })
     ..post('/api/recuperacao/redefinir', (Request request) async {
       final dados = await _lerJson(request);
       final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
