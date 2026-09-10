@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-
 import 'package:bcrypt/bcrypt.dart';
 import 'package:crypto/crypto.dart';
 import 'package:mailer/mailer.dart';
@@ -10,14 +9,17 @@ import 'package:mysql_client/mysql_client.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
+import 'package:dotenv/dotenv.dart';
+
+final env = DotEnv()..load();
 
 Future<void> main() async {
   final connection = await MySQLConnection.createConnection(
-    host: Platform.environment['DB_HOST'] ?? '127.0.0.1',
-    port: int.tryParse(Platform.environment['DB_PORT'] ?? '3306') ?? 3306,
-    userName: Platform.environment['DB_USER'] ?? 'root',
-    password: Platform.environment['DB_PASSWORD'] ?? 'senai2026',
-    databaseName: Platform.environment['DB_NAME'] ?? 'snaplock_db',
+    host: env['DB_HOST'] ?? '127.0.0.1',
+    port: int.tryParse(env['DB_PORT'] ?? '3306') ?? 3306,
+    userName: env['DB_USER'] ?? 'root',
+    password: env['DB_PASSWORD'] ?? 'senai2026',
+    databaseName: env['DB_NAME'] ?? 'snaplock_db',
   );
   await connection.connect();
 
@@ -177,7 +179,7 @@ Future<void> main() async {
       .addMiddleware(logRequests())
       .addMiddleware(_cors())
       .addHandler(router.call);
-  final server = await shelf_io.serve(handler, InternetAddress.anyIPv4, int.tryParse(Platform.environment['PORT'] ?? '3000') ?? 3000);
+  final server = await shelf_io.serve(handler, InternetAddress.anyIPv4, int.tryParse(env['PORT'] ?? '3000') ?? 3000);
   print('SnapLock API em http://${server.address.host}:${server.port}');
 }
 
@@ -217,9 +219,9 @@ String _gerarToken() => (100000 + Random.secure().nextInt(900000)).toString();
 String _hashToken(String token) => sha256.convert(utf8.encode(token)).toString();
 
 Future<void> _enviarToken(String email, String nomeUsuario, String token) async {
-  final host = Platform.environment['SMTP_HOST'];
-  final username = Platform.environment['SMTP_USER'];
-  final password = Platform.environment['SMTP_PASSWORD'];
+  final host = env['SMTP_HOST'];
+  final username = env['SMTP_USER'];
+  final password = env['SMTP_PASSWORD'];
   if (host == null || username == null || password == null) {
     throw StateError('Configure SMTP_HOST, SMTP_USER e SMTP_PASSWORD para enviar tokens.');
   }
@@ -227,8 +229,8 @@ Future<void> _enviarToken(String email, String nomeUsuario, String token) async 
     host,
     username: username,
     password: password,
-    port: int.tryParse(Platform.environment['SMTP_PORT'] ?? '587') ?? 587,
-    ssl: Platform.environment['SMTP_SSL'] == 'true',
+    port: int.tryParse(env['SMTP_PORT'] ?? '587') ?? 587,
+    ssl: env['SMTP_SSL'] == 'true',
   );
 
   final message = Message()

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
 import 'package:snaplock/frontend/feed_page.dart';
 
 class personalizarPerfilPage extends StatefulWidget {
@@ -16,33 +16,69 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
   final ImagePicker picker = ImagePicker();
 
   Uint8List? fotoPerfil;
+  bool selecionandoImagem = false;
 
   Future<void> escolherDaGaleria() async {
-    final XFile? imagem = await picker.pickImage(
-      source: ImageSource.gallery,
-    );
-
-    if (imagem == null) {
+    if (selecionandoImagem) {
       return;
     }
 
-    final bytes = await imagem.readAsBytes();
+    setState(() => selecionandoImagem = true);
+    try {
+      final XFile? imagem = await picker.pickImage(
+        source: ImageSource.gallery,
+      );
 
-    if (!mounted) {
-      return;
+      if (imagem == null) {
+        return;
+      }
+
+      final bytes = await imagem.readAsBytes();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        fotoPerfil = bytes;
+      });
+    } on PlatformException catch (error) {
+      if (mounted && error.code != 'already_active') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível selecionar a imagem.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => selecionandoImagem = false);
+      }
     }
-
-    setState(() {
-      fotoPerfil = bytes;
-    });
   }
 
   void abrirFeed() {
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const FeedPage()),
     );
   }
+
+  void personalizarPerfil() {
+    final biografia = biografiaController.text.trim();
+    if (fotoPerfil == null && biografia.isEmpty) {
+      abrirFeed();
+      return;
+    }
+
+    // A foto e a biografia ficam prontas para serem persistidas quando o usuário estiver autenticado.
+    abrirFeed();
+  }
+
+  @override
+  void dispose() {
+    biografiaController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,9 +108,15 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               height: 25,
             ),
             ElevatedButton.icon(
-              onPressed: escolherDaGaleria,
-              icon: const Icon(Icons.camera_alt),
-              label: const Text("Adicionar Foto"),
+              onPressed: selecionandoImagem ? null : escolherDaGaleria,
+              icon: selecionandoImagem
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.camera_alt),
+              label: Text(selecionandoImagem ? 'Abrindo galeria...' : 'Adicionar Foto'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: Color(0xFFF3E9DC),
@@ -109,9 +151,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
             Align(
               alignment: Alignment.center,
               child: GestureDetector(
-                onTap: () {
-                  abrirFeed();
-                },
+                onTap: abrirFeed,
                 child: const Text(
                   'Deixar para mais tarde',
                   style: TextStyle(
@@ -123,9 +163,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               height: 25,
             ),
             ElevatedButton(
-              onPressed: () {
-                abrirFeed();
-              },
+              onPressed: personalizarPerfil,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: Color(0xFFF3E9DC),

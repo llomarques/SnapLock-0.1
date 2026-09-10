@@ -12,3 +12,6 @@ dependencies:
   mysql_client: ^0.0.27
   shelf: ^1.4.1
   shelf_router: ^1.1.4
+  dotenv: ^4.2.0
+
+
