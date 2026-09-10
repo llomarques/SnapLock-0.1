@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
+import 'editarPerfil_page.dart' hide IconButton;
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -58,26 +59,14 @@ class _PerfilPage extends State<PerfilPage> {
     }
   }
 
-  Future<void> escolherDaGaleria() async {
-    final XFile? imagem = await picker.pickImage(
-      source: ImageSource.gallery,
+   void abrirEditarPerfil(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const EditarPerfilPage()),
     );
-
-    if (imagem == null) {
-      return;
-    }
-
-    final bytes = await imagem.readAsBytes();
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      fotoPerfil = bytes;
-    });
   }
 
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,7 +121,7 @@ class _PerfilPage extends State<PerfilPage> {
                     right: -4,
                     bottom: -4,
                     child: IconButton(
-                      onPressed: escolherDaGaleria,
+                      onPressed: () => abrirEditarPerfil(context),
                       icon: const Icon(Icons.edit, size: 17),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.black,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/frontend/personalizarPerfil_page.dart';
+import 'package:snaplock/frontend/login_page.dart';
 
 import '../controller/controller.cadastrar.dart';
 
@@ -119,6 +120,13 @@ class _CadastroPageState extends State<CadastroPage> {
     senhaController.dispose();
     confirmaSenhaController.dispose();
     super.dispose();
+  }
+
+    void abrirLogin(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
   }
 
   @override
@@ -306,9 +314,7 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 10),
             GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                },
+                onTap: () => abrirLogin(context),
                 child: Text(
                   'Já tenho uma conta',
                   style: TextStyle(
