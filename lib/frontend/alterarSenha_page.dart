@@ -20,6 +20,7 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
   final TextEditingController novaSenhaController = TextEditingController();
   final TextEditingController confirmarSenhaController = TextEditingController();
   final CadastroController cadastroController = CadastroController();
+  bool esconderSenha = true;
   bool carregando = false;
 
   void mostrarMensagem(String mensagem) {
@@ -58,27 +59,92 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Alterar Senha'),
-      ),
+      backgroundColor: Color(0xFFF3E9DC),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            const SizedBox(height: 20),
+            Image.asset(
+              'assets/images/logo.png',
+              width: 150,
+              height: 150,
+            ),
+            const SizedBox(height: 60),
             TextField(
               controller: novaSenhaController,
-              decoration: const InputDecoration(labelText: 'Nova Senha'),
-              obscureText: true,
+              obscureText: esconderSenha,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Color(0xFFD7CBBD),
+                hintText: 'Digite sua nova senha',
+                prefixIcon: const Icon(
+                  Icons.lock,
+                  color: Color(0xFF5E3023),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                suffixIcon: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      esconderSenha = !esconderSenha;
+                    });
+                  },
+                  icon: Icon(
+                    esconderSenha ? Icons.visibility : Icons.visibility_off,
+                    color: Color(0xFF5E3023),
+                  ),
+                )
+              ),
+              
             ),
+            const SizedBox(height: 20),
             TextField(
               controller: confirmarSenhaController,
-              decoration:
-                  const InputDecoration(labelText: 'Confirmar Nova Senha'),
-              obscureText: true,
+              obscureText: esconderSenha,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Color(0xFFD7CBBD),
+                hintText: 'Confirmar Nova Senha',
+                prefixIcon: const Icon(
+                  Icons.lock,
+                  color: Color(0xFF5E3023),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                suffixIcon: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      esconderSenha = !esconderSenha;
+                    });
+                  },
+                  icon: Icon(
+                    esconderSenha ? Icons.visibility : Icons.visibility_off,
+                    color: Color(0xFF5E3023),
+                  ),
+                )
+              ),
+              
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: carregando ? null : alterarSenha,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF895737),
+                foregroundColor: Color(0xFFF3E9DC),
+              ),
               child: carregando
                   ? const CircularProgressIndicator()
                   : const Text('Alterar Senha'),
