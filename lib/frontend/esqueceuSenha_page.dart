@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/theme/app_fonts.dart';
-
 import '../controller/controller.cadastrar.dart';
-import 'alterarSenha_page.dart';
+import 'recuperaSenha_page.dart';
 
 class esqueceuSenhaPage extends StatefulWidget {
   const esqueceuSenhaPage({super.key});
@@ -65,7 +64,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AlterarSenhaPage(email: email, token: token),
+            builder: (_) => RecuperaSenhaPage(email: email, token: token),
           ),
         );
       }

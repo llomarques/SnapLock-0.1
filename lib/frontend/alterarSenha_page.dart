@@ -1,157 +1,146 @@
 import 'package:flutter/material.dart';
-
-import '../controller/controller.cadastrar.dart';
+import '../services/api_service.dart';
 
 class AlterarSenhaPage extends StatefulWidget {
-  final String email;
-  final String token;
+	const AlterarSenhaPage({super.key});
 
-  const AlterarSenhaPage({
-    super.key,
-    required this.email,
-    required this.token,
-  });
-
-  @override
-  State<AlterarSenhaPage> createState() => _AlterarSenhaPageState();
+	@override
+	State<AlterarSenhaPage> createState() => _AlterarSenhaPageState();
 }
 
 class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
-  final TextEditingController novaSenhaController = TextEditingController();
-  final TextEditingController confirmarSenhaController = TextEditingController();
-  final CadastroController cadastroController = CadastroController();
-  bool esconderSenha = true;
-  bool carregando = false;
+	final senhaAtualController = TextEditingController();
+	final novaSenhaController = TextEditingController();
+	final confirmarSenhaController = TextEditingController();
+	bool esconderSenha = true;
+	bool carregando = false;
 
-  void mostrarMensagem(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem)),
-    );
-  }
+	@override
+	void dispose() {
+		senhaAtualController.dispose();
+		novaSenhaController.dispose();
+		confirmarSenhaController.dispose();
+		super.dispose();
+	}
 
-  Future<void> alterarSenha() async {
-    setState(() => carregando = true);
-    try {
-      await cadastroController.redefinirSenha(
-        email: widget.email,
-        token: widget.token,
-        novaSenha: novaSenhaController.text,
-        confirmacaoSenha: confirmarSenhaController.text,
-      );
-      if (mounted) {
-        mostrarMensagem('Senha alterada com sucesso.');
-        Navigator.popUntil(context, (route) => route.isFirst);
-      }
-    } catch (error) {
-      if (mounted) mostrarMensagem(error.toString());
-    } finally {
-      if (mounted) setState(() => carregando = false);
-    }
-  }
+	Future<void> alterarSenha() async {
+		if (novaSenhaController.text != confirmarSenhaController.text) {
+			ScaffoldMessenger.of(context).showSnackBar(
+				const SnackBar(content: Text('As senhas não coincidem.')),
+			);
+			return;
+		}
 
-  @override
-  void dispose() {
-    novaSenhaController.dispose();
-    confirmarSenhaController.dispose();
-    super.dispose();
-  }
+		setState(() => carregando = true);
+		try {
+			await ApiService.changePassword(
+				senhaAtualController.text,
+				novaSenhaController.text,
+			);
+			if (mounted) {
+				ScaffoldMessenger.of(context).showSnackBar(
+					const SnackBar(content: Text('Senha alterada com sucesso.')),
+				);
+				Navigator.pop(context);
+			}
+		} catch (error) {
+			if (mounted) {
+				ScaffoldMessenger.of(context).showSnackBar(
+					SnackBar(content: Text(error.toString().replaceAll('Exception: ', ''))),
+				);
+			}
+		} finally {
+			if (mounted) setState(() => carregando = false);
+		}
+	}
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFF3E9DC),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Image.asset(
-              'assets/images/logo.png',
-              width: 150,
-              height: 150,
-            ),
-            const SizedBox(height: 60),
-            TextField(
-              controller: novaSenhaController,
-              obscureText: esconderSenha,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFD7CBBD),
-                hintText: 'Digite sua nova senha',
-                prefixIcon: const Icon(
-                  Icons.lock,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      esconderSenha = !esconderSenha;
-                    });
-                  },
-                  icon: Icon(
-                    esconderSenha ? Icons.visibility : Icons.visibility_off,
-                    color: Color(0xFF5E3023),
-                  ),
-                )
-              ),
-              
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: confirmarSenhaController,
-              obscureText: esconderSenha,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFD7CBBD),
-                hintText: 'Confirmar Nova Senha',
-                prefixIcon: const Icon(
-                  Icons.lock,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      esconderSenha = !esconderSenha;
-                    });
-                  },
-                  icon: Icon(
-                    esconderSenha ? Icons.visibility : Icons.visibility_off,
-                    color: Color(0xFF5E3023),
-                  ),
-                )
-              ),
-              
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: carregando ? null : alterarSenha,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF895737),
-                foregroundColor: Color(0xFFF3E9DC),
-              ),
-              child: carregando
-                  ? const CircularProgressIndicator()
-                  : const Text('Alterar Senha'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+	@override
+	Widget build(BuildContext context) {
+		return Scaffold(
+			backgroundColor: const Color(0xFFF3E9DC),
+			body: SingleChildScrollView(
+				padding: const EdgeInsets.all(16),
+				child: Column(
+					children: [
+						const SizedBox(height: 20),
+						Image.asset(
+							'assets/images/logo.png',
+							width: 150,
+							height: 150,
+						),
+						const SizedBox(height: 60),
+						TextField(
+							controller: senhaAtualController,
+							obscureText: esconderSenha,
+							decoration: InputDecoration(
+								filled: true,
+								fillColor: const Color(0xFFD7CBBD),
+								hintText: 'Senha atual',
+								prefixIcon: const Icon(Icons.lock, color: Color(0xFF5E3023)),
+								suffixIcon: IconButton(
+									onPressed: () {
+										setState(() => esconderSenha = !esconderSenha);
+									},
+									icon: Icon(
+										esconderSenha ? Icons.visibility : Icons.visibility_off,
+										color: const Color(0xFF5E3023),
+									),
+								),
+								border: OutlineInputBorder(
+									borderRadius: BorderRadius.circular(16),
+									borderSide: BorderSide.none,
+								),
+							),
+						),
+						const SizedBox(height: 20),
+						TextField(
+							controller: novaSenhaController,
+							obscureText: esconderSenha,
+							decoration: _decoracaoSenha('Digite sua nova senha'),
+						),
+						const SizedBox(height: 20),
+						TextField(
+							controller: confirmarSenhaController,
+							obscureText: esconderSenha,
+							decoration: _decoracaoSenha('Confirmar nova senha'),
+						),
+						const SizedBox(height: 20),
+						ElevatedButton(
+							onPressed: carregando ? null : alterarSenha,
+							style: ElevatedButton.styleFrom(
+								backgroundColor: const Color(0xFF895737),
+								foregroundColor: const Color(0xFFF3E9DC),
+							),
+							child: carregando
+									? const CircularProgressIndicator()
+									: const Text('Alterar senha'),
+						),
+					],
+				),
+			),
+		);
+	}
+
+	InputDecoration _decoracaoSenha(String texto) {
+		return InputDecoration(
+			filled: true,
+			fillColor: const Color(0xFFD7CBBD),
+			hintText: texto,
+			prefixIcon: const Icon(Icons.lock, color: Color(0xFF5E3023)),
+			suffixIcon: IconButton(
+				onPressed: () {
+					setState(() => esconderSenha = !esconderSenha);
+				},
+				icon: Icon(
+					esconderSenha ? Icons.visibility : Icons.visibility_off,
+					color: const Color(0xFF5E3023),
+				),
+			),
+			border: OutlineInputBorder(
+				borderRadius: BorderRadius.circular(16),
+				borderSide: BorderSide.none,
+			),
+		);
+	}
 }
+
