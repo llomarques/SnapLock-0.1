@@ -3,6 +3,7 @@ import 'package:snaplock/frontend/personalizarPerfil_page.dart';
 import 'package:snaplock/frontend/login_page.dart';
 
 import '../controller/controller.cadastrar.dart';
+import '../services/app_localizations.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -42,22 +43,22 @@ class _CadastroPageState extends State<CadastroPage> {
         email.isEmpty ||
         senha.isEmpty ||
         confirmaSenha.isEmpty) {
-      mostrarMensagem('Preencha todos os campos');
+      mostrarMensagem(AppLocalizations.of(context).fillAllFields);
       return;
     }
 
     if (!email.contains('@')) {
-      mostrarMensagem('Digite um e-mail válido');
+      mostrarMensagem(AppLocalizations.of(context).invalidEmail);
       return;
     }
 
     if (dataNascimento == null) {
-      mostrarMensagem('Selecione sua data de nascimento');
+      mostrarMensagem(AppLocalizations.of(context).selectBirthdate);
       return;
     }
 
     if (senha != confirmaSenha) {
-      mostrarMensagem('As senhas não coincidem');
+      mostrarMensagem(AppLocalizations.of(context).passwordsDoNotMatch);
       return;
     }
 
@@ -72,7 +73,7 @@ class _CadastroPageState extends State<CadastroPage> {
         dataNascimento: dataNascimento!,
       );
       if (mounted) {
-        mostrarMensagem('Usuário cadastrado com sucesso');
+        mostrarMensagem(AppLocalizations.of(context).accountCreated);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -151,7 +152,7 @@ class _CadastroPageState extends State<CadastroPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite seu nome',
+                hintText: AppLocalizations.of(context).typeName,
                 prefixIcon: const Icon(
                   Icons.person,
                   color: Color(0xFF5E3023),
@@ -172,7 +173,7 @@ class _CadastroPageState extends State<CadastroPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite seu username',
+                hintText: AppLocalizations.of(context).typeUsername,
                 prefixIcon:
                     const Icon(Icons.alternate_email, color: Color(0xFF5E3023)),
                 border: OutlineInputBorder(
@@ -194,8 +195,8 @@ class _CadastroPageState extends State<CadastroPage> {
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
                 hintText: dataNascimento == null
-                    ? 'Digite sua data de nascimento'
-                    : 'Nascimento: ${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}',
+                    ? AppLocalizations.of(context).typeBirthdate
+                    : '${AppLocalizations.of(context).birthdate}: ${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}',
                 prefixIcon: const Icon(
                   Icons.cake,
                   color: Color(0xFF5E3023),
@@ -217,7 +218,7 @@ class _CadastroPageState extends State<CadastroPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite seu e-mail',
+                hintText: AppLocalizations.of(context).typeEmail,
                 prefixIcon: const Icon(
                   Icons.email,
                   color: Color(0xFF5E3023),
@@ -239,7 +240,7 @@ class _CadastroPageState extends State<CadastroPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Color(0xFFD7CBBD),
-                hintText: 'Digite sua senha',
+                hintText: AppLocalizations.of(context).typePassword,
                 prefixIcon: const Icon(
                   Icons.lock,
                   color: Color(0xFF5E3023),
@@ -271,7 +272,7 @@ class _CadastroPageState extends State<CadastroPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Color(0xFFD7CBBD),
-                hintText: 'Confirme sua senha',
+                hintText: AppLocalizations.of(context).confirmPassword,
                 prefixIcon: const Icon(
                   Icons.lock,
                   color: Color(0xFF5E3023),
@@ -310,13 +311,13 @@ class _CadastroPageState extends State<CadastroPage> {
                       height: 18,
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white))
-                  : const Text('Cadastrar', style: TextStyle(fontSize: 14)),
+                  : Text(AppLocalizations.of(context).register, style: const TextStyle(fontSize: 14)),
             ),
             const SizedBox(height: 10),
             GestureDetector(
                 onTap: () => abrirLogin(context),
                 child: Text(
-                  'Já tenho uma conta',
+                  AppLocalizations.of(context).alreadyAccount,
                   style: TextStyle(
                     color: Color(0xFF895737),
                     fontWeight: FontWeight.bold, // Opcional: sublinha a palavra

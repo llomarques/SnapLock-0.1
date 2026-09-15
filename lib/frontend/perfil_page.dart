@@ -3,6 +3,7 @@ import 'package:snaplock/services/api_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'editarPerfil_page.dart' hide IconButton;
+import '../services/app_localizations.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -101,7 +102,7 @@ class _PerfilPage extends State<PerfilPage> {
               Expanded(
                 child: Center(
                   child: Text(
-                    '$quantidadeAmigos\nAmigos',
+                    '$quantidadeAmigos\n${AppLocalizations.of(context).friends}',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 17,
@@ -156,7 +157,7 @@ class _PerfilPage extends State<PerfilPage> {
               Expanded(
                 child: Center(
                   child: Text(
-                    '$quantidadeFotos\nMemórias',
+                    '$quantidadeFotos\n${AppLocalizations.of(context).memories}',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 17,
@@ -172,7 +173,7 @@ class _PerfilPage extends State<PerfilPage> {
             height: 15,
           ),
           Text(
-            'Nome',
+            AppLocalizations.of(context).name,
             style: TextStyle(
               color: Colors.black,
               fontSize: 13,
@@ -200,7 +201,7 @@ class _PerfilPage extends State<PerfilPage> {
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: const Color(0xFFD7CBBD),
-                  hintText: 'Biografia',
+                  hintText: AppLocalizations.of(context).biography,
                   prefixIcon: const Icon(
                     Icons.chat_bubble,
                     color: Color(0xFF5E3023),

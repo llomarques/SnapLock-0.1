@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/frontend/inicio_page.dart';
+import 'package:snaplock/services/app_language.dart';
+import 'package:snaplock/services/app_localizations.dart';
 import 'alterarSenha_page.dart';
+import 'sobreNos_page.dart';
 
 class ConfiguracoesPage extends StatefulWidget {
   const ConfiguracoesPage({super.key});
@@ -12,24 +15,79 @@ class ConfiguracoesPage extends StatefulWidget {
 class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
   bool notificacoesAtivas = true;
 
+  Future<void> selecionarIdioma() async {
+    final idioma = await showDialog<String>(
+      context: context,
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: const Color(0xFF895737),
+            secondary: const Color(0xFFC08552),
+            surface: const Color(0xFFF3E9DC),
+          ),
+          dialogTheme: const DialogThemeData(
+            backgroundColor: Color(0xFFF3E9DC),
+            surfaceTintColor: Colors.transparent,
+          ),
+        ),
+        child: AlertDialog(
+          title: Text(AppLocalizations.of(context).appLanguage),
+          content: RadioGroup<String>(
+            groupValue: appLanguage.locale.languageCode,
+            onChanged: (valor) => Navigator.pop(context, valor),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<String>(
+                  title: Text('Português (Brasil)'),
+                  value: 'pt',
+                ),
+                RadioListTile<String>(
+                  title: Text('English'),
+                  value: 'en',
+                ),
+                RadioListTile<String>(
+                  title: Text('Español'),
+                  value: 'es',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (idioma != null && mounted) {
+      await appLanguage.setLocale(Locale(idioma));
+      setState(() {});
+    }
+  }
+
+  void abrirSobreNos() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SobreNosPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF3E9DC),
       appBar: AppBar(
-        title: const Text('Configurações'),
+        title: Text(AppLocalizations.of(context).settings),
         backgroundColor: const Color(0xFFF3E9DC),
       ),
       body: ListView(
         children: [
           ListTile(
             leading: const Icon(Icons.notifications),
-            title: const Text('Notificações'),
+            title: Text(AppLocalizations.of(context).notifications),
             trailing: Transform.scale(
               scale: 0.8,
               child: Switch(
                 value: notificacoesAtivas,
-                activeColor: Colors.green,
+                activeThumbColor: Colors.green,
                 inactiveThumbColor: Colors.red,
                 inactiveTrackColor: Colors.red.shade200,
                 onChanged: (valor) {
@@ -42,22 +100,23 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
           ),
           ListTile(
             leading: const Icon(Icons.palette),
-            title: const Text('Tema'),
+            title: Text(AppLocalizations.of(context).theme),
             onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.visibility),
-            title: const Text('Controle de visualizações'),
+            title: Text(AppLocalizations.of(context).viewControl),
             onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.language),
-            title: const Text('Idioma'),
-            onTap: () {},
+            title: Text(AppLocalizations.of(context).language),
+            subtitle: Text(appLanguage.languageName),
+            onTap: selecionarIdioma,
           ),
           ListTile(
             leading: const Icon(Icons.lock),
-            title: const Text('Alterar senha'),
+            title: Text(AppLocalizations.of(context).changePassword),
             onTap: () {
               Navigator.push(
                 context,
@@ -69,17 +128,17 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
           ),
           ListTile(
             leading: const Icon(Icons.call),
-            title: const Text('Ajuda e suporte'),
+            title: Text(AppLocalizations.of(context).help),
             onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.info),
-            title: const Text('Sobre nós'),
-            onTap: () {},
+            title: Text(AppLocalizations.of(context).about),
+            onTap: abrirSobreNos,
           ),
           ListTile(
             leading: const Icon(Icons.logout),
-            title: const Text('Sair da conta'),
+            title: Text(AppLocalizations.of(context).logout),
             onTap: () {
               Navigator.pushReplacement(
                 context,
@@ -91,7 +150,10 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
           ),
           ListTile(
             leading: const Icon(Icons.delete, color: Colors.red),
-            title: const Text('Deletar conta', style: TextStyle(color: Colors.red)),
+            title: Text(
+              AppLocalizations.of(context).deleteAccount,
+              style: const TextStyle(color: Colors.red),
+            ),
             onTap: () {},
           ),
         ],

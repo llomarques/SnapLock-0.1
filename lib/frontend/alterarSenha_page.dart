@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/app_localizations.dart';
 
 class AlterarSenhaPage extends StatefulWidget {
 	const AlterarSenhaPage({super.key});
@@ -26,7 +27,7 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 	Future<void> alterarSenha() async {
 		if (novaSenhaController.text != confirmarSenhaController.text) {
 			ScaffoldMessenger.of(context).showSnackBar(
-				const SnackBar(content: Text('As senhas não coincidem.')),
+				SnackBar(content: Text(AppLocalizations.of(context).passwordsDoNotMatch)),
 			);
 			return;
 		}
@@ -39,7 +40,7 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 			);
 			if (mounted) {
 				ScaffoldMessenger.of(context).showSnackBar(
-					const SnackBar(content: Text('Senha alterada com sucesso.')),
+					SnackBar(content: Text(AppLocalizations.of(context).passwordChanged)),
 				);
 				Navigator.pop(context);
 			}
@@ -75,7 +76,7 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 							decoration: InputDecoration(
 								filled: true,
 								fillColor: const Color(0xFFD7CBBD),
-								hintText: 'Senha atual',
+								hintText: AppLocalizations.of(context).currentPassword,
 								prefixIcon: const Icon(Icons.lock, color: Color(0xFF5E3023)),
 								suffixIcon: IconButton(
 									onPressed: () {
@@ -96,13 +97,13 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 						TextField(
 							controller: novaSenhaController,
 							obscureText: esconderSenha,
-							decoration: _decoracaoSenha('Digite sua nova senha'),
+							decoration: _decoracaoSenha(AppLocalizations.of(context).newPassword),
 						),
 						const SizedBox(height: 20),
 						TextField(
 							controller: confirmarSenhaController,
 							obscureText: esconderSenha,
-							decoration: _decoracaoSenha('Confirmar nova senha'),
+							decoration: _decoracaoSenha(AppLocalizations.of(context).confirmPassword),
 						),
 						const SizedBox(height: 20),
 						ElevatedButton(
@@ -113,7 +114,7 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 							),
 							child: carregando
 									? const CircularProgressIndicator()
-									: const Text('Alterar senha'),
+									: Text(AppLocalizations.of(context).changePassword),
 						),
 					],
 				),

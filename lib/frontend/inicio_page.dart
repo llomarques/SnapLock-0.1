@@ -3,6 +3,7 @@ import 'package:snaplock/frontend/login_page.dart';
 import 'cadastro_page.dart';
 import 'package:snaplock/frontend/carrossel.dart';
 import 'package:snaplock/theme/app_fonts.dart';
+import 'package:snaplock/services/app_localizations.dart';
 
 class InicioPage extends StatelessWidget {
   const InicioPage({super.key});
@@ -39,7 +40,7 @@ class InicioPage extends StatelessWidget {
             ),
             const SizedBox(height: 43),
             Text(
-              'Seja bem-vindo!',
+              AppLocalizations.of(context).welcome,
               textAlign: TextAlign.center,
               style: AppFonts.cormorantBold.copyWith(
                 fontSize: 24,
@@ -64,7 +65,7 @@ class InicioPage extends StatelessWidget {
                       foregroundColor: Color(0xFFF3E9DC),
                       minimumSize: const Size.fromHeight(50),
                     ),
-                    child: const Text('Fazer Login'),
+                    child: Text(AppLocalizations.of(context).login),
                   ),
                   const SizedBox(height: 22),
                   ElevatedButton(
@@ -74,7 +75,7 @@ class InicioPage extends StatelessWidget {
                       foregroundColor: Color(0xFFF3E9DC),
                       minimumSize: const Size.fromHeight(50),
                     ),
-                    child: const Text('Criar conta'),
+                    child: Text(AppLocalizations.of(context).createAccount),
                   ),
                 ],
               ),

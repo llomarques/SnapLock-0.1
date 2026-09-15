@@ -4,6 +4,7 @@ import 'cadastro_page.dart';
 import 'esqueceuSenha_page.dart';
 import 'feed_page.dart';
 import '../controller/controller.login.dart';
+import '../services/app_localizations.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -31,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (login.isEmpty || senha.isEmpty) {
       mostrarMensagem(
-        'Preencha o e-mail/username e a senha.',
+        AppLocalizations.of(context).fillLogin,
       );
       return;
     }
@@ -94,7 +95,7 @@ class _LoginPageState extends State<LoginPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite seu e-mail ou usuário',
+                hintText: AppLocalizations.of(context).typeEmailOrUsername,
                 prefixIcon: const Icon(
                   Icons.person,
                   color: Color(0xFF5E3023),
@@ -118,7 +119,7 @@ class _LoginPageState extends State<LoginPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Color(0xFFD7CBBD),
-                hintText: 'Digite sua senha',
+                hintText: AppLocalizations.of(context).typePassword,
                 prefixIcon: const Icon(
                   Icons.lock,
                   color: Color(0xFF5E3023),
@@ -152,8 +153,8 @@ class _LoginPageState extends State<LoginPage> {
                 onTap: () {
                   abrirEsqueceuSenha();
                 },
-                child: const Text(
-                  'Esqueceu a senha?',
+                child: Text(
+                  AppLocalizations.of(context).forgotPassword,
                   style: TextStyle(
                     color: Color(0xFF895737),
                     fontWeight: FontWeight.w900
@@ -172,7 +173,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 label: carregando
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Entrar')),
+                  : Text(AppLocalizations.of(context).enter)),
             const SizedBox(
               height: 10,
             ),
@@ -181,10 +182,10 @@ class _LoginPageState extends State<LoginPage> {
                 style: TextStyle(color: Colors.black, fontSize: 16),
                 children: [
                   TextSpan(
-                    text: 'Não tem uma conta? ',
+                    text: AppLocalizations.of(context).noAccount,
                   ),
                   TextSpan(
-                    text: 'Cadastre-se',
+                    text: AppLocalizations.of(context).signUp,
                     style: TextStyle(
                       color: Color(0xFF895737),
                       fontWeight: FontWeight.bold,

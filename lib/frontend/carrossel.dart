@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:snaplock/theme/app_fonts.dart';
+import 'package:snaplock/services/app_localizations.dart';
 
 class CarrosselDeInformacoes extends StatefulWidget {
   const CarrosselDeInformacoes({super.key});
-
-  static const listaDeTexto = [
-    'Em um clique, guarde memórias',
-    'Aqui a sua privacidade é preservada',
-    'Curta as fotos dos seus amigos',
-    'Faça login ou crie sua conta para continuar'
-  ];
 
   @override
   State<CarrosselDeInformacoes> createState() => _CarrosselDeInformacoesState();
@@ -21,6 +15,12 @@ class _CarrosselDeInformacoesState extends State<CarrosselDeInformacoes> {
 
   @override
   Widget build(BuildContext context) {
+    final listaDeTexto = [
+      AppLocalizations.of(context).saveMemories,
+      AppLocalizations.of(context).privacyPreserved,
+      AppLocalizations.of(context).enjoyFriendsPhotos,
+      AppLocalizations.of(context).continueLogin,
+    ];
     return Column(
       children: [
         CarouselSlider(
@@ -35,7 +35,7 @@ class _CarrosselDeInformacoesState extends State<CarrosselDeInformacoes> {
               setState(() => paginaAtual = index);
             },
           ),
-          items: CarrosselDeInformacoes.listaDeTexto.map((itemText) {
+          items: listaDeTexto.map((itemText) {
             return Container(
               width: MediaQuery.of(context).size.width,
               margin: EdgeInsets.zero,
@@ -61,7 +61,7 @@ class _CarrosselDeInformacoesState extends State<CarrosselDeInformacoes> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
-            CarrosselDeInformacoes.listaDeTexto.length,
+            listaDeTexto.length,
             (index) => AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: paginaAtual == index ? 18 : 8,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../controller/controller.cadastrar.dart';
+import '../services/app_localizations.dart';
 
 class RecuperaSenhaPage extends StatefulWidget {
   final String email;
@@ -40,7 +41,7 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
         confirmacaoSenha: confirmarSenhaController.text,
       );
       if (mounted) {
-        mostrarMensagem('Senha alterada com sucesso.');
+        mostrarMensagem(AppLocalizations.of(context).passwordChanged);
         Navigator.popUntil(context, (route) => route.isFirst);
       }
     } catch (error) {
@@ -76,7 +77,7 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
               controller: novaSenhaController,
               obscureText: esconderNovaSenha,
               decoration: _decoracaoSenha(
-                'Digite sua nova senha',
+                AppLocalizations.of(context).newPassword,
                 esconderNovaSenha,
                 () => setState(() => esconderNovaSenha = !esconderNovaSenha),
               ),
@@ -86,7 +87,7 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
               controller: confirmarSenhaController,
               obscureText: esconderConfirmarSenha,
               decoration: _decoracaoSenha(
-                'Confirmar Nova Senha',
+                AppLocalizations.of(context).confirmPassword,
                 esconderConfirmarSenha,
                 () => setState(
                   () => esconderConfirmarSenha = !esconderConfirmarSenha,
@@ -102,7 +103,7 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
               ),
               child: carregando
                   ? const CircularProgressIndicator()
-                  : const Text('Alterar Senha'),
+                  : Text(AppLocalizations.of(context).changePassword),
             ),
           ],
         ),

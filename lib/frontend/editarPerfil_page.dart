@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+import '../services/app_localizations.dart';
 
 class EditarPerfilPage extends StatefulWidget {
   final String biografiaInicial;
@@ -68,7 +69,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const Text('Editar foto ou dados do perfil'),
+            Text(AppLocalizations.of(context).editProfile),
             const SizedBox(height: 30),
             Container(
               width: 120,
@@ -95,7 +96,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             ElevatedButton.icon(
               onPressed: escolherDaGaleria,
               icon: const Icon(Icons.camera_alt),
-              label: const Text('Adicionar Foto'),
+              label: Text(AppLocalizations.of(context).addPhoto),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: const Color(0xFFF3E9DC),
@@ -107,7 +108,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Nome',
+                hintText: AppLocalizations.of(context).name,
                 prefixIcon: const Icon(
                   Icons.person,
                   color: Color(0xFF5E3023),
@@ -128,7 +129,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Biografia',
+                hintText: AppLocalizations.of(context).biography,
                 prefixIcon: const Icon(
                   Icons.chat_bubble,
                   color: Color(0xFF5E3023),
@@ -154,7 +155,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                 foregroundColor: const Color(0xFFF3E9DC),
                 minimumSize: const Size.fromHeight(50),
               ),
-              child: const Text('Salvar alterações'),
+              child: Text(AppLocalizations.of(context).save),
             ),
             const SizedBox(height: 27),
             Align(
