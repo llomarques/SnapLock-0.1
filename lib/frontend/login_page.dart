@@ -96,7 +96,7 @@ class _LoginPageState extends State<LoginPage> {
                 fillColor: const Color(0xFFD7CBBD),
                 hintText: 'Digite seu e-mail ou usuário',
                 prefixIcon: const Icon(
-                  Icons.email,
+                  Icons.person,
                   color: Color(0xFF5E3023),
                 ),
                 border: OutlineInputBorder(

@@ -6,6 +6,7 @@ import 'postar_page.dart';
 import 'dump_page.dart';
 import 'perfil_page.dart';
 import 'configuracoes_page.dart';
+import 'pesquisa_page.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -18,6 +19,14 @@ class FeedHeader extends StatelessWidget {
   const FeedHeader({super.key, required this.onMenuPressed});
 
   final VoidCallback onMenuPressed;
+
+  void abrirPesquisa(BuildContext context) {
+     Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PesquisaPage()),
+    );
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +55,7 @@ class FeedHeader extends StatelessWidget {
             ),
             actions: [
               IconButton(
-                onPressed: () {},
+                onPressed: () => abrirPesquisa(context),
                 icon: const Icon(Icons.person_search, size: 35.0, color: Colors.black),
               ),
             ],
