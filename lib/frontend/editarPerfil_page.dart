@@ -16,7 +16,9 @@ class ProfileEditResult {
 }
 
 class EditarPerfilPage extends StatefulWidget {
-  const EditarPerfilPage({super.key});
+  final String biografiaInicial;
+
+  const EditarPerfilPage({super.key, this.biografiaInicial = ''});
 
   @override
   State<EditarPerfilPage> createState() => _EditarPerfilPageState();
@@ -27,15 +29,6 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
   final TextEditingController biografiaController = TextEditingController();
   final ImagePicker picker = ImagePicker();
   Uint8List? fotoPerfil;
-  bool salvando = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final usuario = LoginController.usuarioAtual ?? {};
-    nomeController.text = (usuario['name'] ?? usuario['nome'] ?? '').toString();
-    biografiaController.text = (usuario['bio'] ?? usuario['biografia'] ?? '').toString();
-  }
 
   Future<void> escolherDaGaleria() async {
     final XFile? imagem = await picker.pickImage(
@@ -159,41 +152,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             ),
             const SizedBox(height: 25),
             ElevatedButton(
-              onPressed: salvando
-                  ? null
-                  : () async {
-                final nome = nomeController.text.trim();
-                final biografia = biografiaController.text.trim();
-                if (nome.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Informe um nome.')),
-                  );
-                  return;
-                }
-
-                setState(() => salvando = true);
-                try {
-                  await LoginController.atualizarPerfil(
-                    nome: nome,
-                    biografia: biografia,
-                  );
-                  if (!context.mounted) return;
-                  Navigator.pop(
-                    context,
-                    ProfileEditResult(
-                      name: nome,
-                      bio: biografia,
-                      photo: fotoPerfil,
-                    ),
-                  );
-                } catch (error) {
-                  if (!context.mounted) return;
-                  setState(() => salvando = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(error.toString().replaceFirst('LoginException: ', ''))),
-                  );
-                }
-              },
+              onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: const Color(0xFFF3E9DC),

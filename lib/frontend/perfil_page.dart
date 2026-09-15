@@ -86,7 +86,10 @@ class _PerfilPage extends State<PerfilPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF3E9DC),
-      body: Column(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+        
         children: [
           const SizedBox(
             height: 25,
@@ -199,10 +202,13 @@ class _PerfilPage extends State<PerfilPage> {
               
               TextField(
                 controller: biografiaController,
+                readOnly: true,
+                showCursor: false,
+                enableInteractiveSelection: false,
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: const Color(0xFFD7CBBD),
-                  hintText: 'Digite sua biografia',
+                  hintText: 'Biografia',
                   prefixIcon: const Icon(
                     Icons.chat_bubble,
                     color: Color(0xFF5E3023),
@@ -224,6 +230,7 @@ class _PerfilPage extends State<PerfilPage> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 }

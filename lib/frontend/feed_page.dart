@@ -5,6 +5,7 @@ import 'notificacoes_page.dart';
 import 'postar_page.dart';
 import 'dump_page.dart';
 import 'perfil_page.dart';
+import 'configuracoes_page.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -57,6 +58,7 @@ class FeedHeader extends StatelessWidget {
   }
 }
 
+
 class FeedConteudoPage extends StatelessWidget {
   const FeedConteudoPage({super.key});
 
@@ -78,6 +80,13 @@ class _FeedPage extends State<FeedPage> {
     DumpPage(),
     PerfilPage()
   ];
+
+    void abrirConfiguracoes() {
+   Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const ConfiguracoesPage()),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -116,8 +125,7 @@ class _FeedPage extends State<FeedPage> {
               leading: const Icon(Icons.settings),
               title: const Text('Configurações'),
               onTap: () {
-                Navigator.pop(context);
-                setState(() => indice = 0);
+                abrirConfiguracoes();
               },
             ),
             ListTile(
