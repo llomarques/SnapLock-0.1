@@ -20,7 +20,8 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
   final TextEditingController novaSenhaController = TextEditingController();
   final TextEditingController confirmarSenhaController = TextEditingController();
   final CadastroController cadastroController = CadastroController();
-  bool esconderSenha = true;
+  bool esconderNovaSenha = true;
+  bool esconderConfirmarSenha = true;
   bool carregando = false;
 
   void mostrarMensagem(String mensagem) {
@@ -73,70 +74,24 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
             const SizedBox(height: 60),
             TextField(
               controller: novaSenhaController,
-              obscureText: esconderSenha,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFD7CBBD),
-                hintText: 'Digite sua nova senha',
-                prefixIcon: const Icon(
-                  Icons.lock,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      esconderSenha = !esconderSenha;
-                    });
-                  },
-                  icon: Icon(
-                    esconderSenha ? Icons.visibility : Icons.visibility_off,
-                    color: Color(0xFF5E3023),
-                  ),
-                )
+              obscureText: esconderNovaSenha,
+              decoration: _decoracaoSenha(
+                'Digite sua nova senha',
+                esconderNovaSenha,
+                () => setState(() => esconderNovaSenha = !esconderNovaSenha),
               ),
-              
             ),
             const SizedBox(height: 20),
             TextField(
               controller: confirmarSenhaController,
-              obscureText: esconderSenha,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFD7CBBD),
-                hintText: 'Confirmar Nova Senha',
-                prefixIcon: const Icon(
-                  Icons.lock,
-                  color: Color(0xFF5E3023),
+              obscureText: esconderConfirmarSenha,
+              decoration: _decoracaoSenha(
+                'Confirmar Nova Senha',
+                esconderConfirmarSenha,
+                () => setState(
+                  () => esconderConfirmarSenha = !esconderConfirmarSenha,
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      esconderSenha = !esconderSenha;
-                    });
-                  },
-                  icon: Icon(
-                    esconderSenha ? Icons.visibility : Icons.visibility_off,
-                    color: Color(0xFF5E3023),
-                  ),
-                )
               ),
-              
             ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -151,6 +106,30 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  InputDecoration _decoracaoSenha(
+    String texto,
+    bool esconderSenha,
+    VoidCallback alternarVisibilidade,
+  ) {
+    return InputDecoration(
+      filled: true,
+      fillColor: const Color(0xFFD7CBBD),
+      hintText: texto,
+      prefixIcon: const Icon(Icons.lock, color: Color(0xFF5E3023)),
+      suffixIcon: IconButton(
+        onPressed: alternarVisibilidade,
+        icon: Icon(
+          esconderSenha ? Icons.visibility : Icons.visibility_off,
+          color: const Color(0xFF5E3023),
+        ),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
       ),
     );
   }
