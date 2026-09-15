@@ -3,7 +3,9 @@ import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 
 class EditarPerfilPage extends StatefulWidget {
-  const EditarPerfilPage({super.key});
+  final String biografiaInicial;
+
+  const EditarPerfilPage({super.key, this.biografiaInicial = ''});
 
   @override
   State<EditarPerfilPage> createState() => _EditarPerfilPageState();
@@ -14,6 +16,12 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
   final TextEditingController biografiaController = TextEditingController();
   final ImagePicker picker = ImagePicker();
   Uint8List? fotoPerfil;
+
+  @override
+  void initState() {
+    super.initState();
+    biografiaController.text = widget.biografiaInicial;
+  }
 
   Future<void> escolherDaGaleria() async {
     final XFile? imagem = await picker.pickImage(
@@ -137,7 +145,10 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             ),
             const SizedBox(height: 25),
             ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(
+                context,
+                biografiaController.text.trim(),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: const Color(0xFFF3E9DC),

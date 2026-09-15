@@ -89,6 +89,13 @@ class CadastroController {
 		await _enviar('/api/recuperacao/solicitar', {'email': email.trim().toLowerCase()});
 	}
 
+	Future<void> validarToken({required String email, required String token}) async {
+		await _enviar('/api/recuperacao/validar-token', {
+			'email': email.trim().toLowerCase(),
+			'token': token.trim(),
+		});
+	}
+
 	Future<void> redefinirSenha({
 		required String email,
 		required String token,
