@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
-import 'editarPerfil_page.dart' hide IconButton;
+import 'editarPerfil_page.dart';
+import '../controller/controller.login.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -19,6 +20,15 @@ class _PerfilPage extends State<PerfilPage> {
   Uint8List? fotoPerfil;
   int quantidadeAmigos = 0;
   int quantidadeFotos = 0;
+
+  Map<String, dynamic> get usuario => LoginController.usuarioAtual ?? {};
+
+  String get nomeUsuario =>
+      (usuario['name'] ?? usuario['nome'] ?? 'Usuário').toString();
+
+  String get username => (usuario['username'] ?? '').toString();
+
+  String get biografia => (usuario['bio'] ?? usuario['biografia'] ?? '').toString();
 
   @override
   void initState() {
@@ -45,14 +55,14 @@ class _PerfilPage extends State<PerfilPage> {
 
   Future<void> carregarQuantidadeFotos() async {
     try {
-      final fotos = await ApiService.getFotos();
+      final fotos = await ApiService.getMyGallery();
 
       if (!mounted) {
         return;
       }
 
       setState(() {
-        quantidadeFotos = fotos.length!;
+        quantidadeFotos = fotos.length;
       });
     } catch (_) {
       // Mantém o perfil disponível mesmo quando a API estiver indisponível.
@@ -60,10 +70,15 @@ class _PerfilPage extends State<PerfilPage> {
   }
 
    void abrirEditarPerfil(BuildContext context) {
-    Navigator.push(
+    Navigator.push<ProfileEditResult>(
       context,
       MaterialPageRoute(builder: (context) => const EditarPerfilPage()),
-    );
+    ).then((resultado) {
+      if (!mounted || resultado == null) return;
+      setState(() {
+        fotoPerfil = resultado.photo ?? fotoPerfil;
+      });
+    });
   }
 
   
@@ -153,7 +168,7 @@ class _PerfilPage extends State<PerfilPage> {
             height: 15,
           ),
           Text(
-            'Nome',
+            nomeUsuario,
             style: TextStyle(
               color: Colors.black,
               fontSize: 13,
@@ -164,12 +179,21 @@ class _PerfilPage extends State<PerfilPage> {
             height: 5,
           ),
           Text(
-            '@nomedeusuario',
+            username.isEmpty ? '@usuario' : '@$username',
             style: TextStyle(color: Colors.black, fontSize: 10),
           ),
           const SizedBox(
             height: 20,
           ),
+          if (biografia.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              biografia,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.black87, fontSize: 13),
+            ),
+          ],
+          const SizedBox(height: 12),
           Column(
             children: [
               
@@ -202,8 +226,4 @@ class _PerfilPage extends State<PerfilPage> {
       ),
     );
   }
-}
-
-extension on Object? {
-  int? get length => null;
 }

@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   `email` varchar(150) NOT NULL,
   `senha_hash` varchar(255) NOT NULL,
   `foto_perfil` varchar(255) DEFAULT NULL,
+  `biografia` text DEFAULT NULL,
   `data_nascimento` date NOT NULL,
   `ativo` tinyint(1) NOT NULL DEFAULT 1,
   `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
@@ -88,6 +89,10 @@ CREATE TABLE IF NOT EXISTS `usuario` (
 ALTER TABLE `usuario`
   ADD COLUMN IF NOT EXISTS `username` varchar(30) NOT NULL AFTER `nome`,
   ADD UNIQUE KEY IF NOT EXISTS `username` (`username`);
+
+-- Migração para bancos criados antes da coluna biografia.
+ALTER TABLE `usuario`
+  ADD COLUMN IF NOT EXISTS `biografia` text DEFAULT NULL AFTER `foto_perfil`;
 
 CREATE TABLE IF NOT EXISTS `recuperacao_senha` (
   `id_recuperacao` int(11) NOT NULL AUTO_INCREMENT,

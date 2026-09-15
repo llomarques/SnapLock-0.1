@@ -14,6 +14,7 @@ import 'package:dotenv/dotenv.dart';
 final env = DotEnv()..load();
 
 Future<void> main() async {
+  final sessoes = <String, int>{};
   final connection = await MySQLConnection.createConnection(
     host: env['DB_HOST'] ?? '127.0.0.1',
     port: int.tryParse(env['DB_PORT'] ?? '3306') ?? 3306,
@@ -35,7 +36,7 @@ Future<void> main() async {
       }
 
       final usuarios = await connection.execute(
-        '''SELECT id_usuario, nome, username, email, senha_hash
+        '''SELECT id_usuario, nome, username, email, senha_hash, biografia
            FROM usuario
            WHERE (email = :email OR username = :username) AND ativo = 1
            LIMIT 1''',
@@ -50,7 +51,19 @@ Future<void> main() async {
         return _json(401, {'erro': 'E-mail/usuário ou senha incorretos.'});
       }
 
+      final token = _gerarTokenSessao();
+      sessoes[token] = int.parse(usuario['id_usuario']!);
       return _json(200, {
+        'success': true,
+        'token': token,
+        'user': {
+          'id': usuario['id_usuario'],
+          'name': usuario['nome'],
+          'username': usuario['username'],
+          'email': usuario['email'],
+          'bio': usuario['biografia'] ?? '',
+          'avatarUrl': '',
+        },
         'id_usuario': int.parse(usuario['id_usuario']!),
         'nome': usuario['nome'],
         'username': usuario['username'],
@@ -173,6 +186,45 @@ Future<void> main() async {
       await connection.execute('UPDATE usuario SET senha_hash = :senha_hash WHERE id_usuario = :id_usuario', {'senha_hash': BCrypt.hashpw(novaSenha, BCrypt.gensalt()), 'id_usuario': idUsuario});
       await connection.execute('UPDATE recuperacao_senha SET usado_em = NOW() WHERE id_recuperacao = :id_recuperacao', {'id_recuperacao': idRecuperacao});
       return _json(200, {'mensagem': 'Senha redefinida com sucesso.'});
+    })
+    ..put('/api/profile', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'message': 'JSON inválido.'});
+
+      final nome = (dados['name'] ?? '').toString().trim();
+      final biografia = (dados['bio'] ?? '').toString().trim();
+      if (nome.isEmpty || nome.length > 100 || biografia.length > 500) {
+        return _json(422, {'message': 'Confira os dados do perfil.'});
+      }
+
+      await connection.execute(
+        '''UPDATE usuario
+           SET nome = :nome, biografia = :biografia
+           WHERE id_usuario = :id_usuario AND ativo = 1''',
+        {'nome': nome, 'biografia': biografia, 'id_usuario': idUsuario},
+      );
+
+      final usuarios = await connection.execute(
+        '''SELECT id_usuario, nome, username, email, biografia
+           FROM usuario WHERE id_usuario = :id_usuario LIMIT 1''',
+        {'id_usuario': idUsuario},
+      );
+      if (usuarios.rows.isEmpty) return _json(404, {'message': 'Usuário não encontrado.'});
+      final usuario = usuarios.rows.first.assoc();
+      return _json(200, {
+        'success': true,
+        'user': {
+          'id': usuario['id_usuario'],
+          'name': usuario['nome'],
+          'username': usuario['username'],
+          'email': usuario['email'],
+          'bio': usuario['biografia'] ?? '',
+          'avatarUrl': '',
+        },
+      });
     });
 
   final handler = const Pipeline()
@@ -193,8 +245,8 @@ Middleware _cors() => (handler) => (request) async {
 
 const _corsHeaders = {
   'access-control-allow-origin': '*',
-  'access-control-allow-headers': 'Content-Type',
-  'access-control-allow-methods': 'POST, OPTIONS',
+  'access-control-allow-headers': 'Content-Type, Authorization',
+  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
 };
 
 Future<Map<String, dynamic>?> _lerJson(Request request) async {
@@ -217,6 +269,16 @@ bool _senhaValida(String senha) => RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*
 String _gerarToken() => (100000 + Random.secure().nextInt(900000)).toString();
 
 String _hashToken(String token) => sha256.convert(utf8.encode(token)).toString();
+
+String _gerarTokenSessao() => base64UrlEncode(
+      List<int>.generate(32, (_) => Random.secure().nextInt(256)),
+    );
+
+int? _idUsuarioAutenticado(Request request, Map<String, int> sessoes) {
+  final authorization = request.headers['authorization'];
+  if (authorization == null || !authorization.startsWith('Bearer ')) return null;
+  return sessoes[authorization.substring(7).trim()];
+}
 
 Future<void> _enviarToken(String email, String nomeUsuario, String token) async {
   final host = env['SMTP_HOST'];
