@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:snaplock/services/api_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
+import 'package:snaplock/services/api_service.dart';
 import 'editarPerfil_page.dart';
 import '../controller/controller.login.dart';
 
@@ -20,19 +20,16 @@ class _PerfilPage extends State<PerfilPage> {
   Uint8List? fotoPerfil;
   int quantidadeAmigos = 0;
   int quantidadeFotos = 0;
-
-  Map<String, dynamic> get usuario => LoginController.usuarioAtual ?? {};
-
-  String get nomeUsuario =>
-      (usuario['name'] ?? usuario['nome'] ?? 'Usuário').toString();
-
-  String get username => (usuario['username'] ?? '').toString();
-
-  String get biografia => (usuario['bio'] ?? usuario['biografia'] ?? '').toString();
+  String nomeUsuario = '';
+  String username = '';
 
   @override
   void initState() {
     super.initState();
+    final usuario = LoginController.usuarioAtual;
+    nomeUsuario = usuario?['name']?.toString() ?? '';
+    username = usuario?['username']?.toString() ?? '';
+    biografiaController.text = usuario?['bio']?.toString() ?? '';
     carregarQuantidadeAmigos();
     carregarQuantidadeFotos();
   }
@@ -55,30 +52,44 @@ class _PerfilPage extends State<PerfilPage> {
 
   Future<void> carregarQuantidadeFotos() async {
     try {
-      final fotos = await ApiService.getMyGallery();
+      final fotos = await ApiService.getFotos();
 
       if (!mounted) {
         return;
       }
 
       setState(() {
-        quantidadeFotos = fotos.length;
+        quantidadeFotos = fotos.length!;
       });
     } catch (_) {
       // Mantém o perfil disponível mesmo quando a API estiver indisponível.
     }
   }
 
-   void abrirEditarPerfil(BuildContext context) {
-    Navigator.push<ProfileEditResult>(
+  Future<void> abrirEditarPerfil(BuildContext context) async {
+    final usuario = await Navigator.push<Map<String, dynamic>>(
       context,
-      MaterialPageRoute(builder: (context) => const EditarPerfilPage()),
-    ).then((resultado) {
-      if (!mounted || resultado == null) return;
+      MaterialPageRoute(
+        builder: (context) => EditarPerfilPage(
+          nomeInicial: nomeUsuario,
+          biografiaInicial: biografiaController.text,
+        ),
+      ),
+    );
+
+    if (usuario != null && mounted) {
       setState(() {
-        fotoPerfil = resultado.photo ?? fotoPerfil;
+        nomeUsuario = usuario['name']?.toString() ?? nomeUsuario;
+        username = usuario['username']?.toString() ?? username;
+        biografiaController.text = usuario['bio']?.toString() ?? '';
       });
-    });
+    }
+  }
+
+  @override
+  void dispose() {
+    biografiaController.dispose();
+    super.dispose();
   }
 
   
@@ -182,21 +193,12 @@ class _PerfilPage extends State<PerfilPage> {
             height: 5,
           ),
           Text(
-            username.isEmpty ? '@usuario' : '@$username',
+            username.isEmpty ? '@username' : '@$username',
             style: TextStyle(color: Colors.black, fontSize: 10),
           ),
           const SizedBox(
             height: 20,
           ),
-          if (biografia.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              biografia,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.black87, fontSize: 13),
-            ),
-          ],
-          const SizedBox(height: 12),
           Column(
             children: [
               
@@ -233,4 +235,8 @@ class _PerfilPage extends State<PerfilPage> {
     ),
   );
   }
+}
+
+extension on Object? {
+  int? get length => null;
 }

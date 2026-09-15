@@ -41,6 +41,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.2"
+  cloudinary_api:
+    dependency: "direct main"
+    description:
+      name: cloudinary_api
+      sha256: "698e06e34e4e2ae2c9a429ea49330e7a09fdba9749f5f9956b35a6b3231eb36a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
+  cloudinary_url_gen:
+    dependency: "direct main"
+    description:
+      name: cloudinary_url_gen
+      sha256: "7bc052deef297ebe4abe630ef51440674a0b3bf2fe2b54d46bcfcb33c0f2e219"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.8.0"
   collection:
     dependency: transitive
     description:
@@ -49,6 +65,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  convert:
+    dependency: transitive
+    description:
+      name: convert
+      sha256: b30acd5944035672bc15c6b7a8b47d773e41e2f17de064350988c5d02adb1c68
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.2"
   crypto:
     dependency: "direct main"
     description:
@@ -65,6 +89,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.2.0"
+  http:
+    dependency: transitive
+    description:
+      name: http
+      sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.6.0"
   http_methods:
     dependency: transitive
     description:
@@ -117,10 +149,10 @@ packages:
     dependency: transitive
     description:
       name: mime
-      sha256: "41a20518f0cb1256669420fdba0cd90d21561e560ac240f26ef8322e45bb7ed6"
+      sha256: "801fd0b26f14a4a58ccb09d5892c3fbdeff209594300a542492cf13fba9d247a"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0"
+    version: "1.0.6"
   mysql_client:
     dependency: "direct main"
     description:
@@ -145,6 +177,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.2"
+  shelf_multipart:
+    dependency: "direct main"
+    description:
+      name: shelf_multipart
+      sha256: "6dc368d7778ea031e7f688b70ea95b1b27731116cf71d837f6a25df613d81902"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   shelf_router:
     dependency: "direct main"
     description:
@@ -209,5 +249,21 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  universal_io:
+    dependency: transitive
+    description:
+      name: universal_io
+      sha256: f63cbc48103236abf48e345e07a03ce5757ea86285ed313a6a032596ed9301e2
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.1"
+  web:
+    dependency: transitive
+    description:
+      name: web
+      sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
 sdks:
   dart: ">=3.9.0 <4.0.0"

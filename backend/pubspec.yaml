@@ -12,6 +12,9 @@ dependencies:
   mysql_client: ^0.0.27
   shelf: ^1.4.1
   shelf_router: ^1.1.4
+  shelf_multipart: ^1.0.0
   dotenv: ^4.2.0
+  cloudinary_api: ^1.1.1
+  cloudinary_url_gen: ^1.8.0
 
 

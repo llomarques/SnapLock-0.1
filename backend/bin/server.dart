@@ -8,12 +8,30 @@ import 'package:mailer/smtp_server.dart';
 import 'package:mysql_client/mysql_client.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
+import 'package:shelf_multipart/form_data.dart';
+import 'package:shelf_multipart/multipart.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:dotenv/dotenv.dart';
+
+import 'package:cloudinary_url_gen/cloudinary.dart';
+import 'package:cloudinary_url_gen/transformation/transformation.dart';
+import 'package:cloudinary_api/uploader/cloudinary_uploader.dart';
+import 'package:cloudinary_api/src/request/model/uploader_params.dart';
+import 'package:cloudinary_url_gen/transformation/effect/effect.dart';
+import 'package:cloudinary_url_gen/transformation/resize/resize.dart';
+
+final cloudinaryUrl = env['CLOUDINARY_URL'] ?? '';
+var cloudinary = Cloudinary.fromStringUrl(cloudinaryUrl);
+
 
 final env = DotEnv()..load();
 
 Future<void> main() async {
+
+  cloudinary.config.urlConfig.secure = true;
+  // await upload();
+  // transform();
+
   final sessoes = <String, int>{};
   final connection = await MySQLConnection.createConnection(
     host: env['DB_HOST'] ?? '127.0.0.1',
@@ -25,6 +43,8 @@ Future<void> main() async {
   await connection.connect();
 
   final router = Router()
+
+  
     ..post('/api/login', (Request request) async {
       final dados = await _lerJson(request);
       if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
@@ -70,6 +90,8 @@ Future<void> main() async {
         'email': usuario['email'],
       });
     })
+
+
     ..post('/api/usuarios', (Request request) async {
       final dados = await _lerJson(request);
       if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
@@ -121,6 +143,9 @@ Future<void> main() async {
         return _json(500, {'erro': 'Erro interno ao salvar o usuário.'});
       }
     })
+
+
+
     ..post('/api/recuperacao/solicitar', (Request request) async {
       final dados = await _lerJson(request);
       final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
@@ -160,6 +185,8 @@ Future<void> main() async {
       }
       return _json(200, {'mensagem': 'Se o e-mail existir, um token será enviado.'});
     })
+
+
     ..post('/api/recuperacao/validar-token', (Request request) async {
       final dados = await _lerJson(request);
       final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
@@ -179,6 +206,8 @@ Future<void> main() async {
       if (resultados.rows.isEmpty) return _json(422, {'erro': 'Token inválido ou expirado.'});
       return _json(200, {'mensagem': 'Token válido.'});
     })
+
+
     ..post('/api/recuperacao/redefinir', (Request request) async {
       final dados = await _lerJson(request);
       final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
@@ -206,6 +235,118 @@ Future<void> main() async {
       await connection.execute('UPDATE recuperacao_senha SET usado_em = NOW() WHERE id_recuperacao = :id_recuperacao', {'id_recuperacao': idRecuperacao});
       return _json(200, {'mensagem': 'Senha redefinida com sucesso.'});
     })
+
+            ..post('/api/postagens', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      if (!request.isMultipart) {
+        return _json(422, {'message': 'Envie como multipart/form-data.'});
+      }
+
+      String? legenda;
+      File? tempFile;
+
+      await for (final formData in request.multipartFormData) {
+        if (formData.name == 'legenda') {
+          legenda = await _coletarString(formData.part);
+        } else if (formData.name == 'midia') {
+          final bytes = await _coletarBytes(formData.part);
+          final contentType = formData.part.headers['content-type'];
+          final extensao = _extensaoPorContentType(contentType);
+          tempFile = File('${Directory.systemTemp.path}/upload_${DateTime.now().microsecondsSinceEpoch}$extensao');
+          await tempFile.writeAsBytes(bytes);
+        }
+      }
+
+      if (tempFile == null) {
+        return _json(422, {'message': 'Envie o arquivo no campo "midia" (multipart/form-data).'});
+      }
+
+      String? midiaUrl;
+      try {
+        final response = await cloudinary.uploader().upload(
+          tempFile,
+          params: UploadParams(folder: 'postagens'),
+        );
+        midiaUrl = response?.data?.secureUrl;
+      } catch (error, stackTrace) {
+        print('Erro no upload da mídia: $error');
+        print(stackTrace);
+        return _json(502, {'message': 'Falha ao enviar a mídia para o Cloudinary.'});
+      } finally {
+        if (await tempFile.exists()) await tempFile.delete();
+      }
+
+      if (midiaUrl == null) {
+        return _json(502, {'message': 'Falha ao processar a mídia.'});
+      }
+
+      final result = await connection.execute(
+        'INSERT INTO postagem (id_usuario, legenda, midia_url) VALUES (:id_usuario, :legenda, :midia_url)',
+        {'id_usuario': idUsuario, 'legenda': legenda ?? '', 'midia_url': midiaUrl},
+      );
+
+      return _json(201, {
+        'success': true,
+        'id_postagem': int.parse(result.lastInsertID.toString()),
+        'midia_url': midiaUrl,
+      });
+    })
+
+      ..post('/api/profile/foto', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      if (!request.isMultipart) {
+        return _json(422, {'message': 'Envie o arquivo como multipart/form-data.'});
+      }
+
+      File? tempFile;
+
+      await for (final formData in request.multipartFormData) {
+        if (formData.name == 'foto') {
+          final bytes = await _coletarBytes(formData.part);
+          final contentType = formData.part.headers['content-type'];
+          final extensao = _extensaoPorContentType(contentType);
+          tempFile = File('${Directory.systemTemp.path}/upload_${DateTime.now().microsecondsSinceEpoch}$extensao');
+          await tempFile.writeAsBytes(bytes);
+        }
+      }
+
+      if (tempFile == null) {
+        return _json(422, {'message': 'Envie o arquivo no campo "foto" (multipart/form-data).'});
+      }
+
+      String? url;
+      try {
+        final response = await cloudinary.uploader().upload(
+          tempFile,
+          params: UploadParams(folder: 'perfil'),
+        );
+        url = response?.data?.secureUrl;
+        print('Upload de foto de perfil concluído. URL recebida: ${url != null}');
+      } catch (error, stackTrace) {
+        print('Erro no upload da foto de perfil: $error');
+        print(stackTrace);
+        return _json(502, {'message': 'Falha ao enviar a imagem para o Cloudinary.'});
+      } finally {
+        if (await tempFile.exists()) await tempFile.delete();
+      }
+
+      if (url == null) {
+        print('Cloudinary não retornou uma URL para a foto de perfil.');
+        return _json(502, {'message': 'Falha ao processar a imagem.'});
+      }
+
+      await connection.execute(
+        'UPDATE usuario SET foto_perfil = :url WHERE id_usuario = :id_usuario AND ativo = 1',
+        {'url': url, 'id_usuario': idUsuario},
+      );
+
+      return _json(200, {'success': true, 'foto_perfil': url});
+    })
+
     ..put('/api/profile', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
@@ -245,6 +386,8 @@ Future<void> main() async {
         },
       });
     });
+    
+
 
   final handler = const Pipeline()
       .addMiddleware(logRequests())
@@ -268,12 +411,36 @@ const _corsHeaders = {
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
 };
 
+
 Future<Map<String, dynamic>?> _lerJson(Request request) async {
   try {
     final body = jsonDecode(await request.readAsString());
     return body is Map<String, dynamic> ? body : null;
   } on FormatException {
     return null;
+  }
+}
+
+Future<List<int>> _coletarBytes(Stream<List<int>> stream) async {
+  final bytes = <int>[];
+  await for (final chunk in stream) {
+    bytes.addAll(chunk);
+  }
+  return bytes;
+}
+
+Future<String> _coletarString(Stream<List<int>> stream) => utf8.decoder.bind(stream).join();
+
+String _extensaoPorContentType(String? contentType) {
+  switch (contentType) {
+    case 'image/png':
+      return '.png';
+    case 'image/webp':
+      return '.webp';
+    case 'image/gif':
+      return '.gif';
+    default:
+      return '.jpg';
   }
 }
 
