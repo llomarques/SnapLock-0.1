@@ -69,6 +69,9 @@ For You Only!
 Versão do aplicativo: 1.0.0
 Desenvolvido com carinho pela equipe CyberSisters.
 
+contato: 
+snaplock.support@gmail.com
+
 © 2026 SnapLock. Todos os direitos reservados.''',
               style: const TextStyle(
                 color: Color(0xFF3E3A36),
