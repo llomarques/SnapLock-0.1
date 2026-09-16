@@ -21,7 +21,7 @@ Aplicativo Flutter com backend Dart, MariaDB e recuperação de senha por e-mail
 
 ## Banco de dados
 
-Execute `snaplock_db.sql` no MariaDB. Para uma instalação já existente, confira se a tabela `usuario` tem `username` e índice único:
+Execute `snaplock_db.sql` no MariaDB. A biografia fica na coluna `usuario.biografia`. Para uma instalação já existente, confira se a tabela `usuario` tem `username`, `biografia` e os índices únicos:
 
 ```sql
 USE snaplock_db;

@@ -15,6 +15,9 @@ class LoginException implements Exception {
 class LoginController {
   LoginController({http.Client? client}) : _client = client ?? http.Client();
 
+  static Map<String, dynamic>? usuarioAtual;
+  static String? tokenAtual;
+
   static const _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL');
 
   static String get apiBaseUrl {
@@ -53,6 +56,50 @@ class LoginController {
         body?['erro']?.toString() ?? 'E-mail/usuário ou senha incorretos.',
       );
     }
-    return body ?? <String, dynamic>{};
+
+    final resposta = body ?? <String, dynamic>{};
+    final usuario = resposta['user'];
+    usuarioAtual = usuario is Map<String, dynamic>
+        ? usuario
+        : {
+            'id': resposta['id_usuario']?.toString() ?? '',
+            'name': resposta['nome']?.toString() ?? '',
+            'username': resposta['username']?.toString() ?? '',
+            'email': resposta['email']?.toString() ?? '',
+            'bio': resposta['bio']?.toString() ?? '',
+            'avatarUrl': resposta['avatarUrl']?.toString() ?? '',
+          };
+    tokenAtual = resposta['token']?.toString();
+    return resposta;
+  }
+
+  static Future<Map<String, dynamic>> atualizarPerfil({
+    required String nome,
+    required String biografia,
+  }) async {
+    if (tokenAtual == null || tokenAtual!.isEmpty) {
+      throw const LoginException('Faça login novamente para editar o perfil.');
+    }
+
+    final response = await http.put(
+      Uri.parse('$apiBaseUrl/api/profile'),
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Authorization': 'Bearer $tokenAtual',
+      },
+      body: jsonEncode({'name': nome, 'bio': biografia}),
+    );
+
+    final decoded = jsonDecode(response.body);
+    final data = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
+    if (response.statusCode < 200 || response.statusCode >= 300 || data['success'] != true) {
+      throw LoginException(data['message']?.toString() ?? 'Erro ao salvar o perfil.');
+    }
+
+    final usuario = data['user'];
+    if (usuario is Map<String, dynamic>) {
+      usuarioAtual = usuario;
+    }
+    return data;
   }
 }

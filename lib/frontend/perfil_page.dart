@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:snaplock/services/api_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'editarPerfil_page.dart' hide IconButton;
 import '../services/app_localizations.dart';
+import 'package:snaplock/services/api_service.dart';
+import 'editarPerfil_page.dart';
+import '../controller/controller.login.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -20,10 +22,16 @@ class _PerfilPage extends State<PerfilPage> {
   Uint8List? fotoPerfil;
   int quantidadeAmigos = 0;
   int quantidadeFotos = 0;
+  String nomeUsuario = '';
+  String username = '';
 
   @override
   void initState() {
     super.initState();
+    final usuario = LoginController.usuarioAtual;
+    nomeUsuario = usuario?['name']?.toString() ?? '';
+    username = usuario?['username']?.toString() ?? '';
+    biografiaController.text = usuario?['bio']?.toString() ?? '';
     carregarQuantidadeAmigos();
     carregarQuantidadeFotos();
   }
@@ -61,18 +69,21 @@ class _PerfilPage extends State<PerfilPage> {
   }
 
   Future<void> abrirEditarPerfil(BuildContext context) async {
-    final biografia = await Navigator.push<String>(
+    final usuario = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
         builder: (context) => EditarPerfilPage(
+          nomeInicial: nomeUsuario,
           biografiaInicial: biografiaController.text,
         ),
       ),
     );
 
-    if (biografia != null && mounted) {
+    if (usuario != null && mounted) {
       setState(() {
-        biografiaController.text = biografia;
+        nomeUsuario = usuario['name']?.toString() ?? nomeUsuario;
+        username = usuario['username']?.toString() ?? username;
+        biografiaController.text = usuario['bio']?.toString() ?? '';
       });
     }
   }
@@ -174,6 +185,7 @@ class _PerfilPage extends State<PerfilPage> {
           ),
           Text(
             AppLocalizations.of(context).name,
+            nomeUsuario,
             style: TextStyle(
               color: Colors.black,
               fontSize: 13,
@@ -184,7 +196,7 @@ class _PerfilPage extends State<PerfilPage> {
             height: 5,
           ),
           Text(
-            '@nomedeusuario',
+            username.isEmpty ? '@username' : '@$username',
             style: TextStyle(color: Colors.black, fontSize: 10),
           ),
           const SizedBox(

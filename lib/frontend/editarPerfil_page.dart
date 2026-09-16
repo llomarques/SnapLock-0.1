@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import '../services/app_localizations.dart';
+import '../controller/controller.login.dart';
 
 class EditarPerfilPage extends StatefulWidget {
+  final String nomeInicial;
   final String biografiaInicial;
 
-  const EditarPerfilPage({super.key, this.biografiaInicial = ''});
+  const EditarPerfilPage({super.key, this.nomeInicial = '', this.biografiaInicial = ''});
 
   @override
   State<EditarPerfilPage> createState() => _EditarPerfilPageState();
@@ -17,11 +19,35 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
   final TextEditingController biografiaController = TextEditingController();
   final ImagePicker picker = ImagePicker();
   Uint8List? fotoPerfil;
+  bool salvando = false;
 
   @override
   void initState() {
     super.initState();
+    nomeController.text = widget.nomeInicial;
     biografiaController.text = widget.biografiaInicial;
+  }
+
+  Future<void> salvarAlteracoes() async {
+    if (salvando) return;
+
+    setState(() => salvando = true);
+    try {
+      final resposta = await LoginController.atualizarPerfil(
+        nome: nomeController.text.trim(),
+        biografia: biografiaController.text.trim(),
+      );
+      if (mounted) {
+        Navigator.pop(context, resposta['user'] as Map<String, dynamic>);
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => salvando = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
+      }
+    }
   }
 
   Future<void> escolherDaGaleria() async {
@@ -146,10 +172,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             ),
             const SizedBox(height: 25),
             ElevatedButton(
-              onPressed: () => Navigator.pop(
-                context,
-                biografiaController.text.trim(),
-              ),
+              onPressed: salvando ? null : salvarAlteracoes,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: const Color(0xFFF3E9DC),
