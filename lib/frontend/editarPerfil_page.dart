@@ -7,8 +7,16 @@ import '../controller/controller.login.dart';
 class EditarPerfilPage extends StatefulWidget {
   final String nomeInicial;
   final String biografiaInicial;
+  final Uint8List? fotoPerfilInicial;
+  final String fotoPerfilUrlInicial;
 
-  const EditarPerfilPage({super.key, this.nomeInicial = '', this.biografiaInicial = ''});
+  const EditarPerfilPage({
+    super.key,
+    this.nomeInicial = '',
+    this.biografiaInicial = '',
+    this.fotoPerfilInicial,
+    this.fotoPerfilUrlInicial = '',
+  });
 
   @override
   State<EditarPerfilPage> createState() => _EditarPerfilPageState();
@@ -26,29 +34,47 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
     super.initState();
     nomeController.text = widget.nomeInicial;
     biografiaController.text = widget.biografiaInicial;
+    fotoPerfil = widget.fotoPerfilInicial;
   }
 
   Future<void> salvarAlteracoes() async {
-    if (salvando) return;
+  if (salvando) return;
 
-    setState(() => salvando = true);
-    try {
-      final resposta = await LoginController.atualizarPerfil(
-        nome: nomeController.text.trim(),
-        biografia: biografiaController.text.trim(),
+  setState(() => salvando = true);
+  try {
+    String? novaFotoUrl;
+
+    // Se o usuário escolheu uma nova foto, envia primeiro
+    if (fotoPerfil != null) {
+      novaFotoUrl = await LoginController.atualizarFotoPerfil(fotoPerfil!);
+    }
+
+    final resposta = await LoginController.atualizarPerfil(
+      nome: nomeController.text.trim(),
+      biografia: biografiaController.text.trim(),
+    );
+
+    if (mounted) {
+      final usuarioAtualizado = Map<String, dynamic>.from(
+        resposta['user'] as Map<String, dynamic>,
       );
-      if (mounted) {
-        Navigator.pop(context, resposta['user'] as Map<String, dynamic>);
+
+      // O endpoint de nome/bio não sabe da nova foto, então mesclamos aqui
+      if (novaFotoUrl != null) {
+        usuarioAtualizado['avatarUrl'] = novaFotoUrl;
       }
-    } catch (error) {
-      if (mounted) {
-        setState(() => salvando = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString())),
-        );
-      }
+
+      Navigator.pop(context, usuarioAtualizado);
+    }
+  } catch (error) {
+    if (mounted) {
+      setState(() => salvando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
     }
   }
+}
 
   Future<void> escolherDaGaleria() async {
     final XFile? imagem = await picker.pickImage(
@@ -70,8 +96,19 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
     });
   }
 
+  ImageProvider<Object> get imagemPerfil {
+    if (fotoPerfil != null) {
+      return MemoryImage(fotoPerfil!);
+    }
+    if (widget.fotoPerfilUrlInicial.isNotEmpty) {
+      return NetworkImage(widget.fotoPerfilUrlInicial);
+    }
+    return const AssetImage('assets/images/monalisaPerfil.png');
+  }
+
   @override
   void dispose() {
+    
     nomeController.dispose();
     biografiaController.dispose();
     super.dispose();
@@ -110,11 +147,12 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(14),
                 child: Image(
-                  image: fotoPerfil != null
-                      ? MemoryImage(fotoPerfil!)
-                      : const AssetImage('assets/images/monalisaPerfil.png')
-                          as ImageProvider,
+                  image: imagemPerfil,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Image.asset(
+                    'assets/images/monalisaPerfil.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),

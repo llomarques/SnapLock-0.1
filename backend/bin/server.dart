@@ -57,7 +57,7 @@ Future<void> main() async {
       }
 
       final usuarios = await connection.execute(
-        '''SELECT id_usuario, nome, username, email, senha_hash, biografia
+        '''SELECT id_usuario, nome, username, email, senha_hash, biografia, foto_perfil
            FROM usuario
            WHERE (email = :email OR username = :username) AND ativo = 1
            LIMIT 1''',
@@ -83,7 +83,7 @@ Future<void> main() async {
           'username': usuario['username'],
           'email': usuario['email'],
           'bio': usuario['biografia'] ?? '',
-          'avatarUrl': '',
+          'avatarUrl': usuario['foto_perfil'] ?? '',
         },
         'id_usuario': int.parse(usuario['id_usuario']!),
         'nome': usuario['nome'],
@@ -408,7 +408,7 @@ Future<void> main() async {
       );
 
       final usuarios = await connection.execute(
-        '''SELECT id_usuario, nome, username, email, biografia
+        '''SELECT id_usuario, nome, username, email, biografia, foto_perfil
            FROM usuario WHERE id_usuario = :id_usuario LIMIT 1''',
         {'id_usuario': idUsuario},
       );
@@ -423,7 +423,7 @@ Future<void> main() async {
           'username': usuario['username'],
           'email': usuario['email'],
           'bio': usuario['biografia'] ?? '',
-          'avatarUrl': '',
+          'avatarUrl': usuario['foto_perfil'] ?? '',
         },
       });
     });
