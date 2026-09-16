@@ -6,6 +6,8 @@ import 'postar_page.dart';
 import 'dump_page.dart';
 import 'perfil_page.dart';
 import 'configuracoes_page.dart';
+import 'pesquisa_page.dart';
+import '../services/app_localizations.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -18,6 +20,14 @@ class FeedHeader extends StatelessWidget {
   const FeedHeader({super.key, required this.onMenuPressed});
 
   final VoidCallback onMenuPressed;
+
+  void abrirPesquisa(BuildContext context) {
+     Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PesquisaPage()),
+    );
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +56,7 @@ class FeedHeader extends StatelessWidget {
             ),
             actions: [
               IconButton(
-                onPressed: () {},
+                onPressed: () => abrirPesquisa(context),
                 icon: const Icon(Icons.person_search, size: 35.0, color: Colors.black),
               ),
             ],
@@ -64,8 +74,8 @@ class FeedConteudoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Feed'),
+    return Center(
+      child: Text(AppLocalizations.of(context).feed),
     );
   }
 }
@@ -107,7 +117,7 @@ class _FeedPage extends State<FeedPage> {
             ),
             ListTile(
               leading: const Icon(Icons.person),
-              title: const Text('Perfil'),
+              title: Text(AppLocalizations.of(context).profile),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => indice = 4);
@@ -115,7 +125,7 @@ class _FeedPage extends State<FeedPage> {
             ),
             ListTile(
               leading: const Icon(Icons.notifications),
-              title: const Text('Notificações'),
+              title: Text(AppLocalizations.of(context).notifications),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => indice = 1);
@@ -123,14 +133,14 @@ class _FeedPage extends State<FeedPage> {
             ),
             ListTile(
               leading: const Icon(Icons.settings),
-              title: const Text('Configurações'),
+              title: Text(AppLocalizations.of(context).settings),
               onTap: () {
                 abrirConfiguracoes();
               },
             ),
             ListTile(
               leading: const Icon(Icons.call),
-              title: const Text('Ajuda e Suporte'),
+              title: Text(AppLocalizations.of(context).helpAndSupport),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => indice = 0);
@@ -138,7 +148,7 @@ class _FeedPage extends State<FeedPage> {
             ),
             ListTile(
               leading: const Icon(Icons.logout),
-              title: const Text('Sair'),
+              title: Text(AppLocalizations.of(context).logoutShort),
               onTap: () {
                 Navigator.pushReplacement(
                   context,

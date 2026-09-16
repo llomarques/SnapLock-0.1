@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:snaplock/theme/app_fonts.dart';
 import '../controller/controller.cadastrar.dart';
 import 'recuperaSenha_page.dart';
+import '../services/app_localizations.dart';
 
 class esqueceuSenhaPage extends StatefulWidget {
   const esqueceuSenhaPage({super.key});
@@ -33,7 +34,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
   Future<void> solicitarToken() async {
     final email = confirmaEmailController.text.trim();
     if (email.isEmpty) {
-      mostrarMensagem('Digite seu e-mail');
+      mostrarMensagem(AppLocalizations.of(context).typeEmail);
       return;
     }
     setState(() => carregando = true);
@@ -41,7 +42,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
       await cadastroController.solicitarToken(email);
       if (mounted) {
         setState(() => tokenEnviado = true);
-        mostrarMensagem('Confira seu e-mail e a pasta Spam.');
+        mostrarMensagem(AppLocalizations.of(context).checkEmail);
       }
     } catch (error) {
       if (mounted) mostrarMensagem(error.toString());
@@ -54,7 +55,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
     final email = confirmaEmailController.text.trim();
     final token = tokenController.text.trim();
     if (token.length != 6) {
-      mostrarMensagem('Digite o código de 6 números recebido por e-mail.');
+      mostrarMensagem(AppLocalizations.of(context).typeReceivedCode);
       return;
     }
     setState(() => carregando = true);
@@ -92,7 +93,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
             ),
             const SizedBox(height: 37),
             Text(
-              'Digite seu e-mail para receber o link de recuperação',
+              AppLocalizations.of(context).forgotPasswordDescription,
               textAlign: TextAlign.center,
               style: AppFonts.poppinsRegular.copyWith(
                 fontSize: 12.5,
@@ -106,7 +107,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite seu email',
+                hintText: AppLocalizations.of(context).typeEmail,
                 prefixIcon: const Icon(
                   Icons.email,
                   color: Color(0xFF5E3023),
@@ -134,11 +135,11 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
                 ),
                 child: carregando
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Enviar código'),
+                    : Text(AppLocalizations.of(context).sendCode),
               ),
             if (tokenEnviado) ...[
-              const Text(
-                'Digite o código de 6 números enviado para seu e-mail',
+              Text(
+                AppLocalizations.of(context).codeSentDescription,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -151,7 +152,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
                   counterText: '',
                   filled: true,
                   fillColor: const Color(0xFFD7CBBD),
-                  hintText: 'Código de 6 números',
+                  hintText: AppLocalizations.of(context).typeCode,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -168,7 +169,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
                 ),
                 child: carregando
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Validar token'),
+                    : Text(AppLocalizations.of(context).validateToken),
               ),
             ],
             const SizedBox(height: 10),
@@ -177,7 +178,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
                   Navigator.pop(context);
                 },
                 child: Text(
-                  'Voltar para o login',
+                  AppLocalizations.of(context).backToLogin,
                   style: TextStyle(
                     color: Color(0xFF895737),
                     fontWeight: FontWeight.bold, // Opcional: sublinha a palavra
