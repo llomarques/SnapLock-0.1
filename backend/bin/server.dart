@@ -23,11 +23,10 @@ import 'package:cloudinary_url_gen/transformation/resize/resize.dart';
 final cloudinaryUrl = env['CLOUDINARY_URL'] ?? '';
 var cloudinary = Cloudinary.fromStringUrl(cloudinaryUrl);
 
-
 final env = DotEnv()..load();
 
 Future<void> main() async {
-
+  print('CLOUDINARY_URL: ${env['CLOUDINARY_URL']}');
   cloudinary.config.urlConfig.secure = true;
   // await upload();
   // transform();
@@ -43,13 +42,15 @@ Future<void> main() async {
   await connection.connect();
 
   final router = Router()
-
-  
     ..post('/api/login', (Request request) async {
       final dados = await _lerJson(request);
       if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
 
-      final login = (dados['login'] ?? dados['email'] ?? dados['username'] ?? '').toString().trim().toLowerCase();
+      final login =
+          (dados['login'] ?? dados['email'] ?? dados['username'] ?? '')
+              .toString()
+              .trim()
+              .toLowerCase();
       final senha = dados['senha'] as String? ?? '';
       if (login.isEmpty || senha.isEmpty) {
         return _json(422, {'erro': 'Informe o e-mail ou username e a senha.'});
@@ -90,20 +91,26 @@ Future<void> main() async {
         'email': usuario['email'],
       });
     })
-
-
     ..post('/api/usuarios', (Request request) async {
       final dados = await _lerJson(request);
       if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
 
       final nome = (dados['nome'] as String? ?? '').trim();
-      final username = (dados['username'] as String? ?? '').trim().toLowerCase();
+      final username =
+          (dados['username'] as String? ?? '').trim().toLowerCase();
       final email = (dados['email'] as String? ?? '').trim().toLowerCase();
       final senha = dados['senha'] as String? ?? '';
       final confirmacaoSenha = dados['confirmacao_senha'] as String? ?? '';
       final dataNascimento = dados['data_nascimento'] as String? ?? '';
 
-      if (nome.isEmpty || nome.length > 100 || !_usernameValido(username) || !_emailValido(email) || email.length > 150 || !_senhaValida(senha) || senha != confirmacaoSenha || !_dataValida(dataNascimento)) {
+      if (nome.isEmpty ||
+          nome.length > 100 ||
+          !_usernameValido(username) ||
+          !_emailValido(email) ||
+          email.length > 150 ||
+          !_senhaValida(senha) ||
+          senha != confirmacaoSenha ||
+          !_dataValida(dataNascimento)) {
         return _json(422, {'erro': 'Confira os dados informados.'});
       }
       if (!_idadeMinimaValida(dataNascimento)) {
@@ -129,12 +136,14 @@ Future<void> main() async {
             'data_nascimento': dataNascimento,
           },
         );
-        return _json(201, {'id_usuario': int.parse(result.lastInsertID.toString())});
+        return _json(
+            201, {'id_usuario': int.parse(result.lastInsertID.toString())});
       } catch (error, stackTrace) {
         final mensagem = error.toString();
         print('Erro ao cadastrar usuário: $mensagem');
         print(stackTrace);
-        if (mensagem.toLowerCase().contains('duplicate') || mensagem.toLowerCase().contains('1062')) {
+        if (mensagem.toLowerCase().contains('duplicate') ||
+            mensagem.toLowerCase().contains('1062')) {
           if (mensagem.toLowerCase().contains('username')) {
             return _json(409, {'erro': 'Este username já está em uso.'});
           }
@@ -143,19 +152,19 @@ Future<void> main() async {
         return _json(500, {'erro': 'Erro interno ao salvar o usuário.'});
       }
     })
-
-
-
     ..post('/api/recuperacao/solicitar', (Request request) async {
       final dados = await _lerJson(request);
       final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
-      if (!_emailValido(email)) return _json(422, {'erro': 'Informe um e-mail válido.'});
+      if (!_emailValido(email))
+        return _json(422, {'erro': 'Informe um e-mail válido.'});
 
       final usuarios = await connection.execute(
         'SELECT id_usuario, nome FROM usuario WHERE email = :email AND ativo = 1 LIMIT 1',
         {'email': email},
       );
-      if (usuarios.rows.isEmpty) return _json(200, {'mensagem': 'Se o e-mail existir, um token será enviado.'});
+      if (usuarios.rows.isEmpty)
+        return _json(
+            200, {'mensagem': 'Se o e-mail existir, um token será enviado.'});
 
       final linhaUsuario = usuarios.rows.first.assoc();
       final idUsuario = int.parse(linhaUsuario['id_usuario']!);
@@ -165,7 +174,9 @@ Future<void> main() async {
         'SELECT enviado_em FROM recuperacao_senha WHERE id_usuario = :id_usuario AND enviado_em > DATE_SUB(NOW(), INTERVAL 30 SECOND) ORDER BY enviado_em DESC LIMIT 1',
         {'id_usuario': idUsuario},
       );
-      if (recentes.rows.isNotEmpty) return _json(429, {'erro': 'Aguarde 30 segundos para solicitar outro token.'});
+      if (recentes.rows.isNotEmpty)
+        return _json(
+            429, {'erro': 'Aguarde 30 segundos para solicitar outro token.'});
 
       final token = _gerarToken();
       try {
@@ -181,12 +192,14 @@ Future<void> main() async {
         );
         print('Erro ao enviar token: $error');
         print(stackTrace);
-        return _json(502, {'erro': 'Não foi possível enviar o e-mail. Confira as configurações SMTP.'});
+        return _json(502, {
+          'erro':
+              'Não foi possível enviar o e-mail. Confira as configurações SMTP.'
+        });
       }
-      return _json(200, {'mensagem': 'Se o e-mail existir, um token será enviado.'});
+      return _json(
+          200, {'mensagem': 'Se o e-mail existir, um token será enviado.'});
     })
-
-
     ..post('/api/recuperacao/validar-token', (Request request) async {
       final dados = await _lerJson(request);
       final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
@@ -203,18 +216,20 @@ Future<void> main() async {
            ORDER BY r.id_recuperacao DESC LIMIT 1''',
         {'email': email, 'token_hash': _hashToken(token)},
       );
-      if (resultados.rows.isEmpty) return _json(422, {'erro': 'Token inválido ou expirado.'});
+      if (resultados.rows.isEmpty)
+        return _json(422, {'erro': 'Token inválido ou expirado.'});
       return _json(200, {'mensagem': 'Token válido.'});
     })
-
-
     ..post('/api/recuperacao/redefinir', (Request request) async {
       final dados = await _lerJson(request);
       final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
       final token = dados?['token'] as String? ?? '';
       final novaSenha = dados?['nova_senha'] as String? ?? '';
       final confirmacaoSenha = dados?['confirmacao_senha'] as String? ?? '';
-      if (!_emailValido(email) || token.isEmpty || !_senhaValida(novaSenha) || novaSenha != confirmacaoSenha) {
+      if (!_emailValido(email) ||
+          token.isEmpty ||
+          !_senhaValida(novaSenha) ||
+          novaSenha != confirmacaoSenha) {
         return _json(422, {'erro': 'Confira os dados informados.'});
       }
 
@@ -226,17 +241,24 @@ Future<void> main() async {
            ORDER BY r.id_recuperacao DESC LIMIT 1''',
         {'email': email, 'token_hash': _hashToken(token)},
       );
-      if (resultados.rows.isEmpty) return _json(422, {'erro': 'Token inválido ou expirado.'});
+      if (resultados.rows.isEmpty)
+        return _json(422, {'erro': 'Token inválido ou expirado.'});
 
       final recuperacao = resultados.rows.first.assoc();
       final idRecuperacao = int.parse(recuperacao['id_recuperacao']!);
       final idUsuario = int.parse(recuperacao['id_usuario']!);
-      await connection.execute('UPDATE usuario SET senha_hash = :senha_hash WHERE id_usuario = :id_usuario', {'senha_hash': BCrypt.hashpw(novaSenha, BCrypt.gensalt()), 'id_usuario': idUsuario});
-      await connection.execute('UPDATE recuperacao_senha SET usado_em = NOW() WHERE id_recuperacao = :id_recuperacao', {'id_recuperacao': idRecuperacao});
+      await connection.execute(
+          'UPDATE usuario SET senha_hash = :senha_hash WHERE id_usuario = :id_usuario',
+          {
+            'senha_hash': BCrypt.hashpw(novaSenha, BCrypt.gensalt()),
+            'id_usuario': idUsuario
+          });
+      await connection.execute(
+          'UPDATE recuperacao_senha SET usado_em = NOW() WHERE id_recuperacao = :id_recuperacao',
+          {'id_recuperacao': idRecuperacao});
       return _json(200, {'mensagem': 'Senha redefinida com sucesso.'});
     })
-
-            ..post('/api/postagens', (Request request) async {
+    ..post('/api/postagens', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
 
@@ -254,26 +276,30 @@ Future<void> main() async {
           final bytes = await _coletarBytes(formData.part);
           final contentType = formData.part.headers['content-type'];
           final extensao = _extensaoPorContentType(contentType);
-          tempFile = File('${Directory.systemTemp.path}/upload_${DateTime.now().microsecondsSinceEpoch}$extensao');
+          tempFile = File(
+              '${Directory.systemTemp.path}/upload_${DateTime.now().microsecondsSinceEpoch}$extensao');
           await tempFile.writeAsBytes(bytes);
         }
       }
 
       if (tempFile == null) {
-        return _json(422, {'message': 'Envie o arquivo no campo "midia" (multipart/form-data).'});
+        return _json(422, {
+          'message': 'Envie o arquivo no campo "midia" (multipart/form-data).'
+        });
       }
 
       String? midiaUrl;
       try {
         final response = await cloudinary.uploader().upload(
-          tempFile,
-          params: UploadParams(folder: 'postagens'),
-        );
+              tempFile,
+              params: UploadParams(folder: 'postagens'),
+            );
         midiaUrl = response?.data?.secureUrl;
       } catch (error, stackTrace) {
         print('Erro no upload da mídia: $error');
         print(stackTrace);
-        return _json(502, {'message': 'Falha ao enviar a mídia para o Cloudinary.'});
+        return _json(
+            502, {'message': 'Falha ao enviar a mídia para o Cloudinary.'});
       } finally {
         if (await tempFile.exists()) await tempFile.delete();
       }
@@ -284,7 +310,11 @@ Future<void> main() async {
 
       final result = await connection.execute(
         'INSERT INTO postagem (id_usuario, legenda, midia_url) VALUES (:id_usuario, :legenda, :midia_url)',
-        {'id_usuario': idUsuario, 'legenda': legenda ?? '', 'midia_url': midiaUrl},
+        {
+          'id_usuario': idUsuario,
+          'legenda': legenda ?? '',
+          'midia_url': midiaUrl
+        },
       );
 
       return _json(201, {
@@ -293,13 +323,13 @@ Future<void> main() async {
         'midia_url': midiaUrl,
       });
     })
-
-      ..post('/api/profile/foto', (Request request) async {
+    ..post('/api/profile/foto', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
 
       if (!request.isMultipart) {
-        return _json(422, {'message': 'Envie o arquivo como multipart/form-data.'});
+        return _json(
+            422, {'message': 'Envie o arquivo como multipart/form-data.'});
       }
 
       File? tempFile;
@@ -309,27 +339,38 @@ Future<void> main() async {
           final bytes = await _coletarBytes(formData.part);
           final contentType = formData.part.headers['content-type'];
           final extensao = _extensaoPorContentType(contentType);
-          tempFile = File('${Directory.systemTemp.path}/upload_${DateTime.now().microsecondsSinceEpoch}$extensao');
+          tempFile = File(
+              '${Directory.systemTemp.path}/upload_${DateTime.now().microsecondsSinceEpoch}$extensao');
           await tempFile.writeAsBytes(bytes);
         }
       }
 
       if (tempFile == null) {
-        return _json(422, {'message': 'Envie o arquivo no campo "foto" (multipart/form-data).'});
+        return _json(422, {
+          'message': 'Envie o arquivo no campo "foto" (multipart/form-data).'
+        });
       }
 
       String? url;
       try {
         final response = await cloudinary.uploader().upload(
-          tempFile,
-          params: UploadParams(folder: 'perfil'),
-        );
+              tempFile,
+              params: UploadParams(folder: 'perfil'),
+            );
+
+        // DEBUG TEMPORÁRIO
+        print('--- DEBUG CLOUDINARY ---');
+        print('response.error: ${response?.error?.message}');
+        print('response.data: ${response?.data}');
+        // print('response.statusCode: ${response?.statusCode}');
+        print('------------------------');
+
         url = response?.data?.secureUrl;
-        print('Upload de foto de perfil concluído. URL recebida: ${url != null}');
       } catch (error, stackTrace) {
         print('Erro no upload da foto de perfil: $error');
         print(stackTrace);
-        return _json(502, {'message': 'Falha ao enviar a imagem para o Cloudinary.'});
+        return _json(
+            502, {'message': 'Falha ao enviar a imagem para o Cloudinary.'});
       } finally {
         if (await tempFile.exists()) await tempFile.delete();
       }
@@ -346,7 +387,6 @@ Future<void> main() async {
 
       return _json(200, {'success': true, 'foto_perfil': url});
     })
-
     ..put('/api/profile', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
@@ -372,7 +412,8 @@ Future<void> main() async {
            FROM usuario WHERE id_usuario = :id_usuario LIMIT 1''',
         {'id_usuario': idUsuario},
       );
-      if (usuarios.rows.isEmpty) return _json(404, {'message': 'Usuário não encontrado.'});
+      if (usuarios.rows.isEmpty)
+        return _json(404, {'message': 'Usuário não encontrado.'});
       final usuario = usuarios.rows.first.assoc();
       return _json(200, {
         'success': true,
@@ -386,14 +427,13 @@ Future<void> main() async {
         },
       });
     });
-    
-
 
   final handler = const Pipeline()
       .addMiddleware(logRequests())
       .addMiddleware(_cors())
       .addHandler(router.call);
-  final server = await shelf_io.serve(handler, InternetAddress.anyIPv4, int.tryParse(env['PORT'] ?? '3000') ?? 3000);
+  final server = await shelf_io.serve(handler, InternetAddress.anyIPv4,
+      int.tryParse(env['PORT'] ?? '3000') ?? 3000);
   print('SnapLock API em http://${server.address.host}:${server.port}');
 }
 
@@ -410,7 +450,6 @@ const _corsHeaders = {
   'access-control-allow-headers': 'Content-Type, Authorization',
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
 };
-
 
 Future<Map<String, dynamic>?> _lerJson(Request request) async {
   try {
@@ -429,7 +468,8 @@ Future<List<int>> _coletarBytes(Stream<List<int>> stream) async {
   return bytes;
 }
 
-Future<String> _coletarString(Stream<List<int>> stream) => utf8.decoder.bind(stream).join();
+Future<String> _coletarString(Stream<List<int>> stream) =>
+    utf8.decoder.bind(stream).join();
 
 String _extensaoPorContentType(String? contentType) {
   switch (contentType) {
@@ -444,17 +484,24 @@ String _extensaoPorContentType(String? contentType) {
   }
 }
 
-Response _json(int status, Map<String, Object?> body) => Response(status, body: jsonEncode(body), headers: {'content-type': 'application/json; charset=utf-8'});
+Response _json(int status, Map<String, Object?> body) => Response(status,
+    body: jsonEncode(body),
+    headers: {'content-type': 'application/json; charset=utf-8'});
 
-bool _emailValido(String email) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+bool _emailValido(String email) =>
+    RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
 
-bool _usernameValido(String username) => RegExp(r'^[a-z0-9_]{3,30}$').hasMatch(username);
+bool _usernameValido(String username) =>
+    RegExp(r'^[a-z0-9_]{3,30}$').hasMatch(username);
 
-bool _senhaValida(String senha) => RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$').hasMatch(senha);
+bool _senhaValida(String senha) =>
+    RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$')
+        .hasMatch(senha);
 
 String _gerarToken() => (100000 + Random.secure().nextInt(900000)).toString();
 
-String _hashToken(String token) => sha256.convert(utf8.encode(token)).toString();
+String _hashToken(String token) =>
+    sha256.convert(utf8.encode(token)).toString();
 
 String _gerarTokenSessao() => base64UrlEncode(
       List<int>.generate(32, (_) => Random.secure().nextInt(256)),
@@ -462,16 +509,19 @@ String _gerarTokenSessao() => base64UrlEncode(
 
 int? _idUsuarioAutenticado(Request request, Map<String, int> sessoes) {
   final authorization = request.headers['authorization'];
-  if (authorization == null || !authorization.startsWith('Bearer ')) return null;
+  if (authorization == null || !authorization.startsWith('Bearer '))
+    return null;
   return sessoes[authorization.substring(7).trim()];
 }
 
-Future<void> _enviarToken(String email, String nomeUsuario, String token) async {
+Future<void> _enviarToken(
+    String email, String nomeUsuario, String token) async {
   final host = env['SMTP_HOST'];
   final username = env['SMTP_USER'];
   final password = env['SMTP_PASSWORD'];
   if (host == null || username == null || password == null) {
-    throw StateError('Configure SMTP_HOST, SMTP_USER e SMTP_PASSWORD para enviar tokens.');
+    throw StateError(
+        'Configure SMTP_HOST, SMTP_USER e SMTP_PASSWORD para enviar tokens.');
   }
   final smtpServer = SmtpServer(
     host,
@@ -513,7 +563,9 @@ Future<void> _enviarToken(String email, String nomeUsuario, String token) async 
 
 bool _dataValida(String value) {
   final data = DateTime.tryParse(value);
-  return data != null && value.length == 10 && data.toIso8601String().startsWith(value);
+  return data != null &&
+      value.length == 10 &&
+      data.toIso8601String().startsWith(value);
 }
 
 bool _idadeMinimaValida(String value) {
