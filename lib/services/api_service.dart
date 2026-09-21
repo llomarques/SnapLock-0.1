@@ -167,16 +167,35 @@ class ApiService {
     }
   }
 
-  static Future<void> changePassword(String currentPassword, String newPassword) async {
+  static Future<void> changePassword(
+    String currentPassword,
+    String newPassword, {
+    String? confirmPassword,
+  }) async {
     final response = await http.put(
       Uri.parse('${ApiConfig.baseUrl}/profile/password'),
       headers: _headers,
-      body: jsonEncode({'currentPassword': currentPassword, 'newPassword': newPassword}),
+      body: jsonEncode({
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword ?? newPassword,
+      }),
     );
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    Map<String, dynamic> data = {};
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        data = decoded;
+      } else if (decoded is Map) {
+        data = Map<String, dynamic>.from(decoded);
+      }
+    } on FormatException {
+      throw Exception('Resposta inválida da API. Verifique o backend e o token de sessão.');
+    }
+
     if (data['success'] != true) {
-      throw Exception(data['message'] ?? 'Erro ao alterar senha.');
+      throw Exception(data['message'] ?? data['erro'] ?? 'Erro ao alterar senha.');
     }
   }
 

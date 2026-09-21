@@ -387,6 +387,52 @@ Future<void> main() async {
 
       return _json(200, {'success': true, 'foto_perfil': url});
     })
+    ..put('/api/profile/password', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'message': 'JSON inválido.'});
+
+      final senhaAtual = (dados['currentPassword'] ?? '').toString();
+      final novaSenha = (dados['newPassword'] ?? '').toString();
+      final confirmacaoSenha = (dados['confirmPassword'] ?? '').toString();
+
+      if (senhaAtual.isEmpty || !_senhaValida(novaSenha)) {
+        return _json(422, {
+          'message': 'A nova senha deve ter 8 caracteres, uma maiúscula, uma minúscula, um número e um caractere especial.'
+        });
+      }
+      if (novaSenha != confirmacaoSenha) {
+        return _json(422, {'message': 'As senhas novas não conferem.'});
+      }
+
+      final usuarios = await connection.execute(
+        'SELECT senha_hash FROM usuario WHERE id_usuario = :id_usuario AND ativo = 1 LIMIT 1',
+        {'id_usuario': idUsuario},
+      );
+      if (usuarios.rows.isEmpty) {
+        return _json(404, {'message': 'Usuário não encontrado.'});
+      }
+
+      final senhaHash = usuarios.rows.first.assoc()['senha_hash'];
+      if (senhaHash == null || !BCrypt.checkpw(senhaAtual, senhaHash)) {
+        return _json(401, {'message': 'A senha atual está incorreta.'});
+      }
+
+      await connection.execute(
+        'UPDATE usuario SET senha_hash = :senha_hash WHERE id_usuario = :id_usuario AND ativo = 1',
+        {
+          'senha_hash': BCrypt.hashpw(novaSenha, BCrypt.gensalt()),
+          'id_usuario': idUsuario,
+        },
+      );
+
+      return _json(200, {
+        'success': true,
+        'message': 'Senha alterada com sucesso.',
+      });
+    })
     ..put('/api/profile', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});

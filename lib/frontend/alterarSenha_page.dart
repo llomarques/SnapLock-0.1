@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
 import '../services/app_localizations.dart';
+import '../controller/controller.alterarSenha.dart';
 
 class AlterarSenhaPage extends StatefulWidget {
 	const AlterarSenhaPage({super.key});
@@ -10,6 +10,7 @@ class AlterarSenhaPage extends StatefulWidget {
 }
 
 class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
+	final AlterarSenhaController alterarSenhaController = AlterarSenhaController();
 	final senhaAtualController = TextEditingController();
 	final novaSenhaController = TextEditingController();
 	final confirmarSenhaController = TextEditingController();
@@ -34,9 +35,10 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 
 		setState(() => carregando = true);
 		try {
-			await ApiService.changePassword(
-				senhaAtualController.text,
-				novaSenhaController.text,
+			await alterarSenhaController.alterarSenha(
+				senhaAtual: senhaAtualController.text,
+				novaSenha: novaSenhaController.text,
+				confirmacaoSenha: confirmarSenhaController.text,
 			);
 			if (mounted) {
 				ScaffoldMessenger.of(context).showSnackBar(

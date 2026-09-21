@@ -3,6 +3,7 @@ import 'package:snaplock/frontend/personalizarPerfil_page.dart';
 import 'package:snaplock/frontend/login_page.dart';
 
 import '../controller/controller.cadastrar.dart';
+import '../controller/controller.login.dart';
 import '../services/app_localizations.dart';
 
 class CadastroPage extends StatefulWidget {
@@ -72,6 +73,7 @@ class _CadastroPageState extends State<CadastroPage> {
         confirmacaoSenha: confirmaSenha,
         dataNascimento: dataNascimento!,
       );
+      await LoginController().entrar(login: email, senha: senha);
       if (mounted) {
         mostrarMensagem(AppLocalizations.of(context).accountCreated);
         Navigator.pushReplacement(

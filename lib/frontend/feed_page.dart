@@ -10,7 +10,9 @@ import 'pesquisa_page.dart';
 import '../services/app_localizations.dart';
 
 class FeedPage extends StatefulWidget {
-  const FeedPage({super.key});
+  final int initialIndex;
+
+  const FeedPage({super.key, this.initialIndex = 0});
 
   @override
   State<FeedPage> createState() => _FeedPage();
@@ -81,7 +83,7 @@ class FeedConteudoPage extends StatelessWidget {
 }
 
 class _FeedPage extends State<FeedPage> {
-  int indice = 0;
+   late int indice;
 
   final telas = const [
     FeedConteudoPage(),
@@ -90,6 +92,12 @@ class _FeedPage extends State<FeedPage> {
     DumpPage(),
     PerfilPage()
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    indice = widget.initialIndex.clamp(0, telas.length - 1);
+  }
 
     void abrirConfiguracoes() {
    Navigator.push(

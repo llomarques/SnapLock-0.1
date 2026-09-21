@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:snaplock/frontend/feed_page.dart';
 import '../services/app_localizations.dart';
+import '../controller/controller.login.dart';
 
 class personalizarPerfilPage extends StatefulWidget {
   const personalizarPerfilPage({super.key});
@@ -18,6 +19,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
 
   Uint8List? fotoPerfil;
   bool selecionandoImagem = false;
+  bool salvando = false;
 
   Future<void> escolherDaGaleria() async {
     if (selecionandoImagem) {
@@ -63,15 +65,48 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
     );
   }
 
-  void personalizarPerfil() {
+  Future<void> personalizarPerfil() async {
     final biografia = biografiaController.text.trim();
     if (fotoPerfil == null && biografia.isEmpty) {
       abrirFeed();
       return;
     }
 
-    // A foto e a biografia ficam prontas para serem persistidas quando o usuário estiver autenticado.
-    abrirFeed();
+    if (salvando) return;
+    setState(() => salvando = true);
+
+    try {
+      String? novaFotoUrl;
+      if (fotoPerfil != null) {
+        novaFotoUrl = await LoginController.atualizarFotoPerfil(fotoPerfil!);
+      }
+
+      final nome = LoginController.usuarioAtual?['name']?.toString() ?? '';
+      final resposta = await LoginController.atualizarPerfil(
+        nome: nome,
+        biografia: biografia,
+      );
+
+      if (novaFotoUrl != null && resposta['user'] is Map<String, dynamic>) {
+        (resposta['user'] as Map<String, dynamic>)['avatarUrl'] = novaFotoUrl;
+      }
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const FeedPage(initialIndex: 4),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => salvando = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
+      }
+    }
   }
 
   @override
@@ -178,13 +213,19 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               height: 25,
             ),
             ElevatedButton(
-              onPressed: personalizarPerfil,
+              onPressed: salvando ? null : personalizarPerfil,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: Color(0xFFF3E9DC),
                 minimumSize: const Size.fromHeight(50),
               ),
-              child: Text(AppLocalizations.of(context).customize),
+              child: salvando
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(AppLocalizations.of(context).customize),
             ),
             const SizedBox(height: 55),
             Align(
