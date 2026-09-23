@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
-import 'editarPerfil_page.dart' hide IconButton;
 import 'package:snaplock/services/api_service.dart';
 import 'editarPerfil_page.dart';
 import '../../controller/controller.login.dart';
@@ -23,6 +22,7 @@ class _PerfilPage extends State<PerfilPage> {
   int quantidadeFotos = 0;
   String nomeUsuario = '';
   String username = '';
+  String fotoPerfilUrl = '';
 
   @override
   void initState() {
@@ -30,6 +30,7 @@ class _PerfilPage extends State<PerfilPage> {
     final usuario = LoginController.usuarioAtual;
     nomeUsuario = usuario?['name']?.toString() ?? '';
     username = usuario?['username']?.toString() ?? '';
+    fotoPerfilUrl = usuario?['avatarUrl']?.toString() ?? '';
     biografiaController.text = usuario?['bio']?.toString() ?? '';
     carregarQuantidadeAmigos();
     carregarQuantidadeFotos();
@@ -74,6 +75,7 @@ class _PerfilPage extends State<PerfilPage> {
         builder: (context) => EditarPerfilPage(
           nomeInicial: nomeUsuario,
           biografiaInicial: biografiaController.text,
+          fotoPerfilUrlInicial: fotoPerfilUrl,
         ),
       ),
     );
@@ -82,9 +84,20 @@ class _PerfilPage extends State<PerfilPage> {
       setState(() {
         nomeUsuario = usuario['name']?.toString() ?? nomeUsuario;
         username = usuario['username']?.toString() ?? username;
+        fotoPerfilUrl = usuario['avatarUrl']?.toString() ?? fotoPerfilUrl;
         biografiaController.text = usuario['bio']?.toString() ?? '';
       });
     }
+  }
+
+  ImageProvider<Object> get imagemPerfil {
+    if (fotoPerfil != null) {
+      return MemoryImage(fotoPerfil!);
+    }
+    if (fotoPerfilUrl.isNotEmpty) {
+      return NetworkImage(fotoPerfilUrl);
+    }
+    return const AssetImage('assets/images/monalisaPerfil.png');
   }
 
   @override
@@ -138,12 +151,12 @@ class _PerfilPage extends State<PerfilPage> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(14),
                       child: Image(
-                        image: fotoPerfil != null
-                            ? MemoryImage(fotoPerfil!)
-                            : const AssetImage(
-                                'assets/images/monalisaPerfil.png',
-                              ) as ImageProvider,
+                        image: imagemPerfil,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Image.asset(
+                          'assets/images/monalisaPerfil.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),

@@ -5,6 +5,7 @@ import 'esqueceuSenha_page.dart';
 import 'feed_page.dart';
 import '../../controller/controller.login.dart';
 import 'package:snaplock/frontend/utils/mensagem_utils.dart';
+import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -109,37 +110,10 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(
               height: 15,
             ),
-            TextField(
-              controller: senhaController,
-              obscureText: esconderSenha,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFD7CBBD),
-                hintText: 'Digite sua senha',
-                prefixIcon: const Icon(
-                  Icons.lock,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        esconderSenha = !esconderSenha;
-                      });
-                    },
-                    icon: Icon(
-                      esconderSenha ? Icons.visibility : Icons.visibility_off,
-                      color: Color(0xFF5E3023),
-                    )),
-              ),
-            ),
+            InputsenhaWidget(
+							controller: senhaController,
+							texto: 'Digite sua senha',
+						),
             const SizedBox(
               height: 10,
             ),

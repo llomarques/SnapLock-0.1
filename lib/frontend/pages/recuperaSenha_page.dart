@@ -93,28 +93,4 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
       ),
     );
   }
-
-  InputDecoration _decoracaoSenha(
-    String texto,
-    bool esconderSenha,
-    VoidCallback alternarVisibilidade,
-  ) {
-    return InputDecoration(
-      filled: true,
-      fillColor: const Color(0xFFD7CBBD),
-      hintText: texto,
-      prefixIcon: const Icon(Icons.lock, color: Color(0xFF5E3023)),
-      suffixIcon: IconButton(
-        onPressed: alternarVisibilidade,
-        icon: Icon(
-          esconderSenha ? Icons.visibility : Icons.visibility_off,
-          color: const Color(0xFF5E3023),
-        ),
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-    );
-  }
 }

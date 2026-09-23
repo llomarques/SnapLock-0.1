@@ -3,6 +3,8 @@ import 'package:snaplock/frontend/pages/personalizarPerfil_page.dart';
 import 'package:snaplock/frontend/pages/login_page.dart';
 import 'package:snaplock/frontend/utils/mensagem_utils.dart';
 import '../../controller/controller.cadastrar.dart';
+import '../../controller/controller.login.dart';
+import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -67,6 +69,7 @@ class _CadastroPageState extends State<CadastroPage> {
         confirmacaoSenha: confirmaSenha,
         dataNascimento: dataNascimento!,
       );
+      await LoginController().entrar(login: email, senha: senha);
       if (mounted) {
         mostrarMensagem(context, 'Usuario cadastrado com sucesso');
         Navigator.pushReplacement(
@@ -191,7 +194,7 @@ class _CadastroPageState extends State<CadastroPage> {
                 fillColor: const Color(0xFFD7CBBD),
                 hintText: dataNascimento == null
                     ? 'Digite sua data de nascimento'
-                    : 'Nascimento: ${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}',
+                    : '${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}',
                 prefixIcon: const Icon(
                   Icons.cake,
                   color: Color(0xFF5E3023),
@@ -229,70 +232,15 @@ class _CadastroPageState extends State<CadastroPage> {
               ),
             ),
             const SizedBox(height: 15),
-            TextField(
-              controller: senhaController,
-              obscureText: esconderSenha,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFD7CBBD),
-                hintText: 'Digite sua senha',
-                prefixIcon: const Icon(
-                  Icons.lock,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        esconderSenha = !esconderSenha;
-                      });
-                    },
-                    icon: Icon(
-                      esconderSenha ? Icons.visibility : Icons.visibility_off,
-                      color: Color(0xFF5E3023),
-                    )),
-              ),
-            ),
+            InputsenhaWidget(
+							controller: senhaController,
+							texto: 'Digite sua senha',
+						),
             const SizedBox(height: 15),
-            TextField(
-              controller: confirmaSenhaController,
-              obscureText: esconderAfirmacao,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFD7CBBD),
-                hintText: 'Confirmar senha',
-                prefixIcon: const Icon(
-                  Icons.lock,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      esconderAfirmacao = !esconderAfirmacao;
-                    });
-                  },
-                  icon: Icon(
-                    esconderAfirmacao ? Icons.visibility : Icons.visibility_off,
-                    color: Color(0xFF5E3023),
-                  ),
-                ),
-              ),
-            ),
+            InputsenhaWidget(
+							controller: confirmaSenhaController,
+							texto: 'Confirme sua senha',
+						),
             const SizedBox(height: 25),
             ElevatedButton.icon(
               onPressed: carregando ? null : cadastrar,

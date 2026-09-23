@@ -67,6 +67,7 @@ set "SMTP_PASSWORD=senha-de-aplicativo-do-google"
 set "SMTP_PORT=587"
 
 dart run bin\server.dart
+
 ```
 
 Para Gmail, `SMTP_USER` é o e-mail que enviará as mensagens. `SMTP_PASSWORD` deve ser uma senha de aplicativo de 16 caracteres, não a senha normal da conta. Crie-a em <https://myaccount.google.com/apppasswords> com a verificação em duas etapas ativada.
