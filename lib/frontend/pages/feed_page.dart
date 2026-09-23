@@ -7,7 +7,6 @@ import 'dump_page.dart';
 import 'perfil_page.dart';
 import 'configuracoes_page.dart';
 import 'pesquisa_page.dart';
-import '../../services/app_localizations.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -75,7 +74,7 @@ class FeedConteudoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(AppLocalizations.of(context).feed),
+      child: const Text('Feed'),
     );
   }
 }
@@ -117,7 +116,7 @@ class _FeedPage extends State<FeedPage> {
             ),
             ListTile(
               leading: const Icon(Icons.person),
-              title: Text(AppLocalizations.of(context).profile),
+              title: const Text('Perfil'),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => indice = 4);
@@ -125,7 +124,7 @@ class _FeedPage extends State<FeedPage> {
             ),
             ListTile(
               leading: const Icon(Icons.notifications),
-              title: Text(AppLocalizations.of(context).notifications),
+              title: const Text('Notificações'),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => indice = 1);
@@ -133,14 +132,14 @@ class _FeedPage extends State<FeedPage> {
             ),
             ListTile(
               leading: const Icon(Icons.settings),
-              title: Text(AppLocalizations.of(context).settings),
+              title: const Text('Configurações'),
               onTap: () {
                 abrirConfiguracoes();
               },
             ),
             ListTile(
               leading: const Icon(Icons.call),
-              title: Text(AppLocalizations.of(context).helpAndSupport),
+              title: const Text('Ajuda e suporte'),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => indice = 0);
@@ -148,7 +147,7 @@ class _FeedPage extends State<FeedPage> {
             ),
             ListTile(
               leading: const Icon(Icons.logout),
-              title: Text(AppLocalizations.of(context).logoutShort),
+              title: const Text('Sair'),
               onTap: () {
                 Navigator.pushReplacement(
                   context,

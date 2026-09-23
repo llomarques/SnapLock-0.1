@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:snaplock/frontend/pages/feed_page.dart';
-import '../../services/app_localizations.dart';
 
 class personalizarPerfilPage extends StatefulWidget {
   const personalizarPerfilPage({super.key});
@@ -46,7 +45,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
     } on PlatformException catch (error) {
       if (mounted && error.code != 'already_active') {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context).imageSelectionError)),
+          const SnackBar(content: Text('Não foi possível selecionar a imagem.')),
         );
       }
     } finally {
@@ -92,7 +91,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
             const SizedBox(
               height: 60,
             ),
-            Text(AppLocalizations.of(context).customizeProfile),
+            const Text('Personalizar perfil'),
             const SizedBox(
               height: 30,
             ),
@@ -130,8 +129,8 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
                     )
                   : const Icon(Icons.camera_alt),
                 label: Text(selecionandoImagem
-                  ? AppLocalizations.of(context).openingGallery
-                  : AppLocalizations.of(context).addPhoto),
+                  ? 'Abrindo galeria...'
+                  : 'Adicionar foto'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: Color(0xFFF3E9DC),
@@ -145,7 +144,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typeBio,
+                hintText: 'Digite sua biografia',
                 prefixIcon: const Icon(
                   Icons.chat_bubble,
                   color: Color(0xFF5E3023),
@@ -168,7 +167,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               child: GestureDetector(
                 onTap: abrirFeed,
                 child: Text(
-                  AppLocalizations.of(context).later,
+                  'Deixar para mais tarde',
                   style: TextStyle(
                       color: Color(0xFF895737), fontWeight: FontWeight.w900),
                 ),
@@ -184,7 +183,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
                 foregroundColor: Color(0xFFF3E9DC),
                 minimumSize: const Size.fromHeight(50),
               ),
-              child: Text(AppLocalizations.of(context).customize),
+              child: const Text('Personalizar'),
             ),
             const SizedBox(height: 55),
             Align(

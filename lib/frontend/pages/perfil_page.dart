@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'editarPerfil_page.dart' hide IconButton;
-import '../../services/app_localizations.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'editarPerfil_page.dart';
 import '../../controller/controller.login.dart';
@@ -113,7 +112,7 @@ class _PerfilPage extends State<PerfilPage> {
               Expanded(
                 child: Center(
                   child: Text(
-                    '$quantidadeAmigos\n${AppLocalizations.of(context).friends}',
+                    '$quantidadeAmigos\nAmigos',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 17,
@@ -168,7 +167,7 @@ class _PerfilPage extends State<PerfilPage> {
               Expanded(
                 child: Center(
                   child: Text(
-                    '$quantidadeFotos\n${AppLocalizations.of(context).memories}',
+                    '$quantidadeFotos\nMemórias',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 17,
@@ -212,7 +211,7 @@ class _PerfilPage extends State<PerfilPage> {
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: const Color(0xFFD7CBBD),
-                  hintText: AppLocalizations.of(context).biography,
+                  hintText: 'Biografia',
                   prefixIcon: const Icon(
                     Icons.chat_bubble,
                     color: Color(0xFF5E3023),

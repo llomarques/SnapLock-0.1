@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../services/app_localizations.dart';
 
 class SobreNosPage extends StatelessWidget {
   const SobreNosPage({super.key});
@@ -9,7 +8,7 @@ class SobreNosPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF3E9DC),
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).about),
+        title: const Text('Sobre nós'),
         backgroundColor: const Color(0xFFF3E9DC),
       ),
       body: SingleChildScrollView(

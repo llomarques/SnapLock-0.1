@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
-import 'package:snaplock/services/app_localizations.dart';
 import 'alterarSenha_page.dart';
 import 'sobreNos_page.dart';
 
@@ -26,14 +25,14 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF3E9DC),
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).settings),
+        title: const Text('Configurações'),
         backgroundColor: const Color(0xFFF3E9DC),
       ),
       body: ListView(
         children: [
           ListTile(
             leading: const Icon(Icons.notifications),
-            title: Text(AppLocalizations.of(context).notifications),
+            title: const Text('Notificações'),
             trailing: Transform.scale(
               scale: 0.8,
               child: Switch(
@@ -51,17 +50,17 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
           ),
           ListTile(
             leading: const Icon(Icons.palette),
-            title: Text(AppLocalizations.of(context).theme),
+            title: const Text('Tema'),
             onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.visibility),
-            title: Text(AppLocalizations.of(context).viewControl),
+            title: const Text('Controle de visualizações'),
             onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.lock),
-            title: Text(AppLocalizations.of(context).changePassword),
+            title: const Text('Alterar senha'),
             onTap: () {
               Navigator.push(
                 context,
@@ -73,17 +72,17 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
           ),
           ListTile(
             leading: const Icon(Icons.call),
-            title: Text(AppLocalizations.of(context).help),
+            title: const Text('Ajuda e suporte'),
             onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.info),
-            title: Text(AppLocalizations.of(context).about),
+            title: const Text('Sobre nós'),
             onTap: abrirSobreNos,
           ),
           ListTile(
             leading: const Icon(Icons.logout),
-            title: Text(AppLocalizations.of(context).logout),
+            title: const Text('Sair da conta'),
             onTap: () {
               Navigator.pushReplacement(
                 context,
@@ -96,7 +95,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
           ListTile(
             leading: const Icon(Icons.delete, color: Colors.red),
             title: Text(
-              AppLocalizations.of(context).deleteAccount,
+              'Deletar conta',
               style: const TextStyle(color: Colors.red),
             ),
             onTap: () {},

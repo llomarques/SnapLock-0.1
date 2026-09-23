@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../services/app_localizations.dart';
 
 class NotificacoesPage extends StatefulWidget {
   const NotificacoesPage({super.key});
@@ -36,7 +35,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(AppLocalizations.of(context).notifications),
+      child: const Text('Notificações'),
     );
   }
 }

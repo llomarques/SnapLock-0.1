@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/frontend/pages/personalizarPerfil_page.dart';
 import 'package:snaplock/frontend/pages/login_page.dart';
-
+import 'package:snaplock/frontend/utils/mensagem_utils.dart';
 import '../../controller/controller.cadastrar.dart';
-import '../../services/app_localizations.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -25,11 +24,7 @@ class _CadastroPageState extends State<CadastroPage> {
   bool carregando = false;
   DateTime? dataNascimento;
 
-  void mostrarMensagem(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem)),
-    );
-  }
+  
 
   Future<void> cadastrar() async {
     String nome = nomeController.text.trim();
@@ -43,22 +38,22 @@ class _CadastroPageState extends State<CadastroPage> {
         email.isEmpty ||
         senha.isEmpty ||
         confirmaSenha.isEmpty) {
-      mostrarMensagem(AppLocalizations.of(context).fillAllFields);
+      mostrarMensagem(context, 'Preencha todos os campos');
       return;
     }
 
     if (!email.contains('@')) {
-      mostrarMensagem(AppLocalizations.of(context).invalidEmail);
+      mostrarMensagem(context, 'Digite um e-mail valido');
       return;
     }
 
     if (dataNascimento == null) {
-      mostrarMensagem(AppLocalizations.of(context).selectBirthdate);
+      mostrarMensagem(context, 'Selecione sua data de nascimento');
       return;
     }
 
     if (senha != confirmaSenha) {
-      mostrarMensagem(AppLocalizations.of(context).passwordsDoNotMatch);
+      mostrarMensagem(context, 'As senhas nao coincidem.');
       return;
     }
 
@@ -73,7 +68,7 @@ class _CadastroPageState extends State<CadastroPage> {
         dataNascimento: dataNascimento!,
       );
       if (mounted) {
-        mostrarMensagem(AppLocalizations.of(context).accountCreated);
+        mostrarMensagem(context, 'Usuario cadastrado com sucesso');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -82,7 +77,7 @@ class _CadastroPageState extends State<CadastroPage> {
         );
       }
     } catch (error) {
-      if (mounted) mostrarMensagem(error.toString());
+      if (mounted) mostrarMensagem(context, error.toString());
     } finally {
       if (mounted) setState(() => carregando = false);
     }
@@ -152,7 +147,7 @@ class _CadastroPageState extends State<CadastroPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typeName,
+                hintText: 'Digite seu nome',
                 prefixIcon: const Icon(
                   Icons.person,
                   color: Color(0xFF5E3023),
@@ -173,7 +168,7 @@ class _CadastroPageState extends State<CadastroPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typeUsername,
+                hintText: 'Digite seu username',
                 prefixIcon:
                     const Icon(Icons.alternate_email, color: Color(0xFF5E3023)),
                 border: OutlineInputBorder(
@@ -195,8 +190,8 @@ class _CadastroPageState extends State<CadastroPage> {
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
                 hintText: dataNascimento == null
-                    ? AppLocalizations.of(context).typeBirthdate
-                    : '${AppLocalizations.of(context).birthdate}: ${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}',
+                    ? 'Digite sua data de nascimento'
+                    : 'Nascimento: ${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}',
                 prefixIcon: const Icon(
                   Icons.cake,
                   color: Color(0xFF5E3023),
@@ -218,7 +213,7 @@ class _CadastroPageState extends State<CadastroPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typeEmail,
+                hintText: 'Digite seu e-mail',
                 prefixIcon: const Icon(
                   Icons.email,
                   color: Color(0xFF5E3023),
@@ -240,7 +235,7 @@ class _CadastroPageState extends State<CadastroPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typePassword,
+                hintText: 'Digite sua senha',
                 prefixIcon: const Icon(
                   Icons.lock,
                   color: Color(0xFF5E3023),
@@ -272,7 +267,7 @@ class _CadastroPageState extends State<CadastroPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).confirmPassword,
+                hintText: 'Confirmar senha',
                 prefixIcon: const Icon(
                   Icons.lock,
                   color: Color(0xFF5E3023),
@@ -311,13 +306,13 @@ class _CadastroPageState extends State<CadastroPage> {
                       height: 18,
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white))
-                  : Text(AppLocalizations.of(context).register, style: const TextStyle(fontSize: 14)),
+                  : const Text('Cadastrar', style: TextStyle(fontSize: 14)),
             ),
             const SizedBox(height: 10),
             GestureDetector(
                 onTap: () => abrirLogin(context),
                 child: Text(
-                  AppLocalizations.of(context).alreadyAccount,
+                  'Ja tenho uma conta',
                   style: TextStyle(
                     color: Color(0xFF895737),
                     fontWeight: FontWeight.bold, // Opcional: sublinha a palavra
