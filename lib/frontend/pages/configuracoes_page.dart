@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:snaplock/frontend/inicio_page.dart';
-import 'package:snaplock/services/app_language.dart';
+import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'package:snaplock/services/app_localizations.dart';
 import 'alterarSenha_page.dart';
 import 'sobreNos_page.dart';
@@ -14,54 +13,6 @@ class ConfiguracoesPage extends StatefulWidget {
 
 class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
   bool notificacoesAtivas = true;
-
-  Future<void> selecionarIdioma() async {
-    final idioma = await showDialog<String>(
-      context: context,
-      builder: (context) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme.copyWith(
-            primary: const Color(0xFF895737),
-            secondary: const Color(0xFFC08552),
-            surface: const Color(0xFFF3E9DC),
-          ),
-          dialogTheme: const DialogThemeData(
-            backgroundColor: Color(0xFFF3E9DC),
-            surfaceTintColor: Colors.transparent,
-          ),
-        ),
-        child: AlertDialog(
-          title: Text(AppLocalizations.of(context).appLanguage),
-          content: RadioGroup<String>(
-            groupValue: appLanguage.locale.languageCode,
-            onChanged: (valor) => Navigator.pop(context, valor),
-            child: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                RadioListTile<String>(
-                  title: Text('Português (Brasil)'),
-                  value: 'pt',
-                ),
-                RadioListTile<String>(
-                  title: Text('English'),
-                  value: 'en',
-                ),
-                RadioListTile<String>(
-                  title: Text('Español'),
-                  value: 'es',
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    if (idioma != null && mounted) {
-      await appLanguage.setLocale(Locale(idioma));
-      setState(() {});
-    }
-  }
 
   void abrirSobreNos() {
     Navigator.push(
@@ -107,12 +58,6 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
             leading: const Icon(Icons.visibility),
             title: Text(AppLocalizations.of(context).viewControl),
             onTap: () {},
-          ),
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: Text(AppLocalizations.of(context).language),
-            subtitle: Text(appLanguage.languageName),
-            onTap: selecionarIdioma,
           ),
           ListTile(
             leading: const Icon(Icons.lock),

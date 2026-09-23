@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../services/app_localizations.dart';
+import '../../services/api_service.dart';
+import '../../services/app_localizations.dart';
 
 class AlterarSenhaPage extends StatefulWidget {
 	const AlterarSenhaPage({super.key});

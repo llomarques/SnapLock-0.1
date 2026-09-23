@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:snaplock/frontend/login_page.dart';
+import 'package:snaplock/frontend/pages/login_page.dart';
 import 'cadastro_page.dart';
-import 'package:snaplock/frontend/carrossel.dart';
+import 'package:snaplock/frontend/utils/carrossel.dart';
 import 'package:snaplock/theme/app_fonts.dart';
 import 'package:snaplock/services/app_localizations.dart';
 

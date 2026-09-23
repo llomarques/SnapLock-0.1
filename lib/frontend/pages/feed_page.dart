@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:snaplock/frontend/inicio_page.dart';
+import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'notificacoes_page.dart';
 import 'postar_page.dart';
 import 'dump_page.dart';
 import 'perfil_page.dart';
 import 'configuracoes_page.dart';
 import 'pesquisa_page.dart';
-import '../services/app_localizations.dart';
+import '../../services/app_localizations.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});

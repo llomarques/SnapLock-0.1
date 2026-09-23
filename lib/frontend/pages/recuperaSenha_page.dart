@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../controller/controller.cadastrar.dart';
-import '../services/app_localizations.dart';
+import '../../controller/controller.cadastrar.dart';
+import '../../services/app_localizations.dart';
 
 class RecuperaSenhaPage extends StatefulWidget {
   final String email;

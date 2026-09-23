@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/app_localizations.dart';
+import '../../services/app_localizations.dart';
 
 class DumpPage extends StatefulWidget {
   const DumpPage({super.key});

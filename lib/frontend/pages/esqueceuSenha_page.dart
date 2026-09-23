@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/theme/app_fonts.dart';
-import '../controller/controller.cadastrar.dart';
+import '../../controller/controller.cadastrar.dart';
 import 'recuperaSenha_page.dart';
-import '../services/app_localizations.dart';
+import '../../services/app_localizations.dart';
 
 class esqueceuSenhaPage extends StatefulWidget {
   const esqueceuSenhaPage({super.key});

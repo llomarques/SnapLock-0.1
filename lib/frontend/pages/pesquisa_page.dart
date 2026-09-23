@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:snaplock/frontend/feed_page.dart';
-import '../services/app_localizations.dart';
+import 'package:snaplock/frontend/pages/feed_page.dart';
+import '../../services/app_localizations.dart';
 
 class PesquisaPage extends StatefulWidget {
   const PesquisaPage({super.key});

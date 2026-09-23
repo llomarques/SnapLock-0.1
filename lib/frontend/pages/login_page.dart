@@ -3,8 +3,8 @@ import 'package:flutter/gestures.dart';
 import 'cadastro_page.dart';
 import 'esqueceuSenha_page.dart';
 import 'feed_page.dart';
-import '../controller/controller.login.dart';
-import '../services/app_localizations.dart';
+import '../../controller/controller.login.dart';
+import '../../services/app_localizations.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

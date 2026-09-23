@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:snaplock/frontend/personalizarPerfil_page.dart';
-import 'package:snaplock/frontend/login_page.dart';
+import 'package:snaplock/frontend/pages/personalizarPerfil_page.dart';
+import 'package:snaplock/frontend/pages/login_page.dart';
 
-import '../controller/controller.cadastrar.dart';
-import '../services/app_localizations.dart';
+import '../../controller/controller.cadastrar.dart';
+import '../../services/app_localizations.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});

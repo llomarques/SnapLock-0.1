@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'editarPerfil_page.dart' hide IconButton;
-import '../services/app_localizations.dart';
+import '../../services/app_localizations.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'editarPerfil_page.dart';
-import '../controller/controller.login.dart';
+import '../../controller/controller.login.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -184,9 +184,8 @@ class _PerfilPage extends State<PerfilPage> {
             height: 15,
           ),
           Text(
-            AppLocalizations.of(context).name,
             nomeUsuario,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.black,
               fontSize: 13,
               fontWeight: FontWeight.bold,
@@ -197,7 +196,7 @@ class _PerfilPage extends State<PerfilPage> {
           ),
           Text(
             username.isEmpty ? '@username' : '@$username',
-            style: TextStyle(color: Colors.black, fontSize: 10),
+            style: const TextStyle(color: Colors.black, fontSize: 10),
           ),
           const SizedBox(
             height: 20,

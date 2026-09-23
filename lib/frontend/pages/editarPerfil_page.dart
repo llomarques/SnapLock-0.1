@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
-import '../services/app_localizations.dart';
-import '../controller/controller.login.dart';
+import '../../services/app_localizations.dart';
+import '../../controller/controller.login.dart';
 
 class EditarPerfilPage extends StatefulWidget {
   final String nomeInicial;

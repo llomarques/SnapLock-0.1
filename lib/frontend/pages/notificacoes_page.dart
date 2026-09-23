@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/app_localizations.dart';
+import '../../services/app_localizations.dart';
 
 class NotificacoesPage extends StatefulWidget {
   const NotificacoesPage({super.key});
