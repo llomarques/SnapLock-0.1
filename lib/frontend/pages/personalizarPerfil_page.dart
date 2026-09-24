@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:snaplock/frontend/pages/feed_page.dart';
+import 'package:snaplock/frontend/utils/foto_utils.dart';
 import '../../controller/controller.login.dart';
 import 'package:snaplock/frontend/widgets/input_widget.dart';
 
@@ -15,8 +15,6 @@ class personalizarPerfilPage extends StatefulWidget {
 class _personalizarPerfilPage extends State<personalizarPerfilPage> {
   final TextEditingController biografiaController = TextEditingController();
 
-  final ImagePicker picker = ImagePicker();
-
   Uint8List? fotoPerfil;
   bool selecionandoImagem = false;
   bool salvando = false;
@@ -28,15 +26,11 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
 
     setState(() => selecionandoImagem = true);
     try {
-      final XFile? imagem = await picker.pickImage(
-        source: ImageSource.gallery,
-      );
+      final bytes = await FotoUtils.selecionarDaGaleria();
 
-      if (imagem == null) {
+      if (bytes == null) {
         return;
       }
-
-      final bytes = await imagem.readAsBytes();
 
       if (!mounted) {
         return;

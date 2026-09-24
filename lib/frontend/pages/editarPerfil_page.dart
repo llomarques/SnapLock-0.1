@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
-import 'package:image_picker/image_picker.dart';
 import '../../controller/controller.login.dart';
 import 'package:snaplock/frontend/widgets/input_widget.dart';
+import 'package:snaplock/frontend/utils/foto_utils.dart';
 
 class EditarPerfilPage extends StatefulWidget {
   final String nomeInicial;
@@ -26,7 +26,6 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
   final TextEditingController nomeController = TextEditingController();
   final TextEditingController usuarioController = TextEditingController();
   final TextEditingController biografiaController = TextEditingController();
-  final ImagePicker picker = ImagePicker();
   Uint8List? fotoPerfil;
   bool salvando = false;
 
@@ -78,17 +77,9 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
 }
 
   Future<void> escolherDaGaleria() async {
-    final XFile? imagem = await picker.pickImage(
-      source: ImageSource.gallery,
-    );
+    final bytes = await FotoUtils.selecionarDaGaleria();
 
-    if (imagem == null) {
-      return;
-    }
-
-    final bytes = await imagem.readAsBytes();
-
-    if (!mounted) {
+    if (bytes == null || !mounted) {
       return;
     }
 

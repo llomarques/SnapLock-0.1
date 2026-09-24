@@ -61,6 +61,16 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 	Widget build(BuildContext context) {
 		return Scaffold(
 			backgroundColor: const Color(0xFFF3E9DC),
+			appBar: AppBar(
+				backgroundColor: const Color(0xFFF3E9DC),
+				 elevation: 0,
+				leading: IconButton(
+					onPressed: () => Navigator.pop(context),
+					icon: const Icon(Icons.arrow_back),
+					color: const Color(0xFF5E3023),
+					tooltip: 'Voltar',
+				),
+			),
 			body: SingleChildScrollView(
 				padding: const EdgeInsets.all(16),
 				child: Column(
