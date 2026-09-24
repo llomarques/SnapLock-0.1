@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:snaplock/frontend/feed_page.dart';
-import '../services/app_localizations.dart';
-import '../controller/controller.login.dart';
+import 'package:snaplock/frontend/pages/feed_page.dart';
+import '../../controller/controller.login.dart';
+import 'package:snaplock/frontend/widgets/input_widget.dart';
 
 class personalizarPerfilPage extends StatefulWidget {
   const personalizarPerfilPage({super.key});
@@ -48,7 +48,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
     } on PlatformException catch (error) {
       if (mounted && error.code != 'already_active') {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context).imageSelectionError)),
+          const SnackBar(content: Text('Não foi possível selecionar a imagem.')),
         );
       }
     } finally {
@@ -127,7 +127,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
             const SizedBox(
               height: 60,
             ),
-            Text(AppLocalizations.of(context).customizeProfile),
+            const Text('Personalizar perfil'),
             const SizedBox(
               height: 30,
             ),
@@ -165,8 +165,8 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
                     )
                   : const Icon(Icons.camera_alt),
                 label: Text(selecionandoImagem
-                  ? AppLocalizations.of(context).openingGallery
-                  : AppLocalizations.of(context).addPhoto),
+                  ? 'Abrindo galeria...'
+                  : 'Adicionar foto'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: Color(0xFFF3E9DC),
@@ -175,25 +175,13 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
             const SizedBox(
               height: 20,
             ),
-            TextField(
+            InputWidget(
               controller: biografiaController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typeBio,
-                prefixIcon: const Icon(
-                  Icons.chat_bubble,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite sua biografia',
+              icon: Icons.chat_bubble,
+              maximoCaracteres: 150,
+			  linhasMinimas: 3,
+			  linhasMaximas: 6,
             ),
             const SizedBox(
               height: 20,
@@ -203,7 +191,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               child: GestureDetector(
                 onTap: abrirFeed,
                 child: Text(
-                  AppLocalizations.of(context).later,
+                  'Deixar para mais tarde',
                   style: TextStyle(
                       color: Color(0xFF895737), fontWeight: FontWeight.w900),
                 ),
@@ -219,13 +207,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
                 foregroundColor: Color(0xFFF3E9DC),
                 minimumSize: const Size.fromHeight(50),
               ),
-              child: salvando
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(AppLocalizations.of(context).customize),
+              child: const Text('Personalizar'),
             ),
             const SizedBox(height: 55),
             Align(

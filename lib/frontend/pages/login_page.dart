@@ -3,8 +3,10 @@ import 'package:flutter/gestures.dart';
 import 'cadastro_page.dart';
 import 'esqueceuSenha_page.dart';
 import 'feed_page.dart';
-import '../controller/controller.login.dart';
-import '../services/app_localizations.dart';
+import '../../controller/controller.login.dart';
+import 'package:snaplock/frontend/utils/mensagem_utils.dart';
+import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
+import 'package:snaplock/frontend/widgets/input_widget.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,11 +22,6 @@ class _LoginPageState extends State<LoginPage> {
 
   bool esconderSenha = true;
   bool carregando = false;
-  void mostrarMensagem(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem)),
-    );
-  }
 
   Future<void> entrar() async {
     String login = loginControllerTexto.text.trim();
@@ -32,7 +29,8 @@ class _LoginPageState extends State<LoginPage> {
 
     if (login.isEmpty || senha.isEmpty) {
       mostrarMensagem(
-        AppLocalizations.of(context).fillLogin,
+        context,
+        'Preencha o e-mail/username e a senha.',
       );
       return;
     }
@@ -46,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
         MaterialPageRoute(builder: (_) => const FeedPage()),
       );
     } catch (error) {
-      if (mounted) mostrarMensagem(error.toString());
+      if (mounted) mostrarMensagem(context, error.toString());
     } finally {
       if (mounted) setState(() => carregando = false);
     }
@@ -89,61 +87,18 @@ class _LoginPageState extends State<LoginPage> {
               height: 250,
             ),
             const SizedBox(height: 20),
-            TextField(
+            InputWidget(
               controller: loginControllerTexto,
-              keyboardType: TextInputType.text,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typeEmailOrUsername,
-                prefixIcon: const Icon(
-                  Icons.person,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite seu e-mail ou usuário',
+              icon: Icons.person,
             ),
             const SizedBox(
               height: 15,
             ),
-            TextField(
-              controller: senhaController,
-              obscureText: esconderSenha,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typePassword,
-                prefixIcon: const Icon(
-                  Icons.lock,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        esconderSenha = !esconderSenha;
-                      });
-                    },
-                    icon: Icon(
-                      esconderSenha ? Icons.visibility : Icons.visibility_off,
-                      color: Color(0xFF5E3023),
-                    )),
-              ),
-            ),
+            InputsenhaWidget(
+							controller: senhaController,
+							texto: 'Digite sua senha',
+						),
             const SizedBox(
               height: 10,
             ),
@@ -154,7 +109,7 @@ class _LoginPageState extends State<LoginPage> {
                   abrirEsqueceuSenha();
                 },
                 child: Text(
-                  AppLocalizations.of(context).forgotPassword,
+                  'Esqueceu a senha?',
                   style: TextStyle(
                     color: Color(0xFF895737),
                     fontWeight: FontWeight.w900
@@ -173,7 +128,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 label: carregando
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text(AppLocalizations.of(context).enter)),
+                  : const Text('Entrar')),
             const SizedBox(
               height: 10,
             ),
@@ -182,10 +137,10 @@ class _LoginPageState extends State<LoginPage> {
                 style: TextStyle(color: Colors.black, fontSize: 16),
                 children: [
                   TextSpan(
-                    text: AppLocalizations.of(context).noAccount,
+                    text: 'Nao tem uma conta? ',
                   ),
                   TextSpan(
-                    text: AppLocalizations.of(context).signUp,
+                    text: 'Cadastre-se',
                     style: TextStyle(
                       color: Color(0xFF895737),
                       fontWeight: FontWeight.bold,

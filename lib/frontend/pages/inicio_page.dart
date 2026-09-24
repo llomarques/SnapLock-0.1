@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:snaplock/frontend/login_page.dart';
+import 'package:snaplock/frontend/pages/login_page.dart';
 import 'cadastro_page.dart';
-import 'package:snaplock/frontend/carrossel.dart';
+import 'package:snaplock/frontend/utils/carrossel.dart';
 import 'package:snaplock/theme/app_fonts.dart';
-import 'package:snaplock/services/app_localizations.dart';
+import 'package:snaplock/frontend/widgets/botoes_widget.dart';
 
 class InicioPage extends StatelessWidget {
   const InicioPage({super.key});
@@ -40,7 +40,7 @@ class InicioPage extends StatelessWidget {
             ),
             const SizedBox(height: 43),
             Text(
-              AppLocalizations.of(context).welcome,
+              'Bem-vindo!',
               textAlign: TextAlign.center,
               style: AppFonts.cormorantBold.copyWith(
                 fontSize: 24,
@@ -58,25 +58,13 @@ class InicioPage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  ElevatedButton(
-                    onPressed: () => abrirLogin(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF895737),
-                      foregroundColor: Color(0xFFF3E9DC),
-                      minimumSize: const Size.fromHeight(50),
-                    ),
-                    child: Text(AppLocalizations.of(context).login),
+                  BotoesWidget(
+                    texto: 'Fazer Login',
+                    aoTocar: () => abrirLogin(context),
                   ),
                   const SizedBox(height: 22),
-                  ElevatedButton(
-                    onPressed: () => abrirCadastro(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF895737),
-                      foregroundColor: Color(0xFFF3E9DC),
-                      minimumSize: const Size.fromHeight(50),
-                    ),
-                    child: Text(AppLocalizations.of(context).createAccount),
-                  ),
+                 BotoesWidget(texto: 'Criar Conta', 
+                 aoTocar: () => abrirCadastro(context))
                 ],
               ),
             ),

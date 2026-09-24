@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-
-import '../controller/controller.cadastrar.dart';
-import '../services/app_localizations.dart';
+import 'package:snaplock/frontend/utils/mensagem_utils.dart';
+import '../../controller/controller.cadastrar.dart';
+import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
 
 class RecuperaSenhaPage extends StatefulWidget {
   final String email;
@@ -25,11 +25,6 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
   bool esconderConfirmarSenha = true;
   bool carregando = false;
 
-  void mostrarMensagem(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem)),
-    );
-  }
 
   Future<void> alterarSenha() async {
     setState(() => carregando = true);
@@ -41,11 +36,11 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
         confirmacaoSenha: confirmarSenhaController.text,
       );
       if (mounted) {
-        mostrarMensagem(AppLocalizations.of(context).passwordChanged);
+        mostrarMensagem(context, 'Senha alterada com sucesso.');
         Navigator.popUntil(context, (route) => route.isFirst);
       }
     } catch (error) {
-      if (mounted) mostrarMensagem(error.toString());
+      if (mounted) mostrarMensagem(context, error.toString());
     } finally {
       if (mounted) setState(() => carregando = false);
     }
@@ -73,27 +68,15 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
               height: 150,
             ),
             const SizedBox(height: 60),
-            TextField(
-              controller: novaSenhaController,
-              obscureText: esconderNovaSenha,
-              decoration: _decoracaoSenha(
-                AppLocalizations.of(context).newPassword,
-                esconderNovaSenha,
-                () => setState(() => esconderNovaSenha = !esconderNovaSenha),
-              ),
-            ),
+            InputsenhaWidget(
+							controller: novaSenhaController,
+							texto: 'Senha atual',
+						),
             const SizedBox(height: 20),
-            TextField(
-              controller: confirmarSenhaController,
-              obscureText: esconderConfirmarSenha,
-              decoration: _decoracaoSenha(
-                AppLocalizations.of(context).confirmPassword,
-                esconderConfirmarSenha,
-                () => setState(
-                  () => esconderConfirmarSenha = !esconderConfirmarSenha,
-                ),
-              ),
-            ),
+            InputsenhaWidget(
+							controller: confirmarSenhaController,
+							texto: 'Senha atual',
+						),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: carregando ? null : alterarSenha,
@@ -103,34 +86,10 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
               ),
               child: carregando
                   ? const CircularProgressIndicator()
-                  : Text(AppLocalizations.of(context).changePassword),
+                  : const Text('Alterar senha'),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  InputDecoration _decoracaoSenha(
-    String texto,
-    bool esconderSenha,
-    VoidCallback alternarVisibilidade,
-  ) {
-    return InputDecoration(
-      filled: true,
-      fillColor: const Color(0xFFD7CBBD),
-      hintText: texto,
-      prefixIcon: const Icon(Icons.lock, color: Color(0xFF5E3023)),
-      suffixIcon: IconButton(
-        onPressed: alternarVisibilidade,
-        icon: Icon(
-          esconderSenha ? Icons.visibility : Icons.visibility_off,
-          color: const Color(0xFF5E3023),
-        ),
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
       ),
     );
   }

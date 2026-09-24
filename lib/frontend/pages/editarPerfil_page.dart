@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
-import '../services/app_localizations.dart';
-import '../controller/controller.login.dart';
+import '../../controller/controller.login.dart';
+import 'package:snaplock/frontend/widgets/input_widget.dart';
 
 class EditarPerfilPage extends StatefulWidget {
   final String nomeInicial;
@@ -24,6 +24,7 @@ class EditarPerfilPage extends StatefulWidget {
 
 class _EditarPerfilPageState extends State<EditarPerfilPage> {
   final TextEditingController nomeController = TextEditingController();
+  final TextEditingController usuarioController = TextEditingController();
   final TextEditingController biografiaController = TextEditingController();
   final ImagePicker picker = ImagePicker();
   Uint8List? fotoPerfil;
@@ -132,7 +133,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Text(AppLocalizations.of(context).editProfile),
+            const Text('Editar perfil'),
             const SizedBox(height: 30),
             Container(
               width: 120,
@@ -160,53 +161,34 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             ElevatedButton.icon(
               onPressed: escolherDaGaleria,
               icon: const Icon(Icons.camera_alt),
-              label: Text(AppLocalizations.of(context).addPhoto),
+              label: const Text('Adicionar foto'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: const Color(0xFFF3E9DC),
               ),
             ),
             const SizedBox(height: 20),
-            TextField(
+            InputWidget(
               controller: nomeController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).name,
-                prefixIcon: const Icon(
-                  Icons.person,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite seu nome',
+              icon: Icons.person,
+              maximoCaracteresSemContador: 20,
             ),
             const SizedBox(height: 20),
-            TextField(
+            InputWidget(
+              controller: usuarioController,
+              texto: 'Digite seu usuário',
+              icon: Icons.alternate_email,
+              maximoCaracteresSemContador: 20,
+            ),
+            const SizedBox(height: 20,),
+            InputWidget(
               controller: biografiaController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).biography,
-                prefixIcon: const Icon(
-                  Icons.chat_bubble,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite sua biografia',
+              icon: Icons.chat_bubble,
+              maximoCaracteres: 150,
+			  linhasMinimas: 3,
+			  linhasMaximas: 6,
             ),
             const SizedBox(height: 25),
             ElevatedButton(
@@ -216,7 +198,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                 foregroundColor: const Color(0xFFF3E9DC),
                 minimumSize: const Size.fromHeight(50),
               ),
-              child: Text(AppLocalizations.of(context).save),
+              child: const Text('Salvar alterações'),
             ),
             const SizedBox(height: 27),
             Align(

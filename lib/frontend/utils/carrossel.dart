@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:snaplock/theme/app_fonts.dart';
-import 'package:snaplock/services/app_localizations.dart';
 
 class CarrosselDeInformacoes extends StatefulWidget {
   const CarrosselDeInformacoes({super.key});
@@ -16,10 +15,10 @@ class _CarrosselDeInformacoesState extends State<CarrosselDeInformacoes> {
   @override
   Widget build(BuildContext context) {
     final listaDeTexto = [
-      AppLocalizations.of(context).saveMemories,
-      AppLocalizations.of(context).privacyPreserved,
-      AppLocalizations.of(context).enjoyFriendsPhotos,
-      AppLocalizations.of(context).continueLogin,
+      'Guarde memorias em um clique',
+      'Aqui sua privacidade e preservada',
+      'Curta as fotos dos seus amigos',
+      'Faca login ou crie sua conta para continuar',
     ];
     return Column(
       children: [

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:snaplock/frontend/personalizarPerfil_page.dart';
-import 'package:snaplock/frontend/login_page.dart';
-
-import '../controller/controller.cadastrar.dart';
-import '../controller/controller.login.dart';
-import '../services/app_localizations.dart';
+import 'package:snaplock/frontend/pages/personalizarPerfil_page.dart';
+import 'package:snaplock/frontend/pages/login_page.dart';
+import 'package:snaplock/frontend/utils/mensagem_utils.dart';
+import '../../controller/controller.cadastrar.dart';
+import '../../controller/controller.login.dart';
+import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
+import 'package:snaplock/frontend/widgets/input_widget.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -26,11 +27,7 @@ class _CadastroPageState extends State<CadastroPage> {
   bool carregando = false;
   DateTime? dataNascimento;
 
-  void mostrarMensagem(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem)),
-    );
-  }
+  
 
   Future<void> cadastrar() async {
     String nome = nomeController.text.trim();
@@ -44,22 +41,22 @@ class _CadastroPageState extends State<CadastroPage> {
         email.isEmpty ||
         senha.isEmpty ||
         confirmaSenha.isEmpty) {
-      mostrarMensagem(AppLocalizations.of(context).fillAllFields);
+      mostrarMensagem(context, 'Preencha todos os campos');
       return;
     }
 
     if (!email.contains('@')) {
-      mostrarMensagem(AppLocalizations.of(context).invalidEmail);
+      mostrarMensagem(context, 'Digite um e-mail valido');
       return;
     }
 
     if (dataNascimento == null) {
-      mostrarMensagem(AppLocalizations.of(context).selectBirthdate);
+      mostrarMensagem(context, 'Selecione sua data de nascimento');
       return;
     }
 
     if (senha != confirmaSenha) {
-      mostrarMensagem(AppLocalizations.of(context).passwordsDoNotMatch);
+      mostrarMensagem(context, 'As senhas nao coincidem.');
       return;
     }
 
@@ -75,7 +72,7 @@ class _CadastroPageState extends State<CadastroPage> {
       );
       await LoginController().entrar(login: email, senha: senha);
       if (mounted) {
-        mostrarMensagem(AppLocalizations.of(context).accountCreated);
+        mostrarMensagem(context, 'Usuario cadastrado com sucesso');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -84,7 +81,7 @@ class _CadastroPageState extends State<CadastroPage> {
         );
       }
     } catch (error) {
-      if (mounted) mostrarMensagem(error.toString());
+      if (mounted) mostrarMensagem(context, error.toString());
     } finally {
       if (mounted) setState(() => carregando = false);
     }
@@ -148,45 +145,18 @@ class _CadastroPageState extends State<CadastroPage> {
               height: 130,
             ),
             const SizedBox(height: 40),
-            TextField(
+            InputWidget(
               controller: nomeController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typeName,
-                prefixIcon: const Icon(
-                  Icons.person,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite seu nome',
+              icon: Icons.person,
+              maximoCaracteresSemContador: 20,
             ),
             const SizedBox(height: 15),
-            TextField(
+            InputWidget(
               controller: usernameController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typeUsername,
-                prefixIcon:
-                    const Icon(Icons.alternate_email, color: Color(0xFF5E3023)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite o usuário',
+              icon: Icons.alternate_email,
+              maximoCaracteresSemContador: 20,
             ),
             const SizedBox(height: 15),
             TextField(
@@ -197,8 +167,8 @@ class _CadastroPageState extends State<CadastroPage> {
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
                 hintText: dataNascimento == null
-                    ? AppLocalizations.of(context).typeBirthdate
-                    : '${AppLocalizations.of(context).birthdate}: ${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}',
+                    ? 'Digite sua data de nascimento'
+                    : '${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}',
                 prefixIcon: const Icon(
                   Icons.cake,
                   color: Color(0xFF5E3023),
@@ -214,92 +184,22 @@ class _CadastroPageState extends State<CadastroPage> {
               ),
             ),
             const SizedBox(height: 15),
-            TextField(
+            InputWidget(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typeEmail,
-                prefixIcon: const Icon(
-                  Icons.email,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite seu e-mail',
+              icon: Icons.email,
             ),
             const SizedBox(height: 15),
-            TextField(
-              controller: senhaController,
-              obscureText: esconderSenha,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typePassword,
-                prefixIcon: const Icon(
-                  Icons.lock,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        esconderSenha = !esconderSenha;
-                      });
-                    },
-                    icon: Icon(
-                      esconderSenha ? Icons.visibility : Icons.visibility_off,
-                      color: Color(0xFF5E3023),
-                    )),
-              ),
-            ),
+            InputsenhaWidget(
+							controller: senhaController,
+							texto: 'Digite sua senha',
+						),
             const SizedBox(height: 15),
-            TextField(
-              controller: confirmaSenhaController,
-              obscureText: esconderAfirmacao,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).confirmPassword,
-                prefixIcon: const Icon(
-                  Icons.lock,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      esconderAfirmacao = !esconderAfirmacao;
-                    });
-                  },
-                  icon: Icon(
-                    esconderAfirmacao ? Icons.visibility : Icons.visibility_off,
-                    color: Color(0xFF5E3023),
-                  ),
-                ),
-              ),
-            ),
+            InputsenhaWidget(
+							controller: confirmaSenhaController,
+							texto: 'Confirme sua senha',
+						),
             const SizedBox(height: 25),
             ElevatedButton.icon(
               onPressed: carregando ? null : cadastrar,
@@ -313,13 +213,13 @@ class _CadastroPageState extends State<CadastroPage> {
                       height: 18,
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white))
-                  : Text(AppLocalizations.of(context).register, style: const TextStyle(fontSize: 14)),
+                  : const Text('Cadastrar', style: TextStyle(fontSize: 14)),
             ),
             const SizedBox(height: 10),
             GestureDetector(
                 onTap: () => abrirLogin(context),
                 child: Text(
-                  AppLocalizations.of(context).alreadyAccount,
+                  'Ja tenho uma conta',
                   style: TextStyle(
                     color: Color(0xFF895737),
                     fontWeight: FontWeight.bold, // Opcional: sublinha a palavra

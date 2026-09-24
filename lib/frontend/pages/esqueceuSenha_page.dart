@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/theme/app_fonts.dart';
-import '../controller/controller.cadastrar.dart';
+import '../../controller/controller.cadastrar.dart';
 import 'recuperaSenha_page.dart';
-import '../services/app_localizations.dart';
+import 'package:snaplock/frontend/utils/mensagem_utils.dart';
+import 'package:snaplock/frontend/widgets/input_widget.dart';
 
 class esqueceuSenhaPage extends StatefulWidget {
   const esqueceuSenhaPage({super.key});
@@ -25,16 +26,10 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
     super.dispose();
   }
 
-  void mostrarMensagem(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem)),
-    );
-  }
-
   Future<void> solicitarToken() async {
     final email = confirmaEmailController.text.trim();
     if (email.isEmpty) {
-      mostrarMensagem(AppLocalizations.of(context).typeEmail);
+      mostrarMensagem(context, 'Digite seu e-mail');
       return;
     }
     setState(() => carregando = true);
@@ -42,10 +37,10 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
       await cadastroController.solicitarToken(email);
       if (mounted) {
         setState(() => tokenEnviado = true);
-        mostrarMensagem(AppLocalizations.of(context).checkEmail);
+        mostrarMensagem(context, 'Confira seu e-mail e a pasta Spam.');
       }
     } catch (error) {
-      if (mounted) mostrarMensagem(error.toString());
+      if (mounted) mostrarMensagem(context, error.toString());
     } finally {
       if (mounted) setState(() => carregando = false);
     }
@@ -55,7 +50,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
     final email = confirmaEmailController.text.trim();
     final token = tokenController.text.trim();
     if (token.length != 6) {
-      mostrarMensagem(AppLocalizations.of(context).typeReceivedCode);
+      mostrarMensagem(context, 'Digite o codigo de 6 numeros recebido por e-mail.');
       return;
     }
     setState(() => carregando = true);
@@ -70,7 +65,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
         );
       }
     } catch (error) {
-      if (mounted) mostrarMensagem(error.toString());
+      if (mounted) mostrarMensagem(context, error.toString());
     } finally {
       if (mounted) setState(() => carregando = false);
     }
@@ -93,7 +88,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
             ),
             const SizedBox(height: 37),
             Text(
-              AppLocalizations.of(context).forgotPasswordDescription,
+              'Digite seu e-mail para receber o link de recuperacao',
               textAlign: TextAlign.center,
               style: AppFonts.poppinsRegular.copyWith(
                 fontSize: 12.5,
@@ -101,26 +96,11 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
               ),
             ),
             const SizedBox(height: 20),
-            TextField(
+            InputWidget(
               controller: confirmaEmailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).typeEmail,
-                prefixIcon: const Icon(
-                  Icons.email,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite seu e-mail',
+              icon: Icons.email,
             ),
             const SizedBox(
               height: 20,
@@ -135,11 +115,11 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
                 ),
                 child: carregando
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : Text(AppLocalizations.of(context).sendCode),
+                    : const Text('Enviar codigo'),
               ),
             if (tokenEnviado) ...[
               Text(
-                AppLocalizations.of(context).codeSentDescription,
+                'Digite o codigo de 6 numeros enviado para seu e-mail',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -152,7 +132,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
                   counterText: '',
                   filled: true,
                   fillColor: const Color(0xFFD7CBBD),
-                  hintText: AppLocalizations.of(context).typeCode,
+                  hintText: 'Codigo de 6 numeros',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -169,7 +149,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
                 ),
                 child: carregando
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : Text(AppLocalizations.of(context).validateToken),
+                    : const Text('Validar token'),
               ),
             ],
             const SizedBox(height: 10),
@@ -178,7 +158,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
                   Navigator.pop(context);
                 },
                 child: Text(
-                  AppLocalizations.of(context).backToLogin,
+                  'Voltar para o login',
                   style: TextStyle(
                     color: Color(0xFF895737),
                     fontWeight: FontWeight.bold, // Opcional: sublinha a palavra

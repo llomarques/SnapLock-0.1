@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:snaplock/frontend/feed_page.dart';
-import '../services/app_localizations.dart';
+import 'package:snaplock/frontend/pages/feed_page.dart';
 
 class PesquisaPage extends StatefulWidget {
   const PesquisaPage({super.key});
@@ -60,7 +59,7 @@ class _PesquisaPage extends State<PesquisaPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: AppLocalizations.of(context).searchUser,
+                hintText: 'Usuário',
                 prefixIcon: const Icon(
                   Icons.search,
                   color: Color(0xFF5E3023),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/app_localizations.dart';
-import '../controller/controller.alterarSenha.dart';
+import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
+import '../../services/api_service.dart';
+import '../../controller/controller.alterarSenha.dart';
 
 class AlterarSenhaPage extends StatefulWidget {
 	const AlterarSenhaPage({super.key});
@@ -14,7 +15,6 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 	final senhaAtualController = TextEditingController();
 	final novaSenhaController = TextEditingController();
 	final confirmarSenhaController = TextEditingController();
-	bool esconderSenha = true;
 	bool carregando = false;
 
 	@override
@@ -28,7 +28,7 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 	Future<void> alterarSenha() async {
 		if (novaSenhaController.text != confirmarSenhaController.text) {
 			ScaffoldMessenger.of(context).showSnackBar(
-				SnackBar(content: Text(AppLocalizations.of(context).passwordsDoNotMatch)),
+				const SnackBar(content: Text('As senhas não coincidem.')),
 			);
 			return;
 		}
@@ -42,7 +42,7 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 			);
 			if (mounted) {
 				ScaffoldMessenger.of(context).showSnackBar(
-					SnackBar(content: Text(AppLocalizations.of(context).passwordChanged)),
+					const SnackBar(content: Text('Senha alterada com sucesso.')),
 				);
 				Navigator.pop(context);
 			}
@@ -72,40 +72,19 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 							height: 150,
 						),
 						const SizedBox(height: 60),
-						TextField(
+						InputsenhaWidget(
 							controller: senhaAtualController,
-							obscureText: esconderSenha,
-							decoration: InputDecoration(
-								filled: true,
-								fillColor: const Color(0xFFD7CBBD),
-								hintText: AppLocalizations.of(context).currentPassword,
-								prefixIcon: const Icon(Icons.lock, color: Color(0xFF5E3023)),
-								suffixIcon: IconButton(
-									onPressed: () {
-										setState(() => esconderSenha = !esconderSenha);
-									},
-									icon: Icon(
-										esconderSenha ? Icons.visibility : Icons.visibility_off,
-										color: const Color(0xFF5E3023),
-									),
-								),
-								border: OutlineInputBorder(
-									borderRadius: BorderRadius.circular(16),
-									borderSide: BorderSide.none,
-								),
-							),
+							texto: 'Senha atual',
 						),
 						const SizedBox(height: 20),
-						TextField(
+						InputsenhaWidget(
 							controller: novaSenhaController,
-							obscureText: esconderSenha,
-							decoration: _decoracaoSenha(AppLocalizations.of(context).newPassword),
+							texto: 'Nova senha',
 						),
 						const SizedBox(height: 20),
-						TextField(
+						InputsenhaWidget(
 							controller: confirmarSenhaController,
-							obscureText: esconderSenha,
-							decoration: _decoracaoSenha(AppLocalizations.of(context).confirmPassword),
+							texto: 'Confirma senha',
 						),
 						const SizedBox(height: 20),
 						ElevatedButton(
@@ -116,7 +95,7 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 							),
 							child: carregando
 									? const CircularProgressIndicator()
-									: Text(AppLocalizations.of(context).changePassword),
+									: const Text('Alterar senha'),
 						),
 					],
 				),
@@ -124,26 +103,5 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 		);
 	}
 
-	InputDecoration _decoracaoSenha(String texto) {
-		return InputDecoration(
-			filled: true,
-			fillColor: const Color(0xFFD7CBBD),
-			hintText: texto,
-			prefixIcon: const Icon(Icons.lock, color: Color(0xFF5E3023)),
-			suffixIcon: IconButton(
-				onPressed: () {
-					setState(() => esconderSenha = !esconderSenha);
-				},
-				icon: Icon(
-					esconderSenha ? Icons.visibility : Icons.visibility_off,
-					color: const Color(0xFF5E3023),
-				),
-			),
-			border: OutlineInputBorder(
-				borderRadius: BorderRadius.circular(16),
-				borderSide: BorderSide.none,
-			),
-		);
-	}
 }
 

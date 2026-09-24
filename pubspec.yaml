@@ -9,8 +9,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_localizations:
-    sdk: flutter
   http: ^1.2.0
   image_picker: ^1.2.3
   shared_preferences: ^2.2.2
