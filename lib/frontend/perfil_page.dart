@@ -3,8 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:snaplock/services/api_service.dart';
 import 'editarPerfil_page.dart';
-import '../../controller/controller.login.dart';
-import 'package:snaplock/frontend/widgets/input_widget.dart';
+import '../controller/controller.login.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -222,13 +221,29 @@ class _PerfilPage extends State<PerfilPage> {
           Column(
             children: [
               
-              InputWidget(
-              controller: biografiaController,
-              texto: 'Digite sua biografia',
-              icon: Icons.chat_bubble,
-			        linhasMinimas: 3,
-			        linhasMaximas: 6,
-            ),
+              TextField(
+                controller: biografiaController,
+                readOnly: true,
+                showCursor: false,
+                enableInteractiveSelection: false,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFFD7CBBD),
+                  hintText: 'Biografia',
+                  prefixIcon: const Icon(
+                    Icons.chat_bubble,
+                    color: Color(0xFF5E3023),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(

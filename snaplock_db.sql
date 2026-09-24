@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   `id_usuario` int(11) NOT NULL AUTO_INCREMENT,
   `nome` varchar(100) NOT NULL,
   `username` varchar(30) NOT NULL,
+  `username_alterado_em` datetime DEFAULT NULL,
   `email` varchar(150) NOT NULL,
   `senha_hash` varchar(255) NOT NULL,
   `foto_perfil` varchar(255) DEFAULT NULL,
@@ -89,6 +90,10 @@ CREATE TABLE IF NOT EXISTS `usuario` (
 ALTER TABLE `usuario`
   ADD COLUMN IF NOT EXISTS `username` varchar(30) NOT NULL AFTER `nome`,
   ADD UNIQUE KEY IF NOT EXISTS `username` (`username`);
+
+-- Bloqueia novas alterações de username por 30 dias após cada alteração.
+ALTER TABLE `usuario`
+  ADD COLUMN IF NOT EXISTS `username_alterado_em` datetime DEFAULT NULL AFTER `username`;
 
 -- Migração para bancos criados antes da coluna biografia.
 ALTER TABLE `usuario`

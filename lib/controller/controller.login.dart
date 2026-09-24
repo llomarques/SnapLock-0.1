@@ -65,6 +65,7 @@ class LoginController {
             'id': resposta['id_usuario']?.toString() ?? '',
             'name': resposta['nome']?.toString() ?? '',
             'username': resposta['username']?.toString() ?? '',
+            'usernameChangedAt': resposta['usernameChangedAt']?.toString() ?? '',
             'email': resposta['email']?.toString() ?? '',
             'bio': resposta['bio']?.toString() ?? '',
             'avatarUrl': resposta['avatarUrl']?.toString() ?? '',
@@ -116,6 +117,7 @@ class LoginController {
 
   static Future<Map<String, dynamic>> atualizarPerfil({
     required String nome,
+    required String username,
     required String biografia,
   }) async {
     if (tokenAtual == null || tokenAtual!.isEmpty) {
@@ -128,7 +130,11 @@ class LoginController {
         'Content-Type': 'application/json; charset=utf-8',
         'Authorization': 'Bearer $tokenAtual',
       },
-      body: jsonEncode({'name': nome, 'bio': biografia}),
+      body: jsonEncode({
+        'name': nome,
+        'username': username,
+        'bio': biografia,
+      }),
     );
 
     final decoded = jsonDecode(response.body);

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
-import '../../controller/controller.login.dart';
-import 'package:snaplock/frontend/widgets/input_widget.dart';
+import '../controller/controller.login.dart';
 
 class EditarPerfilPage extends StatefulWidget {
   final String nomeInicial;
   final String usernameInicial;
-  final String usernameChangedAt;
   final String biografiaInicial;
   final Uint8List? fotoPerfilInicial;
   final String fotoPerfilUrlInicial;
@@ -16,10 +14,9 @@ class EditarPerfilPage extends StatefulWidget {
     super.key,
     this.nomeInicial = '',
     this.usernameInicial = '',
-    this.usernameChangedAt = '',
     this.biografiaInicial = '',
     this.fotoPerfilInicial,
-    this.fotoPerfilUrlInicial = '',
+    this.fotoPerfilUrlInicial = '', required String usernameChangedAt,
   });
 
   @override
@@ -28,7 +25,7 @@ class EditarPerfilPage extends StatefulWidget {
 
 class _EditarPerfilPageState extends State<EditarPerfilPage> {
   final TextEditingController nomeController = TextEditingController();
-  final TextEditingController usuarioController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController biografiaController = TextEditingController();
   final ImagePicker picker = ImagePicker();
   Uint8List? fotoPerfil;
@@ -38,7 +35,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
   void initState() {
     super.initState();
     nomeController.text = widget.nomeInicial;
-    usuarioController.text = widget.usernameInicial;
+    usernameController.text = widget.usernameInicial;
     biografiaController.text = widget.biografiaInicial;
     fotoPerfil = widget.fotoPerfilInicial;
   }
@@ -57,7 +54,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
 
     final resposta = await LoginController.atualizarPerfil(
       nome: nomeController.text.trim(),
-      username: usuarioController.text.trim(),
+      username: usernameController.text.trim(),
       biografia: biografiaController.text.trim(),
     );
 
@@ -117,7 +114,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
   void dispose() {
     
     nomeController.dispose();
-    usuarioController.dispose();
+    usernameController.dispose();
     biografiaController.dispose();
     super.dispose();
   }
@@ -175,27 +172,67 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               ),
             ),
             const SizedBox(height: 20),
-            InputWidget(
+            TextField(
               controller: nomeController,
-              texto: 'Digite seu nome',
-              icon: Icons.person,
-              maximoCaracteresSemContador: 20,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFFD7CBBD),
+                hintText: 'Nome',
+                prefixIcon: const Icon(
+                  Icons.person,
+                  color: Color(0xFF5E3023),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
             const SizedBox(height: 20),
-            InputWidget(
-              controller: usuarioController,
-              texto: 'Digite seu usuário',
-              icon: Icons.alternate_email,
-              maximoCaracteresSemContador: 20,
+            TextField(
+              controller: usernameController,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFFD7CBBD),
+                hintText: 'Username',
+                prefixIcon: const Icon(
+                  Icons.alternate_email,
+                  color: Color(0xFF5E3023),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
-            const SizedBox(height: 20,),
-            InputWidget(
+            const SizedBox(height: 20),
+            TextField(
               controller: biografiaController,
-              texto: 'Digite sua biografia',
-              icon: Icons.chat_bubble,
-              maximoCaracteres: 150,
-			  linhasMinimas: 3,
-			  linhasMaximas: 6,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFFD7CBBD),
+                hintText: 'Biografia',
+                prefixIcon: const Icon(
+                  Icons.chat_bubble,
+                  color: Color(0xFF5E3023),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
             const SizedBox(height: 25),
             ElevatedButton(

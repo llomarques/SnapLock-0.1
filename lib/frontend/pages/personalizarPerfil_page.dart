@@ -84,6 +84,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
       final nome = LoginController.usuarioAtual?['name']?.toString() ?? '';
       final resposta = await LoginController.atualizarPerfil(
         nome: nome,
+        username: LoginController.usuarioAtual?['username']?.toString() ?? '',
         biografia: biografia,
       );
 

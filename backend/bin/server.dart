@@ -45,7 +45,7 @@ Future<void> main() async {
       }
 
       final usuarios = await connection.execute(
-        '''SELECT id_usuario, nome, username, email, senha_hash, biografia, foto_perfil
+        '''SELECT id_usuario, nome, username, username_alterado_em, email, senha_hash, biografia, foto_perfil
            FROM usuario
            WHERE (email = :email OR username = :username) AND ativo = 1
            LIMIT 1''',
@@ -422,20 +422,63 @@ Future<void> main() async {
       if (dados == null) return _json(400, {'message': 'JSON inválido.'});
 
       final nome = (dados['name'] ?? '').toString().trim();
+      final username = (dados['username'] ?? '').toString().trim().toLowerCase();
       final biografia = (dados['bio'] ?? '').toString().trim();
-      if (nome.isEmpty || nome.length > 100 || biografia.length > 500) {
+      if (nome.isEmpty ||
+          nome.length > 100 ||
+          !_usernameValido(username) ||
+          biografia.length > 500) {
         return _json(422, {'message': 'Confira os dados do perfil.'});
+      }
+
+      final usernameExistente = await connection.execute(
+        '''SELECT id_usuario FROM usuario
+           WHERE username = :username AND id_usuario <> :id_usuario
+           LIMIT 1''',
+        {'username': username, 'id_usuario': idUsuario},
+      );
+      if (usernameExistente.rows.isNotEmpty) {
+        return _json(409, {'message': 'Este username já está em uso.'});
+      }
+
+      final usuarioAtual = await connection.execute(
+        'SELECT username, username_alterado_em FROM usuario WHERE id_usuario = :id_usuario AND ativo = 1 LIMIT 1',
+        {'id_usuario': idUsuario},
+      );
+      if (usuarioAtual.rows.isEmpty) {
+        return _json(404, {'message': 'Usuário não encontrado.'});
+      }
+
+      final dadosAtuais = usuarioAtual.rows.first.assoc();
+      final usernameAtual = dadosAtuais['username'] ?? '';
+      final usernameAlteradoEm = dadosAtuais['username_alterado_em'];
+      if (username != usernameAtual && usernameAlteradoEm != null) {
+        final liberadoEm = DateTime.parse(usernameAlteradoEm).add(const Duration(days: 30));
+        if (DateTime.now().isBefore(liberadoEm)) {
+          return _json(422, {
+            'message': 'O username só pode ser alterado novamente após 30 dias.',
+            'usernameChangedAt': usernameAlteradoEm,
+          });
+        }
       }
 
       await connection.execute(
         '''UPDATE usuario
-           SET nome = :nome, biografia = :biografia
+             SET nome = :nome,
+               username = :username,
+               username_alterado_em = IF(username <> :username, NOW(), username_alterado_em),
+               biografia = :biografia
            WHERE id_usuario = :id_usuario AND ativo = 1''',
-        {'nome': nome, 'biografia': biografia, 'id_usuario': idUsuario},
+        {
+          'nome': nome,
+          'username': username,
+          'biografia': biografia,
+          'id_usuario': idUsuario,
+        },
       );
 
       final usuarios = await connection.execute(
-        '''SELECT id_usuario, nome, username, email, biografia, foto_perfil
+        '''SELECT id_usuario, nome, username, username_alterado_em, email, biografia, foto_perfil
            FROM usuario WHERE id_usuario = :id_usuario LIMIT 1''',
         {'id_usuario': idUsuario},
       );
