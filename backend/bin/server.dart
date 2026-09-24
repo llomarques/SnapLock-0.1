@@ -1,32 +1,20 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'package:bcrypt/bcrypt.dart';
-import 'package:crypto/crypto.dart';
-import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server.dart';
 import 'package:mysql_client/mysql_client.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_multipart/form_data.dart';
 import 'package:shelf_multipart/multipart.dart';
 import 'package:shelf_router/shelf_router.dart';
-import 'package:dotenv/dotenv.dart';
-
-import 'package:cloudinary_url_gen/cloudinary.dart';
-import 'package:cloudinary_url_gen/transformation/transformation.dart';
 import 'package:cloudinary_api/uploader/cloudinary_uploader.dart';
 import 'package:cloudinary_api/src/request/model/uploader_params.dart';
-import 'package:cloudinary_url_gen/transformation/effect/effect.dart';
-import 'package:cloudinary_url_gen/transformation/resize/resize.dart';
 
-final cloudinaryUrl = env['CLOUDINARY_URL'] ?? '';
-var cloudinary = Cloudinary.fromStringUrl(cloudinaryUrl);
-
-final env = DotEnv()..load();
+import '../lib/backend_config.dart';
+import '../lib/backend_utils.dart';
+import '../lib/email_service.dart';
 
 Future<void> main() async {
-  print('CLOUDINARY_URL: ${env['CLOUDINARY_URL']}');
   cloudinary.config.urlConfig.secure = true;
   // await upload();
   // transform();
@@ -77,14 +65,7 @@ Future<void> main() async {
       return _json(200, {
         'success': true,
         'token': token,
-        'user': {
-          'id': usuario['id_usuario'],
-          'name': usuario['nome'],
-          'username': usuario['username'],
-          'email': usuario['email'],
-          'bio': usuario['biografia'] ?? '',
-          'avatarUrl': usuario['foto_perfil'] ?? '',
-        },
+        'user': _usuarioPublico(usuario),
         'id_usuario': int.parse(usuario['id_usuario']!),
         'nome': usuario['nome'],
         'username': usuario['username'],
@@ -463,14 +444,7 @@ Future<void> main() async {
       final usuario = usuarios.rows.first.assoc();
       return _json(200, {
         'success': true,
-        'user': {
-          'id': usuario['id_usuario'],
-          'name': usuario['nome'],
-          'username': usuario['username'],
-          'email': usuario['email'],
-          'bio': usuario['biografia'] ?? '',
-          'avatarUrl': usuario['foto_perfil'] ?? '',
-        },
+        'user': _usuarioPublico(usuario),
       });
     });
 
@@ -497,14 +471,7 @@ const _corsHeaders = {
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
 };
 
-Future<Map<String, dynamic>?> _lerJson(Request request) async {
-  try {
-    final body = jsonDecode(await request.readAsString());
-    return body is Map<String, dynamic> ? body : null;
-  } on FormatException {
-    return null;
-  }
-}
+Future<Map<String, dynamic>?> _lerJson(Request request) => readJson(request);
 
 Future<List<int>> _coletarBytes(Stream<List<int>> stream) async {
   final bytes = <int>[];
@@ -517,106 +484,36 @@ Future<List<int>> _coletarBytes(Stream<List<int>> stream) async {
 Future<String> _coletarString(Stream<List<int>> stream) =>
     utf8.decoder.bind(stream).join();
 
-String _extensaoPorContentType(String? contentType) {
-  switch (contentType) {
-    case 'image/png':
-      return '.png';
-    case 'image/webp':
-      return '.webp';
-    case 'image/gif':
-      return '.gif';
-    default:
-      return '.jpg';
-  }
-}
+String _extensaoPorContentType(String? contentType) =>
+    extensionForContentType(contentType);
 
-Response _json(int status, Map<String, Object?> body) => Response(status,
-    body: jsonEncode(body),
-    headers: {'content-type': 'application/json; charset=utf-8'});
+Response _json(int status, Map<String, Object?> body) =>
+  jsonResponse(status, body, jsonHeaders);
 
-bool _emailValido(String email) =>
-    RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+Map<String, String> _usuarioPublico(Map<String, String?> usuario) =>
+    publicUser(usuario);
 
-bool _usernameValido(String username) =>
-    RegExp(r'^[a-z0-9_]{3,30}$').hasMatch(username);
+bool _emailValido(String email) => validEmail(email);
 
-bool _senhaValida(String senha) =>
-    RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$')
-        .hasMatch(senha);
+bool _usernameValido(String username) => validUsername(username);
 
-String _gerarToken() => (100000 + Random.secure().nextInt(900000)).toString();
+bool _senhaValida(String senha) => validPassword(senha);
 
-String _hashToken(String token) =>
-    sha256.convert(utf8.encode(token)).toString();
+String _gerarToken() => generateRecoveryToken();
 
-String _gerarTokenSessao() => base64UrlEncode(
-      List<int>.generate(32, (_) => Random.secure().nextInt(256)),
-    );
+String _hashToken(String token) => hashToken(token);
 
-int? _idUsuarioAutenticado(Request request, Map<String, int> sessoes) {
-  final authorization = request.headers['authorization'];
-  if (authorization == null || !authorization.startsWith('Bearer '))
-    return null;
-  return sessoes[authorization.substring(7).trim()];
-}
+String _gerarTokenSessao() => generateSessionToken();
+
+int? _idUsuarioAutenticado(Request request, Map<String, int> sessoes) =>
+    authenticatedUserId(request, sessoes);
 
 Future<void> _enviarToken(
-    String email, String nomeUsuario, String token) async {
-  final host = env['SMTP_HOST'];
-  final username = env['SMTP_USER'];
-  final password = env['SMTP_PASSWORD'];
-  if (host == null || username == null || password == null) {
-    throw StateError(
-        'Configure SMTP_HOST, SMTP_USER e SMTP_PASSWORD para enviar tokens.');
-  }
-  final smtpServer = SmtpServer(
-    host,
-    username: username,
-    password: password,
-    port: int.tryParse(env['SMTP_PORT'] ?? '587') ?? 587,
-    ssl: env['SMTP_SSL'] == 'true',
-  );
+  String email,
+  String nomeUsuario,
+  String token,
+) => sendRecoveryToken(email, nomeUsuario, token);
 
-  final message = Message()
-    ..from = Address(username, 'SnapLock')
-    ..recipients.add(email)
-    ..subject = 'Token para redefinir sua senha'
-    ..html = '''
-      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background-color: #f4f4f7;">
-        <div style="background-color: #ffffff; border-radius: 8px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-          <h2 style="color: #1a1a1a; margin-top: 0;">Olá, $nomeUsuario!</h2>
-          <p style="color: #444; font-size: 15px; line-height: 1.5;">
-            Você solicitou a redefinição da sua senha. Use o código abaixo para continuar:
-          </p>
-          <div style="background-color: #f0f0f5; border-radius: 6px; padding: 16px; text-align: center; margin: 24px 0;">
-            <span style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #2b2b2b;">$token</span>
-          </div>
-          <p style="color: #666; font-size: 14px;">⏱️ O código expira em <strong>15 minutos</strong>.</p>
-          <p style="color: #666; font-size: 14px;">Não compartilhe este código com ninguém.</p>
-          <p style="color: #999; font-size: 13px; margin-top: 24px;">
-            Caso você não tenha feito essa solicitação, pode ignorar este e-mail com segurança.
-          </p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-          <p style="color: #bbb; font-size: 12px; text-align: center;">
-            &copy; 2026 SnapLock. Todos os direitos reservados.
-          </p>
-        </div>
-      </div>
-    ''';
+bool _dataValida(String value) => validDate(value);
 
-  await send(message, smtpServer);
-}
-
-bool _dataValida(String value) {
-  final data = DateTime.tryParse(value);
-  return data != null &&
-      value.length == 10 &&
-      data.toIso8601String().startsWith(value);
-}
-
-bool _idadeMinimaValida(String value) {
-  final nascimento = DateTime.parse(value);
-  final hoje = DateTime.now();
-  final dataLimite = DateTime(hoje.year - 16, hoje.month, hoje.day);
-  return !nascimento.isAfter(dataLimite);
-}
+bool _idadeMinimaValida(String value) => validMinimumAge(value);
