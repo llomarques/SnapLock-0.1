@@ -5,6 +5,7 @@ import 'package:snaplock/frontend/utils/mensagem_utils.dart';
 import '../../controller/controller.cadastrar.dart';
 import '../../controller/controller.login.dart';
 import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
+import 'package:snaplock/frontend/widgets/input_widget.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -144,45 +145,18 @@ class _CadastroPageState extends State<CadastroPage> {
               height: 130,
             ),
             const SizedBox(height: 40),
-            TextField(
+            InputWidget(
               controller: nomeController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite seu nome',
-                prefixIcon: const Icon(
-                  Icons.person,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite seu nome',
+              icon: Icons.person,
+              maximoCaracteresSemContador: 20,
             ),
             const SizedBox(height: 15),
-            TextField(
+            InputWidget(
               controller: usernameController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite seu username',
-                prefixIcon:
-                    const Icon(Icons.alternate_email, color: Color(0xFF5E3023)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite o usuário',
+              icon: Icons.alternate_email,
+              maximoCaracteresSemContador: 20,
             ),
             const SizedBox(height: 15),
             TextField(
@@ -210,26 +184,11 @@ class _CadastroPageState extends State<CadastroPage> {
               ),
             ),
             const SizedBox(height: 15),
-            TextField(
+            InputWidget(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite seu e-mail',
-                prefixIcon: const Icon(
-                  Icons.email,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite seu e-mail',
+              icon: Icons.email,
             ),
             const SizedBox(height: 15),
             InputsenhaWidget(

@@ -3,6 +3,7 @@ import 'package:snaplock/theme/app_fonts.dart';
 import '../../controller/controller.cadastrar.dart';
 import 'recuperaSenha_page.dart';
 import 'package:snaplock/frontend/utils/mensagem_utils.dart';
+import 'package:snaplock/frontend/widgets/input_widget.dart';
 
 class esqueceuSenhaPage extends StatefulWidget {
   const esqueceuSenhaPage({super.key});
@@ -95,26 +96,11 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
               ),
             ),
             const SizedBox(height: 20),
-            TextField(
+            InputWidget(
               controller: confirmaEmailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite seu e-mail',
-                prefixIcon: const Icon(
-                  Icons.email,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite seu e-mail',
+              icon: Icons.email,
             ),
             const SizedBox(
               height: 20,

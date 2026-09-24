@@ -6,6 +6,7 @@ import 'feed_page.dart';
 import '../../controller/controller.login.dart';
 import 'package:snaplock/frontend/utils/mensagem_utils.dart';
 import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
+import 'package:snaplock/frontend/widgets/input_widget.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -86,26 +87,10 @@ class _LoginPageState extends State<LoginPage> {
               height: 250,
             ),
             const SizedBox(height: 20),
-            TextField(
+            InputWidget(
               controller: loginControllerTexto,
-              keyboardType: TextInputType.text,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite seu e-mail ou usuario',
-                prefixIcon: const Icon(
-                  Icons.person,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite seu e-mail ou usuário',
+              icon: Icons.person,
             ),
             const SizedBox(
               height: 15,

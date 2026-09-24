@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:snaplock/frontend/pages/feed_page.dart';
 import '../../controller/controller.login.dart';
+import 'package:snaplock/frontend/widgets/input_widget.dart';
 
 class personalizarPerfilPage extends StatefulWidget {
   const personalizarPerfilPage({super.key});
@@ -174,25 +175,13 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
             const SizedBox(
               height: 20,
             ),
-            TextField(
+            InputWidget(
               controller: biografiaController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Digite sua biografia',
-                prefixIcon: const Icon(
-                  Icons.chat_bubble,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              texto: 'Digite sua biografia',
+              icon: Icons.chat_bubble,
+              maximoCaracteres: 150,
+			  linhasMinimas: 3,
+			  linhasMaximas: 6,
             ),
             const SizedBox(
               height: 20,

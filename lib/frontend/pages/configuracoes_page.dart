@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
+import 'package:snaplock/frontend/widgets/criarOpcao_widget.dart';
 import 'alterarSenha_page.dart';
 import 'sobreNos_page.dart';
 
@@ -48,20 +49,20 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
               ),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.palette),
-            title: const Text('Tema'),
-            onTap: () {},
+          CriarOpcaoWidget(
+            icone: Icons.palette,
+            titulo: 'Tema',
+            aoClicar: () {},
           ),
-          ListTile(
-            leading: const Icon(Icons.visibility),
-            title: const Text('Controle de visualizações'),
-            onTap: () {},
+          CriarOpcaoWidget(
+            icone: Icons.visibility,
+            titulo: 'Controle de visualizações',
+            aoClicar: () {},
           ),
-          ListTile(
-            leading: const Icon(Icons.lock),
-            title: const Text('Alterar senha'),
-            onTap: () {
+          CriarOpcaoWidget(
+            icone: Icons.lock,
+            titulo: 'Alterar senha',
+            aoClicar: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -70,20 +71,20 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
               );
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.call),
-            title: const Text('Ajuda e suporte'),
-            onTap: () {},
+          CriarOpcaoWidget(
+            icone: Icons.call,
+            titulo: 'Ajuda e suporte',
+            aoClicar: () {},
           ),
-          ListTile(
-            leading: const Icon(Icons.info),
-            title: const Text('Sobre nós'),
-            onTap: abrirSobreNos,
+          CriarOpcaoWidget(
+            icone: Icons.info,
+            titulo: 'Sobre nós',
+            aoClicar: abrirSobreNos,
           ),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Sair da conta'),
-            onTap: () {
+          CriarOpcaoWidget(
+            icone: Icons.logout,
+            titulo: 'Sair da conta',
+            aoClicar: () {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
