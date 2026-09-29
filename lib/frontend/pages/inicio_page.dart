@@ -49,23 +49,28 @@ class InicioPage extends StatelessWidget {
               ),
             ),
             const CarrosselDeInformacoes(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 77),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 59),
               decoration: BoxDecoration(
-                color: Color(0xFFF3E9DC),
+                color: const Color(0xFFF3E9DC),
                 borderRadius: BorderRadius.circular(27),
               ),
-              child: Column(
-                children: [
-                  BotoesWidget(
-                    texto: 'Fazer Login',
-                    aoTocar: () => abrirLogin(context),
-                  ),
-                  const SizedBox(height: 22),
-                 BotoesWidget(texto: 'Criar Conta', 
-                 aoTocar: () => abrirCadastro(context))
-                ],
+              child: Transform.translate(
+                offset: const Offset(0, -28),
+                child: Column(
+                  children: [
+                    BotoesWidget(
+                      texto: 'Fazer Login',
+                      aoTocar: () => abrirLogin(context),
+                    ),
+                    const SizedBox(height: 22),
+                    BotoesWidget(
+                      texto: 'Criar Conta',
+                      aoTocar: () => abrirCadastro(context),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
