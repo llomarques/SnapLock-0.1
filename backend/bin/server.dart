@@ -72,6 +72,204 @@ Future<void> main() async {
         'email': usuario['email'],
       });
     })
+    ..get('/api/friends/search', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final query = (request.url.queryParameters['q'] ?? '').trim();
+      if (query.isEmpty) {
+        return _json(200, {'success': true, 'users': <Map<String, Object?>>[]});
+      }
+
+      final resultados = await connection.execute(
+        '''SELECT u.id_usuario, u.nome, u.username,
+            u.biografia, u.foto_perfil, u.ativo, a.status AS amizade_status
+           FROM usuario u
+           LEFT JOIN amizade a
+             ON ((a.id_usuario_1 = :id_usuario AND a.id_usuario_2 = u.id_usuario)
+              OR (a.id_usuario_1 = u.id_usuario AND a.id_usuario_2 = :id_usuario))
+           WHERE u.ativo = 1 AND u.id_usuario <> :id_usuario
+             AND (u.nome LIKE :query OR u.username LIKE :query)
+           ORDER BY u.username
+           LIMIT 20''',
+        {'id_usuario': idUsuario, 'query': '%$query%'},
+      );
+
+      final usuarios = resultados.rows.map((row) {
+        final usuario = row.assoc();
+        return <String, Object?>{
+          'id': usuario['id_usuario'] ?? '',
+          'name': usuario['nome'] ?? '',
+          'username': usuario['username'] ?? '',
+          'email': '',
+          'birthdate': '',
+          'bio': usuario['biografia'] ?? '',
+          'gender': '',
+          'avatarUrl': usuario['foto_perfil'] ?? '',
+          'isActive': usuario['ativo'] == '1',
+          'friendshipStatus': usuario['amizade_status'] ?? '',
+        };
+      }).toList();
+
+      return _json(200, {'success': true, 'users': usuarios});
+    })
+    ..post('/api/friends/request', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      final friendId = int.tryParse((dados?['friendId'] ?? '').toString());
+      if (friendId == null || friendId == idUsuario) {
+        return _json(422, {'message': 'Usuário inválido.'});
+      }
+
+      final destinatario = await connection.execute(
+        'SELECT id_usuario FROM usuario WHERE id_usuario = :id_usuario AND ativo = 1 LIMIT 1',
+        {'id_usuario': friendId},
+      );
+      if (destinatario.rows.isEmpty) {
+        return _json(404, {'message': 'Usuário não encontrado.'});
+      }
+
+      final existente = await connection.execute(
+        '''SELECT id_amizade, id_usuario_1, status FROM amizade
+           WHERE (id_usuario_1 = :origem AND id_usuario_2 = :destino)
+              OR (id_usuario_1 = :destino AND id_usuario_2 = :origem)
+           LIMIT 1''',
+        {'origem': idUsuario, 'destino': friendId},
+      );
+      if (existente.rows.isNotEmpty) {
+        final relacao = existente.rows.first.assoc();
+        final status = relacao['status'];
+        if (status == 'aceito') {
+          return _json(409, {'message': 'Vocês já são amigos.'});
+        }
+        if (status == 'pendente') {
+          if (relacao['id_usuario_1'] == idUsuario.toString()) {
+            return _json(200, {'success': true, 'status': 'pendente'});
+          }
+          return _json(409, {'message': 'Este usuário já enviou uma solicitação.'});
+        }
+
+        await connection.execute(
+          'DELETE FROM amizade WHERE id_amizade = :id_amizade',
+          {'id_amizade': relacao['id_amizade']},
+        );
+      }
+
+      final insercao = await connection.execute(
+        '''INSERT INTO amizade (id_usuario_1, id_usuario_2, status)
+           VALUES (:origem, :destino, 'pendente')''',
+        {'origem': idUsuario, 'destino': friendId},
+      );
+      return _json(201, {
+        'success': true,
+        'status': 'pendente',
+        'requestId': insercao.lastInsertID.toString(),
+      });
+    })
+    ..get('/api/friends/pending', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final resultados = await connection.execute(
+        '''SELECT a.id_amizade, u.id_usuario, u.nome, u.username, u.foto_perfil
+           FROM amizade a
+           JOIN usuario u ON u.id_usuario = a.id_usuario_1
+           WHERE a.id_usuario_2 = :id_usuario AND a.status = 'pendente'
+           ORDER BY a.data_solicitacao DESC''',
+        {'id_usuario': idUsuario},
+      );
+      final pendentes = resultados.rows.map((row) {
+        final usuario = row.assoc();
+        return <String, Object?>{
+          'requestId': usuario['id_amizade'] ?? '',
+          'id': usuario['id_usuario'] ?? '',
+          'name': usuario['nome'] ?? '',
+          'username': usuario['username'] ?? '',
+          'avatarUrl': usuario['foto_perfil'] ?? '',
+        };
+      }).toList();
+      return _json(200, {'success': true, 'pending': pendentes});
+    })
+    ..post('/api/friends/accept', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      final requestId = int.tryParse((dados?['requestId'] ?? '').toString());
+      if (requestId == null) {
+        return _json(422, {'message': 'Solicitação inválida.'});
+      }
+
+      final atualizada = await connection.execute(
+        '''UPDATE amizade SET status = 'aceito', data_resposta = NOW()
+           WHERE id_amizade = :id_amizade
+             AND id_usuario_2 = :id_usuario AND status = 'pendente' ''',
+        {'id_amizade': requestId, 'id_usuario': idUsuario},
+      );
+      if (atualizada.affectedRows == 0) {
+        return _json(404, {'message': 'Solicitação pendente não encontrada.'});
+      }
+      return _json(200, {'success': true});
+    })
+    ..post('/api/friends/decline', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      final requestId = int.tryParse((dados?['requestId'] ?? '').toString());
+      if (requestId == null) {
+        return _json(422, {'message': 'Solicitação inválida.'});
+      }
+
+      final removida = await connection.execute(
+        '''DELETE FROM amizade
+           WHERE id_amizade = :id_amizade
+             AND id_usuario_2 = :id_usuario AND status = 'pendente' ''',
+        {'id_amizade': requestId, 'id_usuario': idUsuario},
+      );
+      if (removida.affectedRows == 0) {
+        return _json(404, {'message': 'Solicitação pendente não encontrada.'});
+      }
+      return _json(200, {'success': true});
+    })
+    ..get('/api/friends', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final resultados = await connection.execute(
+        '''SELECT u.id_usuario, u.nome, u.username,
+            u.biografia, u.foto_perfil, u.ativo, a.status AS amizade_status
+           FROM amizade a
+           JOIN usuario u
+             ON u.id_usuario = CASE
+               WHEN a.id_usuario_1 = :id_usuario THEN a.id_usuario_2
+               ELSE a.id_usuario_1
+             END
+           WHERE (a.id_usuario_1 = :id_usuario OR a.id_usuario_2 = :id_usuario)
+             AND a.status = 'aceito'
+           ORDER BY u.username''',
+        {'id_usuario': idUsuario},
+      );
+
+      final amigos = resultados.rows.map((row) {
+        final usuario = row.assoc();
+        return <String, Object?>{
+          'id': usuario['id_usuario'] ?? '',
+          'name': usuario['nome'] ?? '',
+          'username': usuario['username'] ?? '',
+          'email': '',
+          'birthdate': '',
+          'bio': usuario['biografia'] ?? '',
+          'gender': '',
+          'avatarUrl': usuario['foto_perfil'] ?? '',
+          'friendshipStatus': usuario['amizade_status'] ?? '',
+          'isActive': usuario['ativo'] == '1',
+        };
+      }).toList();
+      return _json(200, {'success': true, 'friends': amigos});
+    })
     ..post('/api/usuarios', (Request request) async {
       final dados = await _lerJson(request);
       if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
