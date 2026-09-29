@@ -180,29 +180,53 @@ class _FeedPage extends State<FeedPage> {
       ),
       bottomNavigationBar: NavigationBar(
         backgroundColor: const Color(0xFFD7CBBD),
-        indicatorColor: const Color(0xFFC08552),
+        indicatorColor: Colors.transparent,
         onDestinationSelected: (valor) {
           setState(() {
             indice = valor;
           });
         },
         selectedIndex: indice,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-              icon: Icon(Icons.home, size: 33.0, color: Colors.black),
+              icon: Icon(
+                Icons.home_outlined, 
+                size: 33.0, 
+                color: Colors.black),
+                selectedIcon: Icon(
+                  Icons.home,
+                  size: 40.0,
+                  color: Colors.black,
+                ),
               label: ''),
           NavigationDestination(
               icon: Icon(
-                Icons.notifications,
+                Icons.notifications_outlined,
                 size: 33.0,
                 color: Colors.black,
               ),
+              selectedIcon: Icon(
+                  Icons.notifications,
+                  size: 40.0,
+                  color: Colors.black,
+                ),
               label: ''),
           NavigationDestination(
-              icon: Icon(
-                Icons.add_a_photo,
-                size: 33.0,
-                color: Colors.black,
+              icon: Transform.translate(
+                offset: Offset(0, -30),
+                child: Icon(
+                  Icons.add_circle,
+                  size: 40,
+                  color: Colors.black,
+                ),
+              ),
+              selectedIcon: Transform.translate(
+                offset: Offset(0, -30),
+                child: Icon(
+                  Icons.add_circle,
+                  size: 50,
+                  color: Colors.black,
+                ),
               ),
               label: ''),
           NavigationDestination(
@@ -211,6 +235,11 @@ class _FeedPage extends State<FeedPage> {
                 size: 33.0,
                 color: Colors.black,
               ),
+              selectedIcon: const ImageIcon(
+                  AssetImage('assets/images/dump.png'),
+                  size: 50.0,
+                  color: Colors.black,
+                ),
               label: ''),
           NavigationDestination(
               icon: const ImageIcon(
@@ -218,6 +247,11 @@ class _FeedPage extends State<FeedPage> {
                 size: 33.0,
                 color: Colors.black,
               ),
+              selectedIcon: const ImageIcon(
+                  AssetImage('assets/images/monalisaPerfil.png'),
+                  size: 50.0,
+                  color: Colors.black,
+                ),
               label: ''),
         ],
       ),
