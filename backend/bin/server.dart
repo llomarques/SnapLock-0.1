@@ -45,7 +45,7 @@ Future<void> main() async {
       }
 
       final usuarios = await connection.execute(
-        '''SELECT id_usuario, nome, username, username_alterado_em, email, senha_hash, biografia, foto_perfil
+        '''SELECT id_usuario, nome, username, email, senha_hash, biografia, foto_perfil
            FROM usuario
            WHERE (email = :email OR username = :username) AND ativo = 1
            LIMIT 1''',
@@ -441,32 +441,10 @@ Future<void> main() async {
         return _json(409, {'message': 'Este username já está em uso.'});
       }
 
-      final usuarioAtual = await connection.execute(
-        'SELECT username, username_alterado_em FROM usuario WHERE id_usuario = :id_usuario AND ativo = 1 LIMIT 1',
-        {'id_usuario': idUsuario},
-      );
-      if (usuarioAtual.rows.isEmpty) {
-        return _json(404, {'message': 'Usuário não encontrado.'});
-      }
-
-      final dadosAtuais = usuarioAtual.rows.first.assoc();
-      final usernameAtual = dadosAtuais['username'] ?? '';
-      final usernameAlteradoEm = dadosAtuais['username_alterado_em'];
-      if (username != usernameAtual && usernameAlteradoEm != null) {
-        final liberadoEm = DateTime.parse(usernameAlteradoEm).add(const Duration(days: 30));
-        if (DateTime.now().isBefore(liberadoEm)) {
-          return _json(422, {
-            'message': 'O username só pode ser alterado novamente após 30 dias.',
-            'usernameChangedAt': usernameAlteradoEm,
-          });
-        }
-      }
-
       await connection.execute(
         '''UPDATE usuario
              SET nome = :nome,
                username = :username,
-               username_alterado_em = IF(username <> :username, NOW(), username_alterado_em),
                biografia = :biografia
            WHERE id_usuario = :id_usuario AND ativo = 1''',
         {
@@ -478,7 +456,7 @@ Future<void> main() async {
       );
 
       final usuarios = await connection.execute(
-        '''SELECT id_usuario, nome, username, username_alterado_em, email, biografia, foto_perfil
+        '''SELECT id_usuario, nome, username, email, biografia, foto_perfil
            FROM usuario WHERE id_usuario = :id_usuario LIMIT 1''',
         {'id_usuario': idUsuario},
       );

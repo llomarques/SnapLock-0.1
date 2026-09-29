@@ -65,7 +65,6 @@ class LoginController {
             'id': resposta['id_usuario']?.toString() ?? '',
             'name': resposta['nome']?.toString() ?? '',
             'username': resposta['username']?.toString() ?? '',
-            'usernameChangedAt': resposta['usernameChangedAt']?.toString() ?? '',
             'email': resposta['email']?.toString() ?? '',
             'bio': resposta['bio']?.toString() ?? '',
             'avatarUrl': resposta['avatarUrl']?.toString() ?? '',

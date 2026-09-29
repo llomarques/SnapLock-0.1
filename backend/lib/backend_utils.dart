@@ -31,7 +31,6 @@ Map<String, String> publicUser(Map<String, String?> user) => {
       'id': user['id_usuario'] ?? '',
       'name': user['nome'] ?? '',
       'username': user['username'] ?? '',
-      'usernameChangedAt': user['username_alterado_em'] ?? '',
       'email': user['email'] ?? '',
       'bio': user['biografia'] ?? '',
       'avatarUrl': user['foto_perfil'] ?? '',

@@ -23,7 +23,6 @@ class _PerfilPage extends State<PerfilPage> {
   String nomeUsuario = '';
   String username = '';
   String fotoPerfilUrl = '';
-  String usernameChangedAt = '';
 
   @override
   void initState() {
@@ -31,7 +30,6 @@ class _PerfilPage extends State<PerfilPage> {
     final usuario = LoginController.usuarioAtual;
     nomeUsuario = usuario?['name']?.toString() ?? '';
     username = usuario?['username']?.toString() ?? '';
-    usernameChangedAt = usuario?['usernameChangedAt']?.toString() ?? '';
     fotoPerfilUrl = usuario?['avatarUrl']?.toString() ?? '';
     biografiaController.text = usuario?['bio']?.toString() ?? '';
     carregarQuantidadeAmigos();
@@ -77,7 +75,6 @@ class _PerfilPage extends State<PerfilPage> {
         builder: (context) => EditarPerfilPage(
           nomeInicial: nomeUsuario,
           usernameInicial: username,
-          usernameChangedAt: usernameChangedAt,
           biografiaInicial: biografiaController.text,
           fotoPerfilUrlInicial: fotoPerfilUrl,
         ),
@@ -88,7 +85,6 @@ class _PerfilPage extends State<PerfilPage> {
       setState(() {
         nomeUsuario = usuario['name']?.toString() ?? nomeUsuario;
         username = usuario['username']?.toString() ?? username;
-        usernameChangedAt = usuario['usernameChangedAt']?.toString() ?? usernameChangedAt;
         fotoPerfilUrl = usuario['avatarUrl']?.toString() ?? fotoPerfilUrl;
         biografiaController.text = usuario['bio']?.toString() ?? '';
       });

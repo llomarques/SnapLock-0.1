@@ -16,7 +16,7 @@ class EditarPerfilPage extends StatefulWidget {
     this.usernameInicial = '',
     this.biografiaInicial = '',
     this.fotoPerfilInicial,
-    this.fotoPerfilUrlInicial = '', required String usernameChangedAt,
+    this.fotoPerfilUrlInicial = '',
   });
 
   @override

@@ -7,7 +7,6 @@ import 'package:snaplock/frontend/utils/foto_utils.dart';
 class EditarPerfilPage extends StatefulWidget {
   final String nomeInicial;
   final String usernameInicial;
-  final String usernameChangedAt;
   final String biografiaInicial;
   final Uint8List? fotoPerfilInicial;
   final String fotoPerfilUrlInicial;
@@ -16,7 +15,6 @@ class EditarPerfilPage extends StatefulWidget {
     super.key,
     this.nomeInicial = '',
     this.usernameInicial = '',
-    this.usernameChangedAt = '',
     this.biografiaInicial = '',
     this.fotoPerfilInicial,
     this.fotoPerfilUrlInicial = '',
