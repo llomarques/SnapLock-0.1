@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:snaplock/frontend/pages/feed_page.dart';
+import 'package:snaplock/frontend/pages/configuracoes_page.dart';
+import 'package:snaplock/frontend/widgets/botoes_widget.dart';
+import 'package:snaplock/models/user_model.dart';
+import 'package:snaplock/services/api_service.dart';
 
 class PesquisaPage extends StatefulWidget {
   const PesquisaPage({super.key});
@@ -10,9 +15,136 @@ class PesquisaPage extends StatefulWidget {
 
 class _PesquisaPage extends State<PesquisaPage> {
   final TextEditingController pesquisaController = TextEditingController();
+  Timer? debounce;
+  List<UserModel> usuarios = [];
+  bool buscando = false;
+  bool iniciouBusca = false;
+  String? erro;
+  final Map<String, String> statusAmizade = {};
+  final Set<String> enviandoSolicitacoes = {};
+
+  void aoAlterarBusca(String valor) {
+    debounce?.cancel();
+    final query = valor.trim();
+
+    if (query.isEmpty) {
+      setState(() {
+        usuarios = [];
+        buscando = false;
+        iniciouBusca = false;
+        erro = null;
+      });
+      return;
+    }
+
+    setState(() {
+      buscando = true;
+      iniciouBusca = true;
+      erro = null;
+    });
+    debounce = Timer(
+      const Duration(milliseconds: 300),
+      () => buscarUsuarios(query),
+    );
+  }
+
+  Future<void> buscarUsuarios(String query) async {
+    try {
+      final encontrados = await ApiService.searchUsers(query);
+      if (!mounted || pesquisaController.text.trim() != query) return;
+
+      setState(() {
+        usuarios = encontrados;
+        buscando = false;
+        erro = null;
+      });
+    } catch (error) {
+      if (!mounted || pesquisaController.text.trim() != query) return;
+
+      setState(() {
+        buscando = false;
+        erro = error.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  Future<void> enviarSolicitacao(UserModel usuario) async {
+    if (enviandoSolicitacoes.contains(usuario.id)) return;
+
+    setState(() => enviandoSolicitacoes.add(usuario.id));
+    try {
+      await ApiService.sendFriendRequest(usuario.id);
+      if (mounted) {
+        setState(() => statusAmizade[usuario.id] = 'pendente');
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => enviandoSolicitacoes.remove(usuario.id));
+    }
+  }
+
+  Widget resultadosBusca() {
+    if (!iniciouBusca) {
+      return const Center(child: Text('Busque usuários pelo nome ou username.'));
+    }
+    if (buscando) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (erro != null) {
+      return Center(child: Text(erro!));
+    }
+    if (usuarios.isEmpty) {
+      return const Center(child: Text('Nenhum usuário encontrado.'));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      itemCount: usuarios.length,
+      itemBuilder: (context, index) {
+        final usuario = usuarios[index];
+        final status = statusAmizade[usuario.id] ?? usuario.friendshipStatus;
+        final enviando = enviandoSolicitacoes.contains(usuario.id);
+        return ListTile(
+          dense: true,
+          visualDensity: const VisualDensity(vertical: -2),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+          leading: CircleAvatar(
+            radius: 15,
+            backgroundColor: Colors.black,
+            backgroundImage: usuario.avatarUrl.isNotEmpty
+                ? NetworkImage(usuario.avatarUrl)
+                : null,
+            child: usuario.avatarUrl.isEmpty
+                ? const Icon(Icons.person, color: Colors.white, size: 19)
+                : null,
+          ),
+          title: Text('@${usuario.username}'),
+          trailing: BotoesWidget(
+            texto: enviando
+              ? 'Enviando...'
+              : status == 'aceito'
+                ? 'Amigos'
+                : status == 'pendente'
+                  ? 'Pendente'
+                  : 'Fazer amizade',
+            compacto: true,
+            aoTocar: status.isNotEmpty || enviando
+              ? () {}
+              : () => enviarSolicitacao(usuario),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
+    debounce?.cancel();
     pesquisaController.dispose();
     super.dispose();
   }
@@ -31,12 +163,9 @@ class _PesquisaPage extends State<PesquisaPage> {
                 automaticallyImplyLeading: false,
                 toolbarHeight: 110,
                 leading: IconButton(
-                  onPressed: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FeedPage()),
-                  ),
+                  onPressed: () => Navigator.pop(context),
                   icon: const Icon(
-                    Icons.arrow_back,
+                    Icons.menu,
                     size: 35.0,
                     color: Colors.black,
                   ),
@@ -47,6 +176,21 @@ class _PesquisaPage extends State<PesquisaPage> {
                   height: 80,
                   width: 80,
                 ),
+                actions: [
+                  IconButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ConfiguracoesPage(),
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.settings,
+                      size: 32,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
                 backgroundColor: const Color(0xFFD7CBBD),
               ),
             ),
@@ -56,10 +200,11 @@ class _PesquisaPage extends State<PesquisaPage> {
             padding: const EdgeInsets.all(24),
             child: TextField(
               controller: pesquisaController,
+              onChanged: aoAlterarBusca,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Usuário',
+                hintText: 'Nome ou username',
                 prefixIcon: const Icon(
                   Icons.search,
                   color: Color(0xFF5E3023),
@@ -73,6 +218,14 @@ class _PesquisaPage extends State<PesquisaPage> {
                   borderSide: BorderSide.none,
                 ),
               ),
+            ),
+          ),
+          Expanded(child: resultadosBusca()),
+          const Padding(
+            padding: EdgeInsets.only(top: 12, bottom: 22),
+            child: Text(
+              'Isso é tudo.',
+              style: TextStyle(color: Colors.black38),
             ),
           ),
         ],

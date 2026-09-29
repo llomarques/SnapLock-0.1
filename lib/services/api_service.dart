@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
+import '../controller/controller.login.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 
@@ -55,6 +56,15 @@ class ApiService {
     final headers = {'Content-Type': 'application/json; charset=utf-8'};
     if (_currentToken != null) {
       headers['Authorization'] = 'Bearer $_currentToken';
+    }
+    return headers;
+  }
+
+  static Map<String, String> get _friendHeaders {
+    final headers = _headers;
+    final loginToken = LoginController.tokenAtual;
+    if (loginToken != null && loginToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $loginToken';
     }
     return headers;
   }
@@ -306,22 +316,25 @@ class ApiService {
   static Future<List<UserModel>> searchUsers(String query) async {
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/friends/search?q=${Uri.encodeComponent(query)}'),
-      headers: _headers,
+      headers: _friendHeaders,
     );
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final decoded = jsonDecode(response.body);
+    final data = decoded is Map<String, dynamic>
+        ? decoded
+        : <String, dynamic>{};
     if (data['success'] == true) {
       final list = data['users'] as List;
       return list.map((item) => UserModel.fromJson(item as Map<String, dynamic>)).toList();
     } else {
-      throw Exception(data['message'] ?? 'Erro ao buscar usuários.');
+      throw Exception(data['message'] ?? data['erro'] ?? 'Erro ao buscar usuários.');
     }
   }
 
   static Future<void> sendFriendRequest(String friendId) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/friends/request'),
-      headers: _headers,
+      headers: _friendHeaders,
       body: jsonEncode({'friendId': friendId}),
     );
 
@@ -334,7 +347,7 @@ class ApiService {
   static Future<void> acceptFriendRequest(String requestId) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/friends/accept'),
-      headers: _headers,
+      headers: _friendHeaders,
       body: jsonEncode({'requestId': requestId}),
     );
 
@@ -347,7 +360,7 @@ class ApiService {
   static Future<void> declineFriendRequest(String requestId) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/friends/decline'),
-      headers: _headers,
+      headers: _friendHeaders,
       body: jsonEncode({'requestId': requestId}),
     );
 
@@ -360,7 +373,7 @@ class ApiService {
   static Future<void> removeFriend(String friendId) async {
     final response = await http.delete(
       Uri.parse('${ApiConfig.baseUrl}/friends/$friendId'),
-      headers: _headers,
+      headers: _friendHeaders,
     );
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -372,7 +385,7 @@ class ApiService {
   static Future<List<UserModel>> getFriends() async {
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/friends'),
-      headers: _headers,
+      headers: _friendHeaders,
     );
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -387,7 +400,7 @@ class ApiService {
   static Future<List<Map<String, dynamic>>> getPendingRequests() async {
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/friends/pending'),
-      headers: _headers,
+      headers: _friendHeaders,
     );
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;

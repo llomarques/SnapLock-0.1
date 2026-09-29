@@ -3,7 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:snaplock/services/api_service.dart';
 import 'editarPerfil_page.dart';
-import '../../controller/controller.login.dart';
+import '../controller/controller.login.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -214,35 +214,33 @@ class _PerfilPage extends State<PerfilPage> {
           const SizedBox(
             height: 20,
           ),
-          SizedBox(
-            width: double.infinity,
-            child: TextField(
-              controller: biografiaController,
-              readOnly: true,
-              showCursor: false,
-              enableInteractiveSelection: false,
-              minLines: 1,
-              maxLines: null,
-              maxLength: 150,
-              decoration: InputDecoration(
-                counterText: '',
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Biografia',
-                prefixIcon: const Icon(
-                  Icons.chat_bubble,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+          Column(
+            children: [
+              
+              TextField(
+                controller: biografiaController,
+                readOnly: true,
+                showCursor: false,
+                enableInteractiveSelection: false,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFFD7CBBD),
+                  hintText: 'Biografia',
+                  prefixIcon: const Icon(
+                    Icons.chat_bubble,
+                    color: Color(0xFF5E3023),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
           const SizedBox(
             height: 20,
