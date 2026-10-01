@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:snaplock/frontend/login_page.dart';
+import 'package:snaplock/frontend/pages/inicio_page.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-void main() {
-	runApp(const SnapLockApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const SnapLockApp());
 }
 
 class SnapLockApp extends StatelessWidget {
-	const SnapLockApp({super.key});
+  const SnapLockApp({super.key});
 
-	@override
-	Widget build(BuildContext context) {
-		return MaterialApp(
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'SnapLock',
       theme: ThemeData(
-        colorSchemeSeed: Colors.blue,
-        useMaterial3: true
+        textTheme: GoogleFonts.poppinsTextTheme(),
       ),
-      home: const LoginPage(),
+      home: const InicioPage(),
     );
-	}
+  }
 }

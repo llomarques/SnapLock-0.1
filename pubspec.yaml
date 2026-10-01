@@ -10,10 +10,11 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.0
-  image_picker: ^1.0.7
+  image_picker: ^1.2.3
   shared_preferences: ^2.2.2
-  intl: ^0.19.0
+  intl: ^0.20.2
   google_fonts: ^6.1.0
+  carousel_slider: ^5.1.2
 
 dev_dependencies:
   flutter_test:
@@ -24,3 +25,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/Logo.png
+    - assets/images/logo.png
+    - assets/images/monalisaPerfil.png
+    - assets/images/dump.png
