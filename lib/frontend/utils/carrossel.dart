@@ -4,7 +4,7 @@ import 'package:snaplock/theme/app_fonts.dart';
 
 class CarrosselDeInformacoes extends StatefulWidget {
   const CarrosselDeInformacoes({super.key});
-
+ 
   @override
   State<CarrosselDeInformacoes> createState() => _CarrosselDeInformacoesState();
 }
