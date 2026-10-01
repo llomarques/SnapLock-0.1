@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/services/api_service.dart';
+import 'package:snaplock/frontend/widgets/botoes_widget.dart';
 
 class NotificacoesPage extends StatefulWidget {
   const NotificacoesPage({super.key});
@@ -74,7 +76,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
       return Center(child: Text(erro!));
     }
     if (solicitacoes.isEmpty) {
-      return const Center(child: Text('Nenhuma solicitação de amizade.'));
+      return const Center(child: Text('Cri Cri Cri...'));
     }
 
     return ListView.separated(
@@ -91,38 +93,34 @@ class _NotificacoesPage extends State<NotificacoesPage> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             children: [
-              CircleAvatar(
-                backgroundColor: const Color(0xFFD7CBBD),
-                backgroundImage: avatarUrl.isNotEmpty
-                    ? NetworkImage(avatarUrl)
-                    : null,
-                child: avatarUrl.isEmpty
-                    ? const Icon(Icons.person, color: Color(0xFF5E3023))
-                    : null,
+              AvatarSquareWidget(
+                imageUrl: avatarUrl,
+                size: 33,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('$nome enviou uma solicitação'),
-                    Text('@$username', style: const TextStyle(fontSize: 12)),
+                    Text('@$username enviou uma solicitação'),
                     Wrap(
                       spacing: 4,
                       children: [
-                        TextButton(
-                          onPressed: () => responderSolicitacao(
+                        BotoesWidget(
+                          texto: 'Aceitar',
+                          compacto: true,
+                          aoTocar: () => responderSolicitacao(
                             solicitacao,
                             aceitar: true,
                           ),
-                          child: const Text('Aceitar'),
                         ),
-                        TextButton(
-                          onPressed: () => responderSolicitacao(
+                        BotoesWidget(
+                          texto: 'Recusar',
+                          compacto: true,
+                          aoTocar: () => responderSolicitacao(
                             solicitacao,
                             aceitar: false,
                           ),
-                          child: const Text('Recusar'),
                         ),
                       ],
                     ),

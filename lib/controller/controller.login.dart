@@ -16,7 +16,14 @@ class LoginController {
   LoginController({http.Client? client}) : _client = client ?? http.Client();
 
   static Map<String, dynamic>? usuarioAtual;
+  static final ValueNotifier<Map<String, dynamic>?> usuarioNotifier =
+      ValueNotifier(null);
   static String? tokenAtual;
+
+  static void _atualizarUsuario(Map<String, dynamic>? usuario) {
+    usuarioAtual = usuario;
+    usuarioNotifier.value = usuario;
+  }
 
   static const _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL');
 
@@ -59,7 +66,7 @@ class LoginController {
 
     final resposta = body ?? <String, dynamic>{};
     final usuario = resposta['user'];
-    usuarioAtual = usuario is Map<String, dynamic>
+    _atualizarUsuario(usuario is Map<String, dynamic>
         ? usuario
         : {
             'id': resposta['id_usuario']?.toString() ?? '',
@@ -68,7 +75,7 @@ class LoginController {
             'email': resposta['email']?.toString() ?? '',
             'bio': resposta['bio']?.toString() ?? '',
             'avatarUrl': resposta['avatarUrl']?.toString() ?? '',
-          };
+          });
     tokenAtual = resposta['token']?.toString();
     return resposta;
   }
@@ -105,10 +112,10 @@ class LoginController {
 
   // Atualiza o usuário em memória com a nova foto
   if (usuarioAtual != null) {
-    usuarioAtual = {
+    _atualizarUsuario({
       ...usuarioAtual!,
       'avatarUrl': novaUrl,
-    };
+    });
   }
 
   return novaUrl;
@@ -144,7 +151,7 @@ class LoginController {
 
     final usuario = data['user'];
     if (usuario is Map<String, dynamic>) {
-      usuarioAtual = usuario;
+      _atualizarUsuario(usuario);
     }
     return data;
   }
