@@ -204,63 +204,105 @@ class _FeedPage extends State<FeedPage> {
         selectedIndex: indice,
         destinations: [
           NavigationDestination(
-              icon: Icon(
+              icon: _TapScale(child: Icon(
                 Icons.home_outlined, 
                 size: 33.0, 
-                color: Colors.black),
-                selectedIcon: Icon(
+                color: Colors.black)),
+                selectedIcon: _TapScale(child: Icon(
                   Icons.home,
                   size: 40.0,
                   color: Colors.black,
-                ),
+                )),
               label: ''),
           NavigationDestination(
-              icon: Icon(
+              icon: _TapScale(child: Icon(
                 Icons.notifications_outlined,
                 size: 33.0,
                 color: Colors.black,
-              ),
-              selectedIcon: Icon(
+              )),
+              selectedIcon: _TapScale(child: Icon(
                   Icons.notifications,
                   size: 40.0,
                   color: Colors.black,
-                ),
+                )),
               label: ''),
           NavigationDestination(
-              icon: Transform.translate(
+              icon: _TapScale(child: Transform.translate(
                 offset: Offset(0, -30),
                 child: Icon(
                   Icons.add_circle,
                   size: 40,
                   color: Colors.black,
                 ),
-              ),
-              selectedIcon: Transform.translate(
+              )),
+              selectedIcon: _TapScale(child: Transform.translate(
                 offset: Offset(0, -30),
                 child: Icon(
                   Icons.add_circle,
                   size: 50,
                   color: Colors.black,
                 ),
-              ),
+              )),
               label: ''),
           NavigationDestination(
-              icon: const ImageIcon(
+              icon: _TapScale(child: const ImageIcon(
                 AssetImage('assets/images/dump.png'),
                 size: 33.0,
                 color: Colors.black,
-              ),
-              selectedIcon: const ImageIcon(
+              )),
+              selectedIcon: _TapScale(child: const ImageIcon(
                   AssetImage('assets/images/dump.png'),
                   size: 50.0,
                   color: Colors.black,
-                ),
+                )),
               label: ''),
           NavigationDestination(
+              icon: _TapScale(child: const ImageIcon(
+                AssetImage('assets/images/monalisaPerfil.png'),
+                size: 33.0,
+                color: Colors.black,
+              )),
+              selectedIcon: _TapScale(child: const ImageIcon(
+                  AssetImage('assets/images/monalisaPerfil.png'),
+                  size: 50.0,
+                  color: Colors.black,
+                )),
               icon: _iconePerfil(33),
               selectedIcon: _iconePerfil(50),
               label: ''),
         ],
+      ),
+    );
+  }
+}
+
+class _TapScale extends StatefulWidget {
+  const _TapScale({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_TapScale> createState() => _TapScaleState();
+}
+
+class _TapScaleState extends State<_TapScale> {
+  bool _pressed = false;
+
+  void _release(PointerEvent _) {
+    setState(() => _pressed = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => setState(() => _pressed = true),
+      onPointerUp: _release,
+      onPointerCancel: _release,
+      child: AnimatedScale(
+        scale: _pressed ? 0.84 : 1,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOutCubic,
+        child: widget.child,
       ),
     );
   }

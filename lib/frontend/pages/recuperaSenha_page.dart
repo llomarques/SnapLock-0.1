@@ -70,12 +70,12 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
             const SizedBox(height: 60),
             InputsenhaWidget(
 							controller: novaSenhaController,
-							texto: 'Senha atual',
+							texto: 'Nova senha',
 						),
             const SizedBox(height: 20),
             InputsenhaWidget(
 							controller: confirmarSenhaController,
-							texto: 'Senha atual',
+							texto: 'Confirmar senha',
 						),
             const SizedBox(height: 20),
             ElevatedButton(

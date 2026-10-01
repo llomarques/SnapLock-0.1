@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:snaplock/services/api_service.dart';
 import 'editarPerfil_page.dart';
+import 'amigos_page.dart';
 import '../../controller/controller.login.dart';
 
 class PerfilPage extends StatefulWidget {
@@ -125,13 +126,28 @@ class _PerfilPage extends State<PerfilPage> {
             children: [
               Expanded(
                 child: Center(
-                  child: Text(
-                    '$quantidadeAmigos\nAmigos',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      color: Color(0xFF5E3023),
-                      fontWeight: FontWeight.bold,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AmigosPage(),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Text(
+                        '$quantidadeAmigos\nAmigos',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          color: Color(0xFF5E3023),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ),
