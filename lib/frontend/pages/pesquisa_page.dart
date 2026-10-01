@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:snaplock/frontend/pages/configuracoes_page.dart';
+import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
 import 'package:snaplock/models/user_model.dart';
 import 'package:snaplock/services/api_service.dart';
@@ -113,15 +114,11 @@ class _PesquisaPage extends State<PesquisaPage> {
           dense: true,
           visualDensity: const VisualDensity(vertical: -2),
           contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-          leading: CircleAvatar(
-            radius: 15,
+          leading: AvatarSquareWidget(
+            imageUrl: usuario.avatarUrl,
+            size: 33,
             backgroundColor: Colors.black,
-            backgroundImage: usuario.avatarUrl.isNotEmpty
-                ? NetworkImage(usuario.avatarUrl)
-                : null,
-            child: usuario.avatarUrl.isEmpty
-                ? const Icon(Icons.person, color: Colors.white, size: 19)
-                : null,
+            iconColor: Colors.white,
           ),
           title: Text('@${usuario.username}'),
           trailing: BotoesWidget(
@@ -221,13 +218,14 @@ class _PesquisaPage extends State<PesquisaPage> {
             ),
           ),
           Expanded(child: resultadosBusca()),
-          const Padding(
-            padding: EdgeInsets.only(top: 12, bottom: 22),
-            child: Text(
-              'Isso é tudo.',
-              style: TextStyle(color: Colors.black38),
+          if (iniciouBusca && !buscando && erro == null)
+            const Padding(
+              padding: EdgeInsets.only(top: 12, bottom: 22),
+              child: Text(
+                'Isso é tudo.',
+                style: TextStyle(color: Colors.black38),
+              ),
             ),
-          ),
         ],
       ),
     );

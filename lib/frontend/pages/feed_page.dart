@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:snaplock/controller/controller.login.dart';
+import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'notificacoes_page.dart';
 import 'postar_page.dart';
@@ -83,6 +85,19 @@ class FeedConteudoPage extends StatelessWidget {
 
 class _FeedPage extends State<FeedPage> {
    late int indice;
+
+  Widget _iconePerfil(double tamanho) {
+    return ValueListenableBuilder<Map<String, dynamic>?>(
+      valueListenable: LoginController.usuarioNotifier,
+      builder: (context, usuario, child) => AvatarSquareWidget(
+        imageUrl: usuario?['avatarUrl']?.toString() ?? '',
+        size: tamanho,
+        backgroundColor: Colors.transparent,
+        iconColor: Colors.black,
+        fallbackAsset: 'assets/images/monalisaPerfil.png',
+      ),
+    );
+  }
 
   final telas = const [
     FeedConteudoPage(),
@@ -242,16 +257,8 @@ class _FeedPage extends State<FeedPage> {
                 ),
               label: ''),
           NavigationDestination(
-              icon: const ImageIcon(
-                AssetImage('assets/images/monalisaPerfil.png'),
-                size: 33.0,
-                color: Colors.black,
-              ),
-              selectedIcon: const ImageIcon(
-                  AssetImage('assets/images/monalisaPerfil.png'),
-                  size: 50.0,
-                  color: Colors.black,
-                ),
+              icon: _iconePerfil(33),
+              selectedIcon: _iconePerfil(50),
               label: ''),
         ],
       ),
