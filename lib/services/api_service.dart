@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -272,6 +273,54 @@ class ApiService {
     } else {
       throw Exception(data['message'] ?? 'Erro ao criar publicação.');
     }
+  }
+
+  static Future<Map<String, dynamic>> createPostFromBytes(
+    Uint8List imageBytes,
+    String caption, {
+    String? filtroAplicado,
+    String fileName = 'postagem.jpg',
+  }) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.baseUrl}/fotos'),
+    )
+      ..fields['legenda'] = caption
+      ..fields['filtro_aplicado'] = filtroAplicado ?? ''
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'midia',
+          imageBytes,
+          filename: fileName,
+        ),
+      );
+
+    final loginToken = LoginController.tokenAtual;
+    final token = loginToken != null && loginToken.isNotEmpty
+        ? loginToken
+        : _currentToken;
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    Map<String, dynamic> data = {};
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) data = decoded;
+    } on FormatException {
+      throw Exception(
+        'Erro HTTP ${response.statusCode}: ${response.body.trim()}',
+      );
+    }
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao publicar a memória.');
+    }
+    return data;
   }
 
   static Future<void> deletePost(String postId) async {
