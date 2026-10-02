@@ -437,6 +437,34 @@ Future<void> main() async {
           {'id_recuperacao': idRecuperacao});
       return _json(200, {'mensagem': 'Senha redefinida com sucesso.'});
     })
+
+    
+
+    
+    ..get('/api/fotos/minhas', (Request request) async {
+  final idUsuario = _idUsuarioAutenticado(request, sessoes);
+  if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+  try {
+    final resultado = await connection.execute(
+      '''SELECT id_foto, id_usuario, midia_url, legenda,
+                filtro_aplicado, data_postagem
+         FROM foto
+         WHERE id_usuario = :id_usuario
+         ORDER BY data_postagem DESC, id_foto DESC''',
+      {'id_usuario': idUsuario},
+    );
+
+    return _json(200, {
+      'success': true,
+      'fotos': resultado.rows.map((row) => row.assoc()).toList(),
+    });
+  } catch (error, stackTrace) {
+    print('Erro ao buscar fotos: $error');
+    print(stackTrace);
+    return _json(500, {'message': 'Erro ao carregar galeria.'});
+  }
+})
     ..post('/api/fotos', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});

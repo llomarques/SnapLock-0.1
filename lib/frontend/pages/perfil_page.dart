@@ -18,6 +18,7 @@ class _PerfilPage extends State<PerfilPage> {
   int quantidadeAmigos = 0;
   List<PostModel> fotos = [];
   bool carregandoFotos = true;
+  bool erroAoCarregarFotos = false;
   String nomeUsuario = '';
   String username = '';
   String fotoPerfilUrl = '';
@@ -51,24 +52,52 @@ class _PerfilPage extends State<PerfilPage> {
   }
 
   Future<void> carregarFotos() async {
-    try {
-      final galeria = await ApiService.getMyGallery();
+  try {
+    print('========================================');
+    print('INICIANDO CARREGAMENTO DAS FOTOS');
+    print('========================================');
 
-      if (!mounted) {
-        return;
-      }
+    final galeria = await ApiService.getMyGallery();
 
+    print('FOTOS RECEBIDAS: ${galeria.length}');
+
+    for (final foto in galeria) {
+      print('ID: ${foto.id}');
+      print('URL: ${foto.imageUrl}');
+      print('LEGENDA: ${foto.caption}');
+      print('----------------------------------------');
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      fotos = galeria;
+      erroAoCarregarFotos = false;
+    });
+  } catch (e, stackTrace) {
+    print('========================================');
+    print('ERRO AO CARREGAR FOTOS');
+    print('========================================');
+    print('ERRO: $e');
+    print('STACK TRACE:');
+    print(stackTrace);
+    print('========================================');
+
+    if (mounted) {
       setState(() {
-        fotos = galeria;
+        erroAoCarregarFotos = true;
       });
-    } catch (_) {
-      // Mantém o perfil disponível mesmo quando a API estiver indisponível.
-    } finally {
-      if (mounted) {
-        setState(() => carregandoFotos = false);
-      }
+    }
+  } finally {
+    if (mounted) {
+      setState(() {
+        carregandoFotos = false;
+      });
     }
   }
+}
 
   Future<void> abrirEditarPerfil(BuildContext context) async {
     final usuario = await Navigator.push<Map<String, dynamic>>(
@@ -91,6 +120,93 @@ class _PerfilPage extends State<PerfilPage> {
         biografiaController.text = usuario['bio']?.toString() ?? '';
       });
     }
+  }
+
+  void _abrirFoto(PostModel foto) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.85),
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(16),
+          child: Stack(
+            children: [
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3E9DC),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // FOTO
+                    InteractiveViewer(
+                      minScale: 1,
+                      maxScale: 4,
+                      child: Image.network(
+                        foto.imageUrl,
+                        width: double.infinity,
+                        fit: BoxFit.contain,
+                        errorBuilder: (
+                          context,
+                          error,
+                          stackTrace,
+                        ) {
+                          return const SizedBox(
+                            height: 300,
+                            child: Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                size: 50,
+                                color: Color(0xFF895737),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    // LEGENDA
+                    if (foto.caption.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          foto.caption,
+                          style: const TextStyle(
+                            color: Color(0xFF5E3023),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // BOTÃO FECHAR
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.close),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black.withOpacity(0.65),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   ImageProvider<Object> get imagemPerfil {
@@ -267,6 +383,15 @@ class _PerfilPage extends State<PerfilPage> {
                   color: Color(0xFF895737),
                 ),
               )
+            else if (erroAoCarregarFotos)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  'Não foi possível carregar suas memórias. Tente novamente.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFF6F5C4A)),
+                ),
+              )
             else if (fotos.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
@@ -276,34 +401,96 @@ class _PerfilPage extends State<PerfilPage> {
                 ),
               )
             else
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: fotos.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 3,
-                  crossAxisSpacing: 3,
-                ),
-                itemBuilder: (context, index) => ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.network(
-                    fotos[index].imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: const Color(0xFFD7CBBD),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.broken_image_outlined,
-                        color: Color(0xFF895737),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              _buildGalleryGrid(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildGalleryGrid() {
+    const columnCount = 3;
+    const spacing = 4.0;
+    const aspectRatios = [0.78, 1.2, 0.95, 1.35, 0.82, 1.05];
+    final columns = List.generate(columnCount, (_) => <int>[]);
+    final columnHeights = List<double>.filled(columnCount, 0);
+
+    for (var index = 0; index < fotos.length; index++) {
+      var shortestColumn = 0;
+      for (var column = 1; column < columnCount; column++) {
+        if (columnHeights[column] < columnHeights[shortestColumn]) {
+          shortestColumn = column;
+        }
+      }
+
+      final aspectRatio = aspectRatios[index % aspectRatios.length];
+      columns[shortestColumn].add(index);
+      columnHeights[shortestColumn] += 1 / aspectRatio + spacing;
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var column = 0; column < columnCount; column++) ...[
+          if (column > 0) const SizedBox(width: spacing),
+          Expanded(
+            child: Column(
+              children: [
+                for (final index in columns[column]) ...[
+                  GestureDetector(
+                    onTap: () {
+                      _abrirFoto(fotos[index]);
+                    },
+                    child: AspectRatio(
+                      aspectRatio: aspectRatios[index % aspectRatios.length],
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.network(
+                          fotos[index].imageUrl,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (
+                            context,
+                            child,
+                            loadingProgress,
+                          ) {
+                            if (loadingProgress == null) {
+                              return child;
+                            }
+
+                            return Container(
+                              color: const Color(0xFFD7CBBD),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF895737),
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (
+                            context,
+                            error,
+                            stackTrace,
+                          ) {
+                            return Container(
+                              color: const Color(0xFFD7CBBD),
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.broken_image_outlined,
+                                color: Color(0xFF895737),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: spacing),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

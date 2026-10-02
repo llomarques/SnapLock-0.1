@@ -23,15 +23,18 @@ class PostModel {
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
     return PostModel(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      imageUrl: json['imageUrl'] as String,
-      caption: (json['caption'] as String?) ?? '',
-      createdAt: json['createdAt'] as String,
-      authorName: json['authorName'] as String?,
-      authorAvatar: json['authorAvatar'] as String?,
-      reactionCount: (json['reactionCount'] as int?) ?? 0,
-      userReaction: json['userReaction'] as String?,
+      id: json['id']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
+      imageUrl: json['imageUrl']?.toString() ?? '',
+      caption: json['caption']?.toString() ?? '',
+      createdAt: json['createdAt']?.toString() ?? '',
+      authorName: json['authorName']?.toString(),
+      authorAvatar: json['authorAvatar']?.toString(),
+      reactionCount: int.tryParse(
+            json['reactionCount']?.toString() ?? '0',
+          ) ??
+          0,
+      userReaction: json['userReaction']?.toString(),
     );
   }
 }
