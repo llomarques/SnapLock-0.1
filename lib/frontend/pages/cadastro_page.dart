@@ -27,8 +27,6 @@ class _CadastroPageState extends State<CadastroPage> {
   bool carregando = false;
   DateTime? dataNascimento;
 
-  
-
   Future<void> cadastrar() async {
     String nome = nomeController.text.trim();
     String username = usernameController.text.trim();
@@ -95,6 +93,14 @@ class _CadastroPageState extends State<CadastroPage> {
           dataNascimento ?? DateTime(hoje.year - 16, hoje.month, hoje.day),
       firstDate: DateTime(1900),
       lastDate: hoje,
+      locale: const Locale('pt', 'BR'),
+      initialEntryMode: DatePickerEntryMode.input,
+      helpText: 'Data de nascimento',
+      fieldHintText: 'dd/mm/aaaa',
+      fieldLabelText: 'Data de nascimento',
+      cancelText: 'Cancelar',
+      confirmText: 'Selecionar',
+      errorFormatText: 'Digite no formato dia/mês/ano.',
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -122,7 +128,7 @@ class _CadastroPageState extends State<CadastroPage> {
     super.dispose();
   }
 
-    void abrirLogin(BuildContext context) {
+  void abrirLogin(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -192,14 +198,14 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 15),
             InputsenhaWidget(
-							controller: senhaController,
-							texto: 'Digite sua senha',
-						),
+              controller: senhaController,
+              texto: 'Digite sua senha',
+            ),
             const SizedBox(height: 15),
             InputsenhaWidget(
-							controller: confirmaSenhaController,
-							texto: 'Confirme sua senha',
-						),
+              controller: confirmaSenhaController,
+              texto: 'Confirme sua senha',
+            ),
             const SizedBox(height: 25),
             ElevatedButton.icon(
               onPressed: carregando ? null : cadastrar,
