@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
 import 'package:snaplock/services/api_service.dart';
+import 'package:snaplock/models/post_model.dart';
 import 'editarPerfil_page.dart';
 import 'amigos_page.dart';
 import '../../controller/controller.login.dart';
@@ -16,11 +15,9 @@ class PerfilPage extends StatefulWidget {
 class _PerfilPage extends State<PerfilPage> {
   final TextEditingController biografiaController = TextEditingController();
 
-  final ImagePicker picker = ImagePicker();
-
-  Uint8List? fotoPerfil;
   int quantidadeAmigos = 0;
-  int quantidadeFotos = 0;
+  List<PostModel> fotos = [];
+  bool carregandoFotos = true;
   String nomeUsuario = '';
   String username = '';
   String fotoPerfilUrl = '';
@@ -34,7 +31,7 @@ class _PerfilPage extends State<PerfilPage> {
     fotoPerfilUrl = usuario?['avatarUrl']?.toString() ?? '';
     biografiaController.text = usuario?['bio']?.toString() ?? '';
     carregarQuantidadeAmigos();
-    carregarQuantidadeFotos();
+    carregarFotos();
   }
 
   Future<void> carregarQuantidadeAmigos() async {
@@ -53,19 +50,23 @@ class _PerfilPage extends State<PerfilPage> {
     }
   }
 
-  Future<void> carregarQuantidadeFotos() async {
+  Future<void> carregarFotos() async {
     try {
-      final fotos = await ApiService.getFotos();
+      final galeria = await ApiService.getMyGallery();
 
       if (!mounted) {
         return;
       }
 
       setState(() {
-        quantidadeFotos = fotos.length!;
+        fotos = galeria;
       });
     } catch (_) {
       // Mantém o perfil disponível mesmo quando a API estiver indisponível.
+    } finally {
+      if (mounted) {
+        setState(() => carregandoFotos = false);
+      }
     }
   }
 
@@ -93,9 +94,6 @@ class _PerfilPage extends State<PerfilPage> {
   }
 
   ImageProvider<Object> get imagemPerfil {
-    if (fotoPerfil != null) {
-      return MemoryImage(fotoPerfil!);
-    }
     if (fotoPerfilUrl.isNotEmpty) {
       return NetworkImage(fotoPerfilUrl);
     }
@@ -108,7 +106,6 @@ class _PerfilPage extends State<PerfilPage> {
     super.dispose();
   }
 
-  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,160 +113,197 @@ class _PerfilPage extends State<PerfilPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
-        
-        children: [
-          const SizedBox(
-            height: 25,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Center(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AmigosPage(),
+          children: [
+            const SizedBox(
+              height: 25,
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Center(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AmigosPage(),
+                        ),
                       ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: Text(
-                        '$quantidadeAmigos\nAmigos',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          color: Color(0xFF5E3023),
-                          fontWeight: FontWeight.bold,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Text(
+                          '$quantidadeAmigos\nAmigos',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            color: Color(0xFF5E3023),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color(0xFF895737),
-                        width: 2,
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFF895737),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image(
-                        image: imagemPerfil,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Image.asset(
-                          'assets/images/monalisaPerfil.png',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image(
+                          image: imagemPerfil,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Image.asset(
+                            'assets/images/monalisaPerfil.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    right: -4,
-                    bottom: -4,
-                    child: IconButton(
-                      onPressed: () => abrirEditarPerfil(context),
-                      icon: const Icon(Icons.edit, size: 17),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: const Color(0xFFF3E9DC),
-                        minimumSize: const Size(32, 32),
-                        padding: EdgeInsets.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    Positioned(
+                      right: -4,
+                      bottom: -4,
+                      child: IconButton(
+                        onPressed: () => abrirEditarPerfil(context),
+                        icon: const Icon(Icons.edit, size: 17),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: const Color(0xFFF3E9DC),
+                          minimumSize: const Size(32, 32),
+                          padding: EdgeInsets.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      '${fotos.length}\nMemórias',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        color: Color(0xFF5E3023),
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(
+              height: 15,
+            ),
+            Text(
+              nomeUsuario,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
               ),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    '$quantidadeFotos\nMemórias',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      color: Color(0xFF5E3023),
-                      fontWeight: FontWeight.bold,
+            ),
+            const SizedBox(
+              height: 5,
+            ),
+            Text(
+              username.isEmpty ? '@username' : '@$username',
+              style: const TextStyle(color: Colors.black, fontSize: 10),
+            ),
+            const SizedBox(
+              height: 20,
+            ),
+            SizedBox(
+              width: double.infinity,
+              child: TextField(
+                controller: biografiaController,
+                readOnly: true,
+                showCursor: false,
+                enableInteractiveSelection: false,
+                minLines: 1,
+                maxLines: null,
+                maxLength: 150,
+                decoration: InputDecoration(
+                  counterText: '',
+                  filled: true,
+                  fillColor: const Color(0xFFD7CBBD),
+                  hintText: 'Biografia',
+                  prefixIcon: const Icon(
+                    Icons.chat_bubble,
+                    color: Color(0xFF5E3023),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(
+              height: 20,
+            ),
+            if (carregandoFotos)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(
+                  color: Color(0xFF895737),
+                ),
+              )
+            else if (fotos.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  'Nenhuma memória ainda.',
+                  style: TextStyle(color: Color(0xFF6F5C4A)),
+                ),
+              )
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: fotos.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 3,
+                  crossAxisSpacing: 3,
+                ),
+                itemBuilder: (context, index) => ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.network(
+                    fotos[index].imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: const Color(0xFFD7CBBD),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.broken_image_outlined,
+                        color: Color(0xFF895737),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(
-            height: 15,
-          ),
-          Text(
-            nomeUsuario,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(
-            height: 5,
-          ),
-          Text(
-            username.isEmpty ? '@username' : '@$username',
-            style: const TextStyle(color: Colors.black, fontSize: 10),
-          ),
-          const SizedBox(
-            height: 20,
-          ),
-          SizedBox(
-            width: double.infinity,
-            child: TextField(
-              controller: biografiaController,
-              readOnly: true,
-              showCursor: false,
-              enableInteractiveSelection: false,
-              minLines: 1,
-              maxLines: null,
-              maxLength: 150,
-              decoration: InputDecoration(
-                counterText: '',
-                filled: true,
-                fillColor: const Color(0xFFD7CBBD),
-                hintText: 'Biografia',
-                prefixIcon: const Icon(
-                  Icons.chat_bubble,
-                  color: Color(0xFF5E3023),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(
-            height: 20,
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
-}
-
-extension on Object? {
-  int? get length => null;
 }
