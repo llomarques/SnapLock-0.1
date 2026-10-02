@@ -141,11 +141,16 @@ class _PostarPageState extends State<PostarPage> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(14),
                             child: imagemPerfil == null
-                                ? const Center(
-                                    child: Icon(
-                                      Icons.add_photo_alternate_outlined,
-                                      size: 42,
-                                      color: Color(0xFF895737),
+                                ? Center(
+                                    child: IconButton(
+                                      onPressed: escolherDaGaleria,
+                                      tooltip: 'Adicionar foto',
+                                      icon: const Icon(Icons.add_photo_alternate, size: 48),
+                                      style: IconButton.styleFrom(
+                                        backgroundColor: const Color(0xFF895737),
+                                        foregroundColor: const Color(0xFFF3E9DC),
+                                        fixedSize: const Size(72, 72),
+                                      ),
                                     ),
                                   )
                                 : Image(
@@ -154,21 +159,23 @@ class _PostarPageState extends State<PostarPage> {
                                   ),
                           ),
                         ),
-                        Positioned(
-                          right: -4,
-                          bottom: -4,
-                          child: IconButton(
-                            onPressed: escolherDaGaleria,
-                            icon: const Icon(Icons.edit, size: 17),
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              foregroundColor: const Color(0xFFF3E9DC),
-                              minimumSize: const Size(32, 32),
-                              padding: EdgeInsets.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        if (imagemPerfil != null)
+                          Positioned(
+                            right: -4,
+                            bottom: -4,
+                            child: IconButton(
+                              onPressed: escolherDaGaleria,
+                              tooltip: 'Trocar foto',
+                              icon: const Icon(Icons.add_photo_alternate, size: 17),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.black,
+                                foregroundColor: const Color(0xFFF3E9DC),
+                                minimumSize: const Size(32, 32),
+                                padding: EdgeInsets.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     );
                   },
@@ -230,9 +237,7 @@ class _PostarPageState extends State<PostarPage> {
                             ? IconButton(
                                 onPressed: () {
                                   setState(() {
-                                    legendaConfirmada = legendaController.text
-                                        .trim()
-                                        .isNotEmpty;
+                                    legendaConfirmada = true;
                                   });
                                   FocusScope.of(context).unfocus();
                                 },

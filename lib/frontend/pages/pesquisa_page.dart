@@ -162,7 +162,7 @@ class _PesquisaPage extends State<PesquisaPage> {
                 leading: IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(
-                    Icons.menu,
+                    Icons.arrow_back,
                     size: 35.0,
                     color: Colors.black,
                   ),

@@ -20,9 +20,14 @@ class FeedPage extends StatefulWidget {
 }
 
 class FeedHeader extends StatelessWidget {
-  const FeedHeader({super.key, required this.onMenuPressed});
+  const FeedHeader({
+    super.key,
+    required this.onMenuPressed,
+    this.mostrarAcoes = true,
+  });
 
   final VoidCallback onMenuPressed;
+  final bool mostrarAcoes;
 
   void abrirPesquisa(BuildContext context) {
      Navigator.push(
@@ -47,22 +52,34 @@ class FeedHeader extends StatelessWidget {
           child: AppBar(
             automaticallyImplyLeading: false,
             toolbarHeight: 110,
-            leading: IconButton(
-              onPressed: onMenuPressed,
-              icon: const Icon(Icons.menu, size: 35.0, color: Colors.black),
-            ),
+            leading: mostrarAcoes
+                ? IconButton(
+                    onPressed: onMenuPressed,
+                    icon: const Icon(
+                      Icons.menu,
+                      size: 35.0,
+                      color: Colors.black,
+                    ),
+                  )
+                : null,
             centerTitle: true,
             title: Image.asset(
               'assets/images/logo.png',
               height: 80,
               width: 80,
             ),
-            actions: [
-              IconButton(
-                onPressed: () => abrirPesquisa(context),
-                icon: const Icon(Icons.person_search, size: 35.0, color: Colors.black),
-              ),
-            ],
+            actions: mostrarAcoes
+                ? [
+                    IconButton(
+                      onPressed: () => abrirPesquisa(context),
+                      icon: const Icon(
+                        Icons.person_search,
+                        size: 35.0,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ]
+                : const [],
             backgroundColor: const Color(0xFFD7CBBD),
           ),
         ),
@@ -188,6 +205,7 @@ class _FeedPage extends State<FeedPage> {
           Builder(
             builder: (context) => FeedHeader(
               onMenuPressed: () => Scaffold.of(context).openDrawer(),
+              mostrarAcoes: indice != 2,
             ),
           ),
           Expanded(child: telas[indice]),
@@ -257,18 +275,8 @@ class _FeedPage extends State<FeedPage> {
                 )),
               label: ''),
           NavigationDestination(
-              icon: _TapScale(child: const ImageIcon(
-                AssetImage('assets/images/monalisaPerfil.png'),
-                size: 33.0,
-                color: Colors.black,
-              )),
-              selectedIcon: _TapScale(child: const ImageIcon(
-                  AssetImage('assets/images/monalisaPerfil.png'),
-                  size: 50.0,
-                  color: Colors.black,
-                )),
-              icon: _iconePerfil(33),
-              selectedIcon: _iconePerfil(50),
+              icon: _TapScale(child: _iconePerfil(30)),
+              selectedIcon: _TapScale(child: _iconePerfil(37)),
               label: ''),
         ],
       ),
