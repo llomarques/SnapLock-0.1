@@ -257,18 +257,8 @@ class _FeedPage extends State<FeedPage> {
                 )),
               label: ''),
           NavigationDestination(
-              icon: _TapScale(child: const ImageIcon(
-                AssetImage('assets/images/monalisaPerfil.png'),
-                size: 33.0,
-                color: Colors.black,
-              )),
-              selectedIcon: _TapScale(child: const ImageIcon(
-                  AssetImage('assets/images/monalisaPerfil.png'),
-                  size: 50.0,
-                  color: Colors.black,
-                )),
-              icon: _iconePerfil(33),
-              selectedIcon: _iconePerfil(50),
+              icon: _TapScale(child: _iconePerfil(33)),
+              selectedIcon: _TapScale(child: _iconePerfil(50)),
               label: ''),
         ],
       ),

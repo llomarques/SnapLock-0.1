@@ -94,6 +94,18 @@ ALTER TABLE `usuario`
 ALTER TABLE `usuario`
   ADD COLUMN IF NOT EXISTS `biografia` text DEFAULT NULL AFTER `foto_perfil`;
 
+CREATE TABLE IF NOT EXISTS `postagem` (
+  `id_postagem` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) NOT NULL,
+  `midia_url` varchar(500) NOT NULL,
+  `legenda` text DEFAULT NULL,
+  `filtro_aplicado` varchar(50) DEFAULT NULL,
+  `data_postagem` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_postagem`),
+  KEY `idx_postagem_usuario_data` (`id_usuario`,`data_postagem`),
+  CONSTRAINT `fk_postagem_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
 CREATE TABLE IF NOT EXISTS `recuperacao_senha` (
   `id_recuperacao` int(11) NOT NULL AUTO_INCREMENT,
   `id_usuario` int(11) NOT NULL,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:snaplock/frontend/utils/foto_utils.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
+import 'package:snaplock/services/api_service.dart';
 
 class PostarPage extends StatefulWidget {
   const PostarPage({super.key});
@@ -20,6 +21,7 @@ class _PostarPageState extends State<PostarPage> {
   bool selecionandoImagem = false;
   bool salvando = false;
   String fotoPerfilUrl = '';
+  String? filtroAplicado;
 
   @override
   void initState() {
@@ -70,6 +72,47 @@ class _PostarPageState extends State<PostarPage> {
       if (mounted) {
         setState(() => selecionandoImagem = false);
       }
+    }
+  }
+
+  Future<void> publicar() async {
+    if (salvando) return;
+    final imagem = fotoPerfil;
+    if (imagem == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecione uma foto para publicar.')),
+      );
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    setState(() => salvando = true);
+    try {
+      await ApiService.createPostFromBytes(
+        imagem,
+        legendaController.text.trim(),
+        filtroAplicado: filtroAplicado,
+      );
+      if (!mounted) return;
+
+      legendaController.clear();
+      setState(() {
+        fotoPerfil = null;
+        fotoAspectRatio = 4 / 5;
+        legendaConfirmada = false;
+        filtroAplicado = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Memória publicada com sucesso.')),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => salvando = false);
     }
   }
 
@@ -265,8 +308,8 @@ class _PostarPageState extends State<PostarPage> {
                   ),
                 ),
                 BotoesWidget(
-                  texto: 'Postar',
-                  aoTocar: () {},
+                  texto: salvando ? 'Publicando...' : 'Postar',
+                  aoTocar: publicar,
                 ),
               ],
             ),

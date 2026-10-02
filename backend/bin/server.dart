@@ -437,7 +437,7 @@ Future<void> main() async {
           {'id_recuperacao': idRecuperacao});
       return _json(200, {'mensagem': 'Senha redefinida com sucesso.'});
     })
-    ..post('/api/postagens', (Request request) async {
+    ..post('/api/fotos', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
 
@@ -446,11 +446,15 @@ Future<void> main() async {
       }
 
       String? legenda;
+      String? filtroAplicado;
       File? tempFile;
 
       await for (final formData in request.multipartFormData) {
         if (formData.name == 'legenda') {
           legenda = await _coletarString(formData.part);
+        } else if (formData.name == 'filtro_aplicado') {
+          final valor = (await _coletarString(formData.part)).trim();
+          filtroAplicado = valor.isEmpty ? null : valor;
         } else if (formData.name == 'midia') {
           final bytes = await _coletarBytes(formData.part);
           final contentType = formData.part.headers['content-type'];
@@ -471,36 +475,61 @@ Future<void> main() async {
       try {
         final response = await cloudinary.uploader().upload(
               tempFile,
-              params: UploadParams(folder: 'postagens'),
+            params: UploadParams(folder: 'fotos'),
             );
         midiaUrl = response?.data?.secureUrl;
       } catch (error, stackTrace) {
-        print('Erro no upload da mídia: $error');
+        print('Erro no upload da foto: $error');
         print(stackTrace);
         return _json(
-            502, {'message': 'Falha ao enviar a mídia para o Cloudinary.'});
+          502, {'message': 'Falha ao enviar a foto para o Cloudinary.'});
       } finally {
         if (await tempFile.exists()) await tempFile.delete();
       }
 
       if (midiaUrl == null) {
-        return _json(502, {'message': 'Falha ao processar a mídia.'});
+        return _json(502, {'message': 'Falha ao processar a foto.'});
       }
 
-      final result = await connection.execute(
-        'INSERT INTO postagem (id_usuario, legenda, midia_url) VALUES (:id_usuario, :legenda, :midia_url)',
-        {
-          'id_usuario': idUsuario,
-          'legenda': legenda ?? '',
-          'midia_url': midiaUrl
-        },
-      );
+      try {
+        final result = await connection.execute(
+          '''INSERT INTO foto
+               (id_usuario, midia_url, legenda, filtro_aplicado)
+             VALUES (:id_usuario, :midia_url, :legenda, :filtro_aplicado)''',
+          {
+            'id_usuario': idUsuario,
+            'midia_url': midiaUrl,
+            'legenda': legenda ?? '',
+            'filtro_aplicado': filtroAplicado,
+          },
+        );
+        final idFoto = int.parse(result.lastInsertID.toString());
+        final fotos = await connection.execute(
+          '''SELECT id_foto, id_usuario, midia_url, legenda,
+                    filtro_aplicado, data_postagem
+             FROM foto WHERE id_foto = :id_foto LIMIT 1''',
+          {'id_foto': idFoto},
+        );
+        final foto = fotos.rows.isEmpty
+            ? <String, String?>{}
+            : fotos.rows.first.assoc();
 
-      return _json(201, {
-        'success': true,
-        'id_postagem': int.parse(result.lastInsertID.toString()),
-        'midia_url': midiaUrl,
-      });
+        return _json(201, {
+          'success': true,
+          'foto': {
+            'id_foto': foto['id_foto'] ?? idFoto.toString(),
+            'id_usuario': foto['id_usuario'] ?? idUsuario.toString(),
+            'midia_url': foto['midia_url'] ?? midiaUrl,
+            'legenda': foto['legenda'] ?? legenda ?? '',
+            'filtro_aplicado': foto['filtro_aplicado'],
+            'data_postagem': foto['data_postagem'],
+          },
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao salvar a foto no banco: $error');
+        print(stackTrace);
+        return _json(500, {'message': 'Não foi possível salvar a foto no banco.'});
+      }
     })
     ..post('/api/profile/foto', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
