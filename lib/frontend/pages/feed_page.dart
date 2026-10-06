@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -100,8 +101,11 @@ class FeedConteudoPage extends StatelessWidget {
   }
 }
 
-class _FeedPage extends State<FeedPage> {
+class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
   late int indice;
+  late final AnimationController _animacaoZoomPostagem;
+  bool _animandoZoomPostagem = false;
+  bool _revelarPostagem = false;
   Timer? _timerNotificacoes;
   final Set<String> _solicitacoesConhecidas = {};
   bool _temNotificacaoNova = false;
@@ -158,6 +162,10 @@ class _FeedPage extends State<FeedPage> {
   @override
   void initState() {
     super.initState();
+    _animacaoZoomPostagem = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
     indice = widget.initialIndex.clamp(0, telas.length - 1);
     _atualizarNotificacoes();
     _timerNotificacoes = Timer.periodic(
@@ -169,6 +177,7 @@ class _FeedPage extends State<FeedPage> {
   @override
   void dispose() {
     _timerNotificacoes?.cancel();
+    _animacaoZoomPostagem.dispose();
     super.dispose();
   }
 
@@ -218,6 +227,26 @@ class _FeedPage extends State<FeedPage> {
     }
   }
 
+  void _abrirPostagemComZoom() {
+    if (_animandoZoomPostagem) return;
+
+    setState(() {
+      _animandoZoomPostagem = true;
+      _revelarPostagem = true;
+    });
+    _animacaoZoomPostagem.forward().whenComplete(() {
+      if (!mounted) return;
+      _selecionarAba(2);
+      setState(() => _revelarPostagem = false);
+    });
+  }
+
+  void _finalizarAnimacaoPostagem() {
+    if (_revelarPostagem || !_animandoZoomPostagem) return;
+    setState(() => _animandoZoomPostagem = false);
+    _animacaoZoomPostagem.reset();
+  }
+
   void abrirConfiguracoes() {
     Navigator.push(
       context,
@@ -227,6 +256,15 @@ class _FeedPage extends State<FeedPage> {
 
   @override
   Widget build(BuildContext context) {
+    final tamanhoTela = MediaQuery.sizeOf(context);
+    final distanciaInferior = MediaQuery.viewPaddingOf(context).bottom + 38.0;
+    final centroY = tamanhoTela.height - distanciaInferior - 32.0;
+    final distanciaMaiorCanto = math.sqrt(
+      math.pow(tamanhoTela.width / 2, 2) +
+          math.pow(math.max(centroY, tamanhoTela.height - centroY), 2),
+    );
+    final escalaFinalZoom = (distanciaMaiorCanto * 1.15) / 20;
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -355,26 +393,75 @@ class _FeedPage extends State<FeedPage> {
         ),
         Positioned(
           left: 0,
+          top: 0,
           right: 0,
-          bottom: MediaQuery.of(context).viewPadding.bottom + 38,
+          bottom: 0,
+          child: AbsorbPointer(
+            absorbing: _animandoZoomPostagem,
+            child: AnimatedBuilder(
+              animation: _animacaoZoomPostagem,
+              builder: (context, child) {
+                final progresso =
+                    Curves.easeInCubic.transform(_animacaoZoomPostagem.value);
+                final raio = distanciaMaiorCanto * 1.15 * progresso;
+
+                return ClipPath(
+                  clipper: _CircularRevealClipper(
+                    center: Offset(tamanhoTela.width / 2, centroY),
+                    radius: raio,
+                  ),
+                  child: AnimatedOpacity(
+                    opacity: _revelarPostagem ? 1 : 0,
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOut,
+                    onEnd: _finalizarAnimacaoPostagem,
+                    child: child,
+                  ),
+                );
+              },
+              child: const ColoredBox(color: Color(0xFFF3E9DC)),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: distanciaInferior,
           child: Center(
             child: Semantics(
               button: true,
               label: 'Postar foto',
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => _selecionarAba(2),
+                onTap: _abrirPostagemComZoom,
                 child: SizedBox(
                   width: 64,
                   height: 64,
-                  child: Center(
-                    child: _TapScale(
-                      child: Icon(
-                        Icons.add_circle,
-                        size: indice == 2 ? 50 : 40,
-                        color: Colors.black,
-                      ),
+                  child: AnimatedBuilder(
+                    animation: _animacaoZoomPostagem,
+                    child: const Icon(
+                      Icons.add_circle,
+                      size: 40,
+                      color: Colors.black,
                     ),
+                    builder: (context, child) {
+                      final progresso = _animacaoZoomPostagem.value;
+                      final fade = ((progresso - 0.72) / 0.28).clamp(0.0, 1.0);
+                      final opacidade = 1 - Curves.easeIn.transform(fade);
+                      final escala = 1 +
+                          (escalaFinalZoom - 1) *
+                              Curves.easeInCubic.transform(progresso);
+
+                      return IgnorePointer(
+                        child: Opacity(
+                          opacity: opacidade,
+                          child: Transform.scale(
+                            scale: escala,
+                            child: child,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -384,6 +471,23 @@ class _FeedPage extends State<FeedPage> {
       ],
     );
   }
+}
+
+class _CircularRevealClipper extends CustomClipper<Path> {
+  const _CircularRevealClipper({required this.center, required this.radius});
+
+  final Offset center;
+  final double radius;
+
+  @override
+  Path getClip(Size size) {
+    return Path()..addOval(Rect.fromCircle(center: center, radius: radius));
+  }
+
+  @override
+  bool shouldReclip(covariant _CircularRevealClipper oldClipper) {
+    return oldClipper.center != center || oldClipper.radius != radius;
+      }
 }
 
 class _TapScale extends StatefulWidget {

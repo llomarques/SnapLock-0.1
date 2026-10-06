@@ -108,7 +108,8 @@ class _PostarPageState extends State<PostarPage> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+          SnackBar(
+              content: Text(error.toString().replaceFirst('Exception: ', ''))),
         );
       }
     } finally {
@@ -188,10 +189,14 @@ class _PostarPageState extends State<PostarPage> {
                                     child: IconButton(
                                       onPressed: escolherDaGaleria,
                                       tooltip: 'Adicionar foto',
-                                      icon: const Icon(Icons.add_photo_alternate, size: 40),
+                                      icon: const Icon(
+                                          Icons.add_photo_alternate,
+                                          size: 40),
                                       style: IconButton.styleFrom(
-                                        backgroundColor: const Color(0xFF895737),
-                                        foregroundColor: const Color(0xFFF3E9DC),
+                                        backgroundColor:
+                                            const Color(0xFF895737),
+                                        foregroundColor:
+                                            const Color(0xFFF3E9DC),
                                         fixedSize: const Size(72, 72),
                                       ),
                                     ),
@@ -272,12 +277,14 @@ class _PostarPageState extends State<PostarPage> {
                           ),
                         ),
                       ),
-                      if (legendaConfirmada && !legendaFocusNode.hasFocus)
-                        const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       AnimatedSize(
                         duration: const Duration(milliseconds: 180),
-                        child: legendaFocusNode.hasFocus
-                            ? IconButton(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (legendaFocusNode.hasFocus)
+                              IconButton(
                                 onPressed: () {
                                   setState(() {
                                     legendaConfirmada = true;
@@ -287,27 +294,22 @@ class _PostarPageState extends State<PostarPage> {
                                 tooltip: 'Concluir legenda',
                                 color: const Color(0xFF895737),
                                 icon: const Icon(Icons.check_circle),
-                              )
-                            : legendaConfirmada
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Image.asset(
-                                        'assets/images/efeitos.png',
-                                        width: 32,
-                                        height: 32,
-                                        semanticLabel: 'Efeitos',
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Image.asset(
-                                        'assets/images/proporcao.png',
-                                        width: 32,
-                                        height: 32,
-                                        semanticLabel: 'Proporção',
-                                      ),
-                                    ],
-                                  )
-                                : const SizedBox(width: 0, height: 48),
+                              ),
+                            Image.asset(
+                              'assets/images/efeitos.png',
+                              width: 32,
+                              height: 32,
+                              semanticLabel: 'Efeitos',
+                            ),
+                            const SizedBox(width: 4),
+                            Image.asset(
+                              'assets/images/proporcao.png',
+                              width: 32,
+                              height: 32,
+                              semanticLabel: 'Proporção',
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
