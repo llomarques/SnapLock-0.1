@@ -188,7 +188,7 @@ class _PostarPageState extends State<PostarPage> {
                                     child: IconButton(
                                       onPressed: escolherDaGaleria,
                                       tooltip: 'Adicionar foto',
-                                      icon: const Icon(Icons.add_photo_alternate, size: 48),
+                                      icon: const Icon(Icons.add_photo_alternate, size: 40),
                                       style: IconButton.styleFrom(
                                         backgroundColor: const Color(0xFF895737),
                                         foregroundColor: const Color(0xFFF3E9DC),
