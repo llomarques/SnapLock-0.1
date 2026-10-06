@@ -29,6 +29,14 @@ Future<void> main() async {
   );
   await connection.connect();
 
+  final ratioColumn =
+      await connection.execute("SHOW COLUMNS FROM foto LIKE 'proporcao'");
+  if (ratioColumn.rows.isEmpty) {
+    await connection.execute(
+      'ALTER TABLE foto ADD COLUMN proporcao DOUBLE NULL',
+    );
+  }
+
   final router = Router()
     ..post('/api/login', (Request request) async {
       final dados = await _lerJson(request);
@@ -273,6 +281,30 @@ Future<void> main() async {
       }).toList();
       return _json(200, {'success': true, 'friends': amigos});
     })
+    ..delete('/api/friends/<friendId>',
+        (Request request, String friendId) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idAmigo = int.tryParse(friendId);
+      if (idAmigo == null || idAmigo == idUsuario) {
+        return _json(422, {'message': 'Amigo inválido.'});
+      }
+
+      final removida = await connection.execute(
+        '''DELETE FROM amizade
+           WHERE status = 'aceito'
+             AND ((id_usuario_1 = :id_usuario AND id_usuario_2 = :id_amigo)
+               OR (id_usuario_1 = :id_amigo AND id_usuario_2 = :id_usuario))''',
+        {'id_usuario': idUsuario, 'id_amigo': idAmigo},
+      );
+
+      if (removida.affectedRows == 0) {
+        return _json(404, {'message': 'Amizade não encontrada.'});
+      }
+
+      return _json(200, {'success': true});
+    })
     ..post('/api/usuarios', (Request request) async {
       final dados = await _lerJson(request);
       if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
@@ -440,34 +472,76 @@ Future<void> main() async {
           {'id_recuperacao': idRecuperacao});
       return _json(200, {'mensagem': 'Senha redefinida com sucesso.'});
     })
+    ..get('/api/feed', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
 
-    
+      try {
+        final resultado = await connection.execute(
+          '''SELECT f.id_foto, f.id_usuario, f.midia_url, f.legenda,
+                    f.data_postagem, f.proporcao, u.nome, u.username,
+                    u.foto_perfil
+             FROM foto f
+             JOIN usuario u ON u.id_usuario = f.id_usuario
+             WHERE f.id_usuario = :id_usuario
+                OR EXISTS (
+                  SELECT 1 FROM amizade a
+                  WHERE a.status = 'aceito'
+                    AND ((a.id_usuario_1 = :id_usuario
+                          AND a.id_usuario_2 = f.id_usuario)
+                      OR (a.id_usuario_2 = :id_usuario
+                          AND a.id_usuario_1 = f.id_usuario))
+                    )
+             ORDER BY f.data_postagem DESC, f.id_foto DESC''',
+          {'id_usuario': idUsuario},
+        );
 
-    
+        final posts = resultado.rows.map((row) {
+          final foto = row.assoc();
+          return <String, Object?>{
+            'id': foto['id_foto'] ?? '',
+            'userId': foto['id_usuario'] ?? '',
+            'imageUrl': foto['midia_url'] ?? '',
+            'caption': foto['legenda'] ?? '',
+            'createdAt': foto['data_postagem'] ?? '',
+            'aspectRatio': foto['proporcao'],
+            'authorName': foto['nome'] ?? '',
+            'authorUsername': foto['username'] ?? '',
+            'authorAvatar': foto['foto_perfil'] ?? '',
+          };
+        }).toList();
+
+        return _json(200, {'success': true, 'posts': posts});
+      } catch (error, stackTrace) {
+        print('Erro ao carregar feed: $error');
+        print(stackTrace);
+        return _json(500, {'message': 'Erro ao carregar o feed.'});
+      }
+    })
     ..get('/api/fotos/minhas', (Request request) async {
-  final idUsuario = _idUsuarioAutenticado(request, sessoes);
-  if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
 
-  try {
-    final resultado = await connection.execute(
-      '''SELECT id_foto, id_usuario, midia_url, legenda,
-                filtro_aplicado, data_postagem
+      try {
+        final resultado = await connection.execute(
+          '''SELECT id_foto, id_usuario, midia_url, legenda,
+            filtro_aplicado, data_postagem, proporcao
          FROM foto
          WHERE id_usuario = :id_usuario
          ORDER BY data_postagem DESC, id_foto DESC''',
-      {'id_usuario': idUsuario},
-    );
+          {'id_usuario': idUsuario},
+        );
 
-    return _json(200, {
-      'success': true,
-      'fotos': resultado.rows.map((row) => row.assoc()).toList(),
-    });
-  } catch (error, stackTrace) {
-    print('Erro ao buscar fotos: $error');
-    print(stackTrace);
-    return _json(500, {'message': 'Erro ao carregar galeria.'});
-  }
-})
+        return _json(200, {
+          'success': true,
+          'fotos': resultado.rows.map((row) => row.assoc()).toList(),
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao buscar fotos: $error');
+        print(stackTrace);
+        return _json(500, {'message': 'Erro ao carregar galeria.'});
+      }
+    })
     ..post('/api/fotos', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
@@ -478,6 +552,7 @@ Future<void> main() async {
 
       String? legenda;
       String? filtroAplicado;
+      double? proporcao;
       File? tempFile;
 
       await for (final formData in request.multipartFormData) {
@@ -486,6 +561,9 @@ Future<void> main() async {
         } else if (formData.name == 'filtro_aplicado') {
           final valor = (await _coletarString(formData.part)).trim();
           filtroAplicado = valor.isEmpty ? null : valor;
+        } else if (formData.name == 'proporcao') {
+          final valor = (await _coletarString(formData.part)).trim();
+          proporcao = double.tryParse(valor);
         } else if (formData.name == 'midia') {
           final bytes = await _coletarBytes(formData.part);
           final contentType = formData.part.headers['content-type'];
@@ -525,19 +603,20 @@ Future<void> main() async {
       try {
         final result = await connection.execute(
           '''INSERT INTO foto
-               (id_usuario, midia_url, legenda, filtro_aplicado)
-             VALUES (:id_usuario, :midia_url, :legenda, :filtro_aplicado)''',
+               (id_usuario, midia_url, legenda, filtro_aplicado, proporcao)
+             VALUES (:id_usuario, :midia_url, :legenda, :filtro_aplicado, :proporcao)''',
           {
             'id_usuario': idUsuario,
             'midia_url': midiaUrl,
             'legenda': legenda ?? '',
             'filtro_aplicado': filtroAplicado,
+            'proporcao': proporcao,
           },
         );
         final idFoto = int.parse(result.lastInsertID.toString());
         final fotos = await connection.execute(
           '''SELECT id_foto, id_usuario, midia_url, legenda,
-                    filtro_aplicado, data_postagem
+                    filtro_aplicado, data_postagem, proporcao
              FROM foto WHERE id_foto = :id_foto LIMIT 1''',
           {'id_foto': idFoto},
         );
@@ -553,6 +632,7 @@ Future<void> main() async {
             'legenda': foto['legenda'] ?? legenda ?? '',
             'filtro_aplicado': foto['filtro_aplicado'],
             'data_postagem': foto['data_postagem'],
+            'proporcao': foto['proporcao'],
           },
         });
       } catch (error, stackTrace) {
