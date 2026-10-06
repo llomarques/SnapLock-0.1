@@ -52,52 +52,37 @@ class _PerfilPage extends State<PerfilPage> {
   }
 
   Future<void> carregarFotos() async {
-  try {
-    print('========================================');
-    print('INICIANDO CARREGAMENTO DAS FOTOS');
-    print('========================================');
+    try {
+      final galeria = await ApiService.getMyGallery();
 
-    final galeria = await ApiService.getMyGallery();
+      if (!mounted) {
+        return;
+      }
 
-    print('FOTOS RECEBIDAS: ${galeria.length}');
-
-    for (final foto in galeria) {
-      print('ID: ${foto.id}');
-      print('URL: ${foto.imageUrl}');
-      print('LEGENDA: ${foto.caption}');
-      print('----------------------------------------');
-    }
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      fotos = galeria;
-      erroAoCarregarFotos = false;
-    });
-  } catch (e, stackTrace) {
-    print('========================================');
-    print('ERRO AO CARREGAR FOTOS');
-    print('========================================');
-    print('ERRO: $e');
-    print('STACK TRACE:');
-    print(stackTrace);
-    print('========================================');
-
-    if (mounted) {
       setState(() {
-        erroAoCarregarFotos = true;
+        fotos = galeria;
+        erroAoCarregarFotos = false;
       });
-    }
-  } finally {
-    if (mounted) {
-      setState(() {
-        carregandoFotos = false;
-      });
+    } catch (e, stackTrace) {
+      print('========================================');
+      print('ERRO AO CARREGAR FOTOS');
+      print('ERRO: $e');
+      print('STACK TRACE:');
+      print(stackTrace);
+
+      if (mounted) {
+        setState(() {
+          erroAoCarregarFotos = true;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          carregandoFotos = false;
+        });
+      }
     }
   }
-}
 
   Future<void> abrirEditarPerfil(BuildContext context) async {
     final usuario = await Navigator.push<Map<String, dynamic>>(
@@ -372,6 +357,14 @@ class _PerfilPage extends State<PerfilPage> {
                   ),
                 ),
               ),
+            ),
+            const SizedBox(
+              height: 20,
+            ),
+            Divider(
+              color: const Color.fromARGB(255, 202, 196, 186), // Cor da linha
+              thickness: 2.0, // Espessura da linha
+              height: 20.0, // Espaço ao redor da linha
             ),
             const SizedBox(
               height: 20,
