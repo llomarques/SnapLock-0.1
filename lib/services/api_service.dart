@@ -36,7 +36,8 @@ class ApiService {
     return false;
   }
 
-  static Future<void> _saveSession(String token, Map<String, dynamic> userMap) async {
+  static Future<void> _saveSession(
+      String token, Map<String, dynamic> userMap) async {
     _currentToken = token;
     _currentUser = UserModel.fromJson(userMap);
 
@@ -101,7 +102,8 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> login(String email, String password) async {
+  static Future<Map<String, dynamic>> login(
+      String email, String password) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/auth/login'),
       headers: _headers,
@@ -134,11 +136,17 @@ class ApiService {
     }
   }
 
-  static Future<void> resetPassword(String email, String token, String newPassword) async {
+  static Future<void> resetPassword(
+      String email, String token, String newPassword) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/recuperacao/redefinir'),
       headers: _headers,
-      body: jsonEncode({'email': email, 'token': token, 'nova_senha': newPassword, 'confirmacao_senha': newPassword}),
+      body: jsonEncode({
+        'email': email,
+        'token': token,
+        'nova_senha': newPassword,
+        'confirmacao_senha': newPassword
+      }),
     );
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -202,11 +210,13 @@ class ApiService {
         data = Map<String, dynamic>.from(decoded);
       }
     } on FormatException {
-      throw Exception('Resposta inválida da API. Verifique o backend e o token de sessão.');
+      throw Exception(
+          'Resposta inválida da API. Verifique o backend e o token de sessão.');
     }
 
     if (data['success'] != true) {
-      throw Exception(data['message'] ?? data['erro'] ?? 'Erro ao alterar senha.');
+      throw Exception(
+          data['message'] ?? data['erro'] ?? 'Erro ao alterar senha.');
     }
   }
 
@@ -235,45 +245,57 @@ class ApiService {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (data['success'] == true) {
       final list = data['posts'] as List;
-      return list.map((item) => PostModel.fromJson(item as Map<String, dynamic>)).toList();
+      return list
+          .map((item) => PostModel.fromJson(item as Map<String, dynamic>))
+          .toList();
     } else {
       throw Exception(data['message'] ?? 'Erro ao carregar o feed.');
     }
   }
 
   static Future<List<PostModel>> getMyGallery() async {
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/posts/my-gallery'),
-      headers: _headers,
-    );
+  final url = '${ApiConfig.baseUrl}/fotos/minhas';
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (data['success'] == true) {
-      final list = data['posts'] as List;
-      return list.map((item) => PostModel.fromJson(item as Map<String, dynamic>)).toList();
-    } else {
-      throw Exception(data['message'] ?? 'Erro ao carregar galeria.');
-    }
+  print('========================================');
+  print('URL DA GALERIA: $url');
+  print('========================================');
+
+  final response = await http.get(
+    Uri.parse(url),
+    headers: _friendHeaders,
+  );
+
+  print('STATUS CODE: ${response.statusCode}');
+  print('RESPONSE BODY: ${response.body}');
+
+  if (response.statusCode != 200) {
+    throw Exception(
+      'Erro HTTP ${response.statusCode}: ${response.body}',
+    );
   }
 
-  static Future<PostModel> createPost(String imageBase64, String caption, String fileName) async {
-    final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/posts'),
-      headers: _headers,
-      body: jsonEncode({
-        'imageBase64': imageBase64,
-        'caption': caption,
-        'fileName': fileName,
-      }),
-    );
+  final data = jsonDecode(response.body) as Map<String, dynamic>;
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode == 201 && data['success'] == true) {
-      return PostModel.fromJson(data['post'] as Map<String, dynamic>);
-    } else {
-      throw Exception(data['message'] ?? 'Erro ao criar publicação.');
-    }
+  if (data['success'] == true) {
+    final list = data['fotos'] as List;
+
+    return list.map((item) {
+      final foto = item as Map<String, dynamic>;
+
+      return PostModel(
+        id: foto['id_foto'].toString(),
+        userId: foto['id_usuario'].toString(),
+        imageUrl: foto['midia_url']?.toString() ?? '',
+        caption: foto['legenda']?.toString() ?? '',
+        createdAt: foto['data_postagem']?.toString() ?? '',
+      );
+    }).toList();
   }
+
+  throw Exception(
+    data['message']?.toString() ?? 'Erro ao carregar galeria.',
+  );
+}
 
   static Future<Map<String, dynamic>> createPostFromBytes(
     Uint8List imageBytes,
@@ -364,19 +386,22 @@ class ApiService {
 
   static Future<List<UserModel>> searchUsers(String query) async {
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/friends/search?q=${Uri.encodeComponent(query)}'),
+      Uri.parse(
+          '${ApiConfig.baseUrl}/friends/search?q=${Uri.encodeComponent(query)}'),
       headers: _friendHeaders,
     );
 
     final decoded = jsonDecode(response.body);
-    final data = decoded is Map<String, dynamic>
-        ? decoded
-        : <String, dynamic>{};
+    final data =
+        decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
     if (data['success'] == true) {
       final list = data['users'] as List;
-      return list.map((item) => UserModel.fromJson(item as Map<String, dynamic>)).toList();
+      return list
+          .map((item) => UserModel.fromJson(item as Map<String, dynamic>))
+          .toList();
     } else {
-      throw Exception(data['message'] ?? data['erro'] ?? 'Erro ao buscar usuários.');
+      throw Exception(
+          data['message'] ?? data['erro'] ?? 'Erro ao buscar usuários.');
     }
   }
 
@@ -440,7 +465,9 @@ class ApiService {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (data['success'] == true) {
       final list = data['friends'] as List;
-      return list.map((item) => UserModel.fromJson(item as Map<String, dynamic>)).toList();
+      return list
+          .map((item) => UserModel.fromJson(item as Map<String, dynamic>))
+          .toList();
     } else {
       throw Exception(data['message'] ?? 'Erro ao carregar lista de amigos.');
     }
@@ -457,7 +484,8 @@ class ApiService {
       final list = data['pending'] as List;
       return list.cast<Map<String, dynamic>>();
     } else {
-      throw Exception(data['message'] ?? 'Erro ao carregar solicitações pendentes.');
+      throw Exception(
+          data['message'] ?? 'Erro ao carregar solicitações pendentes.');
     }
   }
 

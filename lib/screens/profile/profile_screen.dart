@@ -55,7 +55,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text('Editar perfil (RF06)', style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold, fontSize: 22)),
+          title: Text('Editar perfil (RF06)',
+              style: GoogleFonts.cormorantGaramond(
+                  fontWeight: FontWeight.bold, fontSize: 22)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -83,10 +85,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancelar', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+              child: Text('Cancelar',
+                  style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkBrown),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: AppTheme.darkBrown),
               onPressed: isSaving
                   ? null
                   : () async {
@@ -103,14 +107,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         setDialogState(() => isSaving = false);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+                            SnackBar(
+                                content: Text(e
+                                    .toString()
+                                    .replaceAll('Exception: ', ''))),
                           );
                         }
                       }
                     },
               child: isSaving
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Salvar', style: GoogleFonts.poppins(color: Colors.white)),
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : Text('Salvar',
+                      style: GoogleFonts.poppins(color: Colors.white)),
             ),
           ],
         ),
@@ -125,7 +137,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Alterar senha (RN14)', style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: Text('Alterar senha (RN14)',
+            style: GoogleFonts.cormorantGaramond(
+                fontWeight: FontWeight.bold, fontSize: 20)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -147,10 +161,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancelar', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+            child: Text('Cancelar',
+                style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkBrown),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: AppTheme.darkBrown),
             onPressed: () async {
               try {
                 await ApiService.changePassword(
@@ -160,18 +176,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (context.mounted) {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Senha alterada com sucesso!')),
+                    const SnackBar(
+                        content: Text('Senha alterada com sucesso!')),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+                    SnackBar(
+                        content:
+                            Text(e.toString().replaceAll('Exception: ', ''))),
                   );
                 }
               }
             },
-            child: Text('Alterar Senha', style: GoogleFonts.poppins(color: Colors.white)),
+            child: Text('Alterar Senha',
+                style: GoogleFonts.poppins(color: Colors.white)),
           ),
         ],
       ),
@@ -182,7 +202,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Excluir conta (RN10)', style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold, color: AppTheme.danger)),
+        title: Text('Excluir conta (RN10)',
+            style: GoogleFonts.cormorantGaramond(
+                fontWeight: FontWeight.bold, color: AppTheme.danger)),
         content: Text(
           'Caso opte por excluir sua conta, todas as suas fotos serão removidas permanentemente do aplicativo (RN10).',
           style: GoogleFonts.poppins(fontSize: 13),
@@ -190,7 +212,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancelar', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+            child: Text('Cancelar',
+                style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
@@ -202,12 +225,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+                    SnackBar(
+                        content:
+                            Text(e.toString().replaceAll('Exception: ', ''))),
                   );
                 }
               }
             },
-            child: Text('Excluir Conta', style: GoogleFonts.poppins(color: Colors.white)),
+            child: Text('Excluir Conta',
+                style: GoogleFonts.poppins(color: Colors.white)),
           ),
         ],
       ),
@@ -221,10 +247,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text('Perfil', style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold, fontSize: 22)),
+        title: Text('Perfil',
+            style: GoogleFonts.cormorantGaramond(
+                fontWeight: FontWeight.bold, fontSize: 22)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppTheme.textPrimary),
+            icon: const Icon(Icons.settings_outlined,
+                color: AppTheme.textPrimary),
             onPressed: () {
               _showSettingsModal();
             },
@@ -232,7 +261,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.darkBrown))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppTheme.darkBrown))
           : RefreshIndicator(
               onRefresh: _loadProfile,
               child: SingleChildScrollView(
@@ -252,31 +282,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _buildCounterItem(_friends.length.toString(), 'Amigos'),
+                              _buildCounterItem(
+                                  _friends.length.toString(), 'Amigos'),
                               CircleAvatar(
                                 radius: 36,
                                 backgroundColor: AppTheme.darkBrown,
                                 child: Text(
                                   (_user?.name ?? 'U')[0].toUpperCase(),
-                                  style: GoogleFonts.cormorantGaramond(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold),
+                                  style: GoogleFonts.cormorantGaramond(
+                                      fontSize: 32,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ),
-                              _buildCounterItem(_gallery.length.toString(), 'Memórias'),
+                              _buildCounterItem(
+                                  _gallery.length.toString(), 'Memórias'),
                             ],
                           ),
                           const SizedBox(height: 14),
                           Text(
                             _user?.name ?? 'Usuário SnapLock',
-                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                            style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.textPrimary),
                           ),
                           Text(
                             _user?.email ?? '',
-                            style: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 12),
+                            style: GoogleFonts.poppins(
+                                color: AppTheme.textSecondary, fontSize: 12),
                           ),
                           if ((_user?.bio ?? '').isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: AppTheme.surfaceLight,
                                 borderRadius: BorderRadius.circular(12),
@@ -284,7 +324,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Text(
                                 _user!.bio,
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.poppins(color: AppTheme.textPrimary, fontSize: 12),
+                                style: GoogleFonts.poppins(
+                                    color: AppTheme.textPrimary, fontSize: 12),
                               ),
                             ),
                           ],
@@ -293,9 +334,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkBrown),
-                                  icon: const Icon(Icons.edit, size: 16, color: Colors.white),
-                                  label: Text('Editar perfil', style: GoogleFonts.poppins(fontSize: 13, color: Colors.white)),
+                                  style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.darkBrown),
+                                  icon: const Icon(Icons.edit,
+                                      size: 16, color: Colors.white),
+                                  label: Text('Editar perfil',
+                                      style: GoogleFonts.poppins(
+                                          fontSize: 13, color: Colors.white)),
                                   onPressed: _showEditProfileDialog,
                                 ),
                               ),
@@ -313,38 +358,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 40),
                             child: Text(
                               'Você ainda não postou nenhuma memória.',
-                              style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+                              style: GoogleFonts.poppins(
+                                  color: AppTheme.textSecondary),
                             ),
                           )
-                        : GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              crossAxisSpacing: 8,
-                              mainAxisSpacing: 8,
-                              childAspectRatio: 1,
-                            ),
-                            itemCount: _gallery.length,
-                            itemBuilder: (context, index) {
-                              final post = _gallery[index];
-                              final imageUrl = post.imageUrl.startsWith('http')
-                                  ? post.imageUrl
-                                  : '${ApiConfig.mediaBaseUrl}${post.imageUrl}';
-
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
-                                child: Image.network(
-                                  imageUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (ctx, err, stack) => Container(
-                                    color: AppTheme.surfaceLight,
-                                    child: const Icon(Icons.image, color: AppTheme.textSecondary),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                        : _buildGalleryGrid(),
                   ],
                 ),
               ),
@@ -352,18 +370,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildGalleryGrid() {
+    const columnCount = 3;
+    const spacing = 8.0;
+    const aspectRatios = [0.78, 1.2, 0.95, 1.35, 0.82, 1.05];
+    final columns = List.generate(columnCount, (_) => <int>[]);
+    final columnHeights = List<double>.filled(columnCount, 0);
+
+    for (var index = 0; index < _gallery.length; index++) {
+      var shortestColumn = 0;
+      for (var column = 1; column < columnCount; column++) {
+        if (columnHeights[column] < columnHeights[shortestColumn]) {
+          shortestColumn = column;
+        }
+      }
+
+      final aspectRatio = aspectRatios[index % aspectRatios.length];
+      columns[shortestColumn].add(index);
+      columnHeights[shortestColumn] += 1 / aspectRatio + spacing;
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var column = 0; column < columnCount; column++) ...[
+          if (column > 0) const SizedBox(width: spacing),
+          Expanded(
+            child: Column(
+              children: [
+                for (final index in columns[column]) ...[
+                  AspectRatio(
+                    aspectRatio: aspectRatios[index % aspectRatios.length],
+                    child: _buildGalleryImage(_gallery[index]),
+                  ),
+                  const SizedBox(height: spacing),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildGalleryImage(PostModel post) {
+    final imageUrl = post.imageUrl.startsWith('http')
+        ? post.imageUrl
+        : '${ApiConfig.mediaBaseUrl}${post.imageUrl}';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (ctx, err, stack) => Container(
+          color: AppTheme.surfaceLight,
+          child: const Icon(Icons.image, color: AppTheme.textSecondary),
+        ),
+      ),
+    );
+  }
+
   void _showSettingsModal() {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.background,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Configurações', style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text('Configurações',
+                style: GoogleFonts.cormorantGaramond(
+                    fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.lock_reset, color: AppTheme.darkBrown),
@@ -384,7 +466,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.delete_forever, color: AppTheme.danger),
-              title: Text('Excluir conta (RN10)', style: GoogleFonts.poppins(color: AppTheme.danger)),
+              title: Text('Excluir conta (RN10)',
+                  style: GoogleFonts.poppins(color: AppTheme.danger)),
               onTap: () {
                 Navigator.pop(ctx);
                 _showDeleteAccountDialog();
@@ -399,8 +482,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildCounterItem(String count, String label) {
     return Column(
       children: [
-        Text(count, style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-        Text(label, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+        Text(count,
+            style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary)),
+        Text(label,
+            style: GoogleFonts.poppins(
+                fontSize: 12, color: AppTheme.textSecondary)),
       ],
     );
   }
