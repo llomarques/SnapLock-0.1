@@ -9,12 +9,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   http: ^1.2.0
   image_picker: ^1.2.3
   shared_preferences: ^2.2.2
   intl: ^0.20.2
   google_fonts: ^6.1.0
   carousel_slider: ^5.1.2
+  lottie: ^3.1.2
 
 dev_dependencies:
   flutter_test:

@@ -148,7 +148,8 @@ Future<void> main() async {
           if (relacao['id_usuario_1'] == idUsuario.toString()) {
             return _json(200, {'success': true, 'status': 'pendente'});
           }
-          return _json(409, {'message': 'Este usuário já enviou uma solicitação.'});
+          return _json(
+              409, {'message': 'Este usuário já enviou uma solicitação.'});
         }
 
         await connection.execute(
@@ -173,7 +174,8 @@ Future<void> main() async {
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
 
       final resultados = await connection.execute(
-        '''SELECT a.id_amizade, u.id_usuario, u.nome, u.username, u.foto_perfil
+        '''SELECT a.id_amizade, a.data_solicitacao,
+            u.id_usuario, u.nome, u.username, u.foto_perfil
            FROM amizade a
            JOIN usuario u ON u.id_usuario = a.id_usuario_1
            WHERE a.id_usuario_2 = :id_usuario AND a.status = 'pendente'
@@ -188,6 +190,7 @@ Future<void> main() async {
           'name': usuario['nome'] ?? '',
           'username': usuario['username'] ?? '',
           'avatarUrl': usuario['foto_perfil'] ?? '',
+          'dataSolicitacao': usuario['data_solicitacao'] ?? '',
         };
       }).toList();
       return _json(200, {'success': true, 'pending': pendentes});
@@ -503,14 +506,14 @@ Future<void> main() async {
       try {
         final response = await cloudinary.uploader().upload(
               tempFile,
-            params: UploadParams(folder: 'fotos'),
+              params: UploadParams(folder: 'fotos'),
             );
         midiaUrl = response?.data?.secureUrl;
       } catch (error, stackTrace) {
         print('Erro no upload da foto: $error');
         print(stackTrace);
         return _json(
-          502, {'message': 'Falha ao enviar a foto para o Cloudinary.'});
+            502, {'message': 'Falha ao enviar a foto para o Cloudinary.'});
       } finally {
         if (await tempFile.exists()) await tempFile.delete();
       }
@@ -538,9 +541,8 @@ Future<void> main() async {
              FROM foto WHERE id_foto = :id_foto LIMIT 1''',
           {'id_foto': idFoto},
         );
-        final foto = fotos.rows.isEmpty
-            ? <String, String?>{}
-            : fotos.rows.first.assoc();
+        final foto =
+            fotos.rows.isEmpty ? <String, String?>{} : fotos.rows.first.assoc();
 
         return _json(201, {
           'success': true,
@@ -556,7 +558,8 @@ Future<void> main() async {
       } catch (error, stackTrace) {
         print('Erro ao salvar a foto no banco: $error');
         print(stackTrace);
-        return _json(500, {'message': 'Não foi possível salvar a foto no banco.'});
+        return _json(
+            500, {'message': 'Não foi possível salvar a foto no banco.'});
       }
     })
     ..post('/api/profile/foto', (Request request) async {
@@ -636,7 +639,8 @@ Future<void> main() async {
 
       if (senhaAtual.isEmpty || !_senhaValida(novaSenha)) {
         return _json(422, {
-          'message': 'A nova senha deve ter 8 caracteres, uma maiúscula, uma minúscula, um número e um caractere especial.'
+          'message':
+              'A nova senha deve ter 8 caracteres, uma maiúscula, uma minúscula, um número e um caractere especial.'
         });
       }
       if (novaSenha != confirmacaoSenha) {
@@ -677,7 +681,8 @@ Future<void> main() async {
       if (dados == null) return _json(400, {'message': 'JSON inválido.'});
 
       final nome = (dados['name'] ?? '').toString().trim();
-      final username = (dados['username'] ?? '').toString().trim().toLowerCase();
+      final username =
+          (dados['username'] ?? '').toString().trim().toLowerCase();
       final biografia = (dados['bio'] ?? '').toString().trim();
       if (nome.isEmpty ||
           nome.length > 100 ||
@@ -764,7 +769,7 @@ String _extensaoPorContentType(String? contentType) =>
     extensionForContentType(contentType);
 
 Response _json(int status, Map<String, Object?> body) =>
-  jsonResponse(status, body, jsonHeaders);
+    jsonResponse(status, body, jsonHeaders);
 
 Map<String, String> _usuarioPublico(Map<String, String?> usuario) =>
     publicUser(usuario);
@@ -788,7 +793,8 @@ Future<void> _enviarToken(
   String email,
   String nomeUsuario,
   String token,
-) => sendRecoveryToken(email, nomeUsuario, token);
+) =>
+    sendRecoveryToken(email, nomeUsuario, token);
 
 bool _dataValida(String value) => validDate(value);
 

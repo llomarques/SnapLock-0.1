@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:snaplock/controller/controller.login.dart';
+import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'notificacoes_page.dart';
@@ -30,11 +32,10 @@ class FeedHeader extends StatelessWidget {
   final bool mostrarAcoes;
 
   void abrirPesquisa(BuildContext context) {
-     Navigator.push(
+    Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const PesquisaPage()),
     );
-
   }
 
   @override
@@ -88,7 +89,6 @@ class FeedHeader extends StatelessWidget {
   }
 }
 
-
 class FeedConteudoPage extends StatelessWidget {
   const FeedConteudoPage({super.key});
 
@@ -101,7 +101,12 @@ class FeedConteudoPage extends StatelessWidget {
 }
 
 class _FeedPage extends State<FeedPage> {
-   late int indice;
+  late int indice;
+  Timer? _timerNotificacoes;
+  final Set<String> _solicitacoesConhecidas = {};
+  bool _temNotificacaoNova = false;
+  bool _inicializouNotificacoes = false;
+  int _versaoLeituraNotificacoes = 0;
 
   Widget _iconePerfil(double tamanho) {
     return ValueListenableBuilder<Map<String, dynamic>?>(
@@ -113,6 +118,32 @@ class _FeedPage extends State<FeedPage> {
         iconColor: Colors.black,
         fallbackAsset: 'assets/images/monalisaPerfil.png',
       ),
+    );
+  }
+
+  Widget _iconeNotificacoes(IconData icone, double tamanho) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icone, size: tamanho, color: Colors.black),
+        if (_temNotificacaoNova)
+          Positioned(
+            top: 0,
+            right: -1,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: const Color(0xFFC08552),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFD7CBBD),
+                  width: 1.5,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -128,14 +159,71 @@ class _FeedPage extends State<FeedPage> {
   void initState() {
     super.initState();
     indice = widget.initialIndex.clamp(0, telas.length - 1);
+    _atualizarNotificacoes();
+    _timerNotificacoes = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _atualizarNotificacoes(),
+    );
   }
 
-    void abrirConfiguracoes() {
-   Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => const ConfiguracoesPage()),
-  );
-}
+  @override
+  void dispose() {
+    _timerNotificacoes?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _atualizarNotificacoes({bool marcarComoLidas = false}) async {
+    final versaoNoInicio = _versaoLeituraNotificacoes;
+    try {
+      final pendentes = await ApiService.getPendingRequests();
+      if (!mounted) return;
+
+      final idsAtuais = pendentes
+          .map((solicitacao) => solicitacao['requestId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      final idsNovos = idsAtuais.difference(_solicitacoesConhecidas);
+
+      setState(() {
+        if (!_inicializouNotificacoes) {
+          _temNotificacaoNova = indice != 1 && idsAtuais.isNotEmpty;
+          _inicializouNotificacoes = true;
+        } else if (marcarComoLidas) {
+          _temNotificacaoNova = false;
+        } else if (idsNovos.isNotEmpty &&
+            versaoNoInicio == _versaoLeituraNotificacoes) {
+          _temNotificacaoNova = true;
+        }
+
+        _solicitacoesConhecidas
+          ..clear()
+          ..addAll(idsAtuais);
+      });
+    } catch (_) {
+      // Mantém o indicador atual se a API estiver indisponível.
+    }
+  }
+
+  void _selecionarAba(int valor) {
+    setState(() {
+      indice = valor;
+      if (valor == 1) {
+        _temNotificacaoNova = false;
+        _versaoLeituraNotificacoes++;
+      }
+    });
+
+    if (valor == 1) {
+      _atualizarNotificacoes(marcarComoLidas: true);
+    }
+  }
+
+  void abrirConfiguracoes() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ConfiguracoesPage()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +255,7 @@ class _FeedPage extends State<FeedPage> {
               title: const Text('Notificações'),
               onTap: () {
                 Navigator.pop(context);
-                setState(() => indice = 1);
+                _selecionarAba(1);
               },
             ),
             ListTile(
@@ -214,38 +302,31 @@ class _FeedPage extends State<FeedPage> {
       bottomNavigationBar: NavigationBar(
         backgroundColor: const Color(0xFFD7CBBD),
         indicatorColor: Colors.transparent,
-        onDestinationSelected: (valor) {
-          setState(() {
-            indice = valor;
-          });
-        },
+        onDestinationSelected: _selecionarAba,
         selectedIndex: indice,
         destinations: [
           NavigationDestination(
-              icon: _TapScale(child: Icon(
-                Icons.home_outlined, 
-                size: 33.0, 
-                color: Colors.black)),
-                selectedIcon: _TapScale(child: Icon(
-                  Icons.home,
-                  size: 40.0,
-                  color: Colors.black,
-                )),
-              label: ''),
-          NavigationDestination(
-              icon: _TapScale(child: Icon(
-                Icons.notifications_outlined,
-                size: 33.0,
+              icon: _TapScale(
+                  child: Icon(Icons.home_outlined,
+                      size: 33.0, color: Colors.black)),
+              selectedIcon: _TapScale(
+                  child: Icon(
+                Icons.home,
+                size: 40.0,
                 color: Colors.black,
               )),
-              selectedIcon: _TapScale(child: Icon(
-                  Icons.notifications,
-                  size: 40.0,
-                  color: Colors.black,
-                )),
               label: ''),
           NavigationDestination(
-              icon: _TapScale(child: Transform.translate(
+              icon: _TapScale(
+                child: _iconeNotificacoes(Icons.notifications_outlined, 33),
+              ),
+              selectedIcon: _TapScale(
+                child: _iconeNotificacoes(Icons.notifications, 40),
+              ),
+              label: ''),
+          NavigationDestination(
+              icon: _TapScale(
+                  child: Transform.translate(
                 offset: Offset(0, -30),
                 child: Icon(
                   Icons.add_circle,
@@ -253,7 +334,8 @@ class _FeedPage extends State<FeedPage> {
                   color: Colors.black,
                 ),
               )),
-              selectedIcon: _TapScale(child: Transform.translate(
+              selectedIcon: _TapScale(
+                  child: Transform.translate(
                 offset: Offset(0, -30),
                 child: Icon(
                   Icons.add_circle,
@@ -263,16 +345,18 @@ class _FeedPage extends State<FeedPage> {
               )),
               label: ''),
           NavigationDestination(
-              icon: _TapScale(child: const ImageIcon(
+              icon: _TapScale(
+                  child: const ImageIcon(
                 AssetImage('assets/images/dump.png'),
                 size: 33.0,
                 color: Colors.black,
               )),
-              selectedIcon: _TapScale(child: const ImageIcon(
-                  AssetImage('assets/images/dump.png'),
-                  size: 50.0,
-                  color: Colors.black,
-                )),
+              selectedIcon: _TapScale(
+                  child: const ImageIcon(
+                AssetImage('assets/images/dump.png'),
+                size: 50.0,
+                color: Colors.black,
+              )),
               label: ''),
           NavigationDestination(
               icon: _TapScale(child: _iconePerfil(30)),
