@@ -227,143 +227,161 @@ class _FeedPage extends State<FeedPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
-      drawer: Drawer(
-        backgroundColor: const Color(0xFFC08552),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 60, bottom: 12),
-              child: Image.asset(
-                'assets/images/logo.png',
-                height: 80,
-                fit: BoxFit.contain,
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Perfil'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => indice = 4);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.notifications),
-              title: const Text('Notificações'),
-              onTap: () {
-                Navigator.pop(context);
-                _selecionarAba(1);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Configurações'),
-              onTap: () {
-                abrirConfiguracoes();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.call),
-              title: const Text('Ajuda e suporte'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => indice = 0);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Sair'),
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const InicioPage(),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Scaffold(
+          backgroundColor: const Color(0xFFF3E9DC),
+          drawer: Drawer(
+            backgroundColor: const Color(0xFFC08552),
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 60, bottom: 12),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    height: 80,
+                    fit: BoxFit.contain,
                   ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          Builder(
-            builder: (context) => FeedHeader(
-              onMenuPressed: () => Scaffold.of(context).openDrawer(),
-              mostrarAcoes: indice != 2,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: const Text('Perfil'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() => indice = 4);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.notifications),
+                  title: const Text('Notificações'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _selecionarAba(1);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.settings),
+                  title: const Text('Configurações'),
+                  onTap: () {
+                    abrirConfiguracoes();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.call),
+                  title: const Text('Ajuda e suporte'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() => indice = 0);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: const Text('Sair'),
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const InicioPage(),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-          Expanded(child: telas[indice]),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        backgroundColor: const Color(0xFFD7CBBD),
-        indicatorColor: Colors.transparent,
-        onDestinationSelected: _selecionarAba,
-        selectedIndex: indice,
-        destinations: [
-          NavigationDestination(
-              icon: _TapScale(
-                  child: Icon(Icons.home_outlined,
-                      size: 33.0, color: Colors.black)),
-              selectedIcon: _TapScale(
-                  child: Icon(
-                Icons.home,
-                size: 40.0,
-                color: Colors.black,
-              )),
-              label: ''),
-          NavigationDestination(
-              icon: _TapScale(
-                child: _iconeNotificacoes(Icons.notifications_outlined, 33),
-              ),
-              selectedIcon: _TapScale(
-                child: _iconeNotificacoes(Icons.notifications, 40),
-              ),
-              label: ''),
-          NavigationDestination(
-              icon: _TapScale(
-                  child: Transform.translate(
-                offset: Offset(0, -30),
-                child: Icon(
-                  Icons.add_circle,
-                  size: 40,
-                  color: Colors.black,
+          body: Column(
+            children: [
+              Builder(
+                builder: (context) => FeedHeader(
+                  onMenuPressed: () => Scaffold.of(context).openDrawer(),
+                  mostrarAcoes: indice != 2,
                 ),
-              )),
-              selectedIcon: _TapScale(
-                  child: Transform.translate(
-                offset: Offset(0, -30),
-                child: Icon(
-                  Icons.add_circle,
-                  size: 50,
-                  color: Colors.black,
+              ),
+              Expanded(child: telas[indice]),
+            ],
+          ),
+          bottomNavigationBar: NavigationBar(
+            backgroundColor: const Color(0xFFD7CBBD),
+            indicatorColor: Colors.transparent,
+            onDestinationSelected: _selecionarAba,
+            selectedIndex: indice,
+            destinations: [
+              NavigationDestination(
+                  icon: _TapScale(
+                      child: Icon(Icons.home_outlined,
+                          size: 33.0, color: Colors.black)),
+                  selectedIcon: _TapScale(
+                      child: Icon(
+                    Icons.home,
+                    size: 40.0,
+                    color: Colors.black,
+                  )),
+                  label: ''),
+              NavigationDestination(
+                  icon: _TapScale(
+                    child: _iconeNotificacoes(Icons.notifications_outlined, 33),
+                  ),
+                  selectedIcon: _TapScale(
+                    child: _iconeNotificacoes(Icons.notifications, 40),
+                  ),
+                  label: ''),
+              const NavigationDestination(
+                icon: SizedBox.shrink(),
+                selectedIcon: SizedBox.shrink(),
+                label: '',
+              ),
+              NavigationDestination(
+                  icon: _TapScale(
+                      child: const ImageIcon(
+                    AssetImage('assets/images/dump.png'),
+                    size: 33.0,
+                    color: Colors.black,
+                  )),
+                  selectedIcon: _TapScale(
+                      child: const ImageIcon(
+                    AssetImage('assets/images/dump.png'),
+                    size: 50.0,
+                    color: Colors.black,
+                  )),
+                  label: ''),
+              NavigationDestination(
+                  icon: _TapScale(child: _iconePerfil(30)),
+                  selectedIcon: _TapScale(child: _iconePerfil(37)),
+                  label: ''),
+            ],
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: MediaQuery.of(context).viewPadding.bottom + 38,
+          child: Center(
+            child: Semantics(
+              button: true,
+              label: 'Postar foto',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _selecionarAba(2),
+                child: SizedBox(
+                  width: 64,
+                  height: 64,
+                  child: Center(
+                    child: _TapScale(
+                      child: Icon(
+                        Icons.add_circle,
+                        size: indice == 2 ? 50 : 40,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
                 ),
-              )),
-              label: ''),
-          NavigationDestination(
-              icon: _TapScale(
-                  child: const ImageIcon(
-                AssetImage('assets/images/dump.png'),
-                size: 33.0,
-                color: Colors.black,
-              )),
-              selectedIcon: _TapScale(
-                  child: const ImageIcon(
-                AssetImage('assets/images/dump.png'),
-                size: 50.0,
-                color: Colors.black,
-              )),
-              label: ''),
-          NavigationDestination(
-              icon: _TapScale(child: _iconePerfil(30)),
-              selectedIcon: _TapScale(child: _iconePerfil(37)),
-              label: ''),
-        ],
-      ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
