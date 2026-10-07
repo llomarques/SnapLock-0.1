@@ -148,19 +148,11 @@ class _AmigosPage extends State<AmigosPage> {
               builder: (context) => PostAmigosPage(amigo: amigo),
             ),
           ),
-<<<<<<< HEAD
-          leading: const CircleAvatar(
-            radius: 15,
-=======
+
           leading: AvatarSquareWidget(
             imageUrl: amigo.avatarUrl,
             size: 33,
->>>>>>> 945f551bb4e1252cb0a1e50ab88adbe444080f03
             backgroundColor: Colors.black,
-            child: Icon(
-              Icons.person,
-              color: Colors.white,
-            ),
           ),
           title: Text(
             amigo.name,
