@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -283,12 +282,8 @@ class _FeedConteudoPageState extends State<FeedConteudoPage> {
   }
 }
 
-class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
+class _FeedPage extends State<FeedPage> {
   late int indice;
-  late final AnimationController _animacaoZoomPostagem;
-  bool _animandoZoomPostagem = false;
-  bool _revelarPostagem = false;
-  bool _drawerAberto = false;
   Timer? _timerNotificacoes;
   final Set<String> _solicitacoesConhecidas = {};
   bool _temNotificacaoNova = false;
@@ -345,10 +340,6 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _animacaoZoomPostagem = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 650),
-    );
     indice = widget.initialIndex.clamp(0, telas.length - 1);
     _atualizarNotificacoes();
     _timerNotificacoes = Timer.periodic(
@@ -360,7 +351,6 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
   @override
   void dispose() {
     _timerNotificacoes?.cancel();
-    _animacaoZoomPostagem.dispose();
     super.dispose();
   }
 
@@ -410,26 +400,6 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
     }
   }
 
-  void _abrirPostagemComZoom() {
-    if (_animandoZoomPostagem) return;
-
-    setState(() {
-      _animandoZoomPostagem = true;
-      _revelarPostagem = true;
-    });
-    _animacaoZoomPostagem.forward().whenComplete(() {
-      if (!mounted) return;
-      _selecionarAba(2);
-      setState(() => _revelarPostagem = false);
-    });
-  }
-
-  void _finalizarAnimacaoPostagem() {
-    if (_revelarPostagem || !_animandoZoomPostagem) return;
-    setState(() => _animandoZoomPostagem = false);
-    _animacaoZoomPostagem.reset();
-  }
-
   void abrirConfiguracoes() {
     Navigator.push(
       context,
@@ -439,242 +409,144 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final tamanhoTela = MediaQuery.sizeOf(context);
-    final distanciaInferior = MediaQuery.viewPaddingOf(context).bottom + 38.0;
-    final centroY = tamanhoTela.height - distanciaInferior - 32.0;
-    final distanciaMaiorCanto = math.sqrt(
-      math.pow(tamanhoTela.width / 2, 2) +
-          math.pow(math.max(centroY, tamanhoTela.height - centroY), 2),
-    );
-    final escalaFinalZoom = (distanciaMaiorCanto * 1.15) / 20;
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Scaffold(
-          backgroundColor: const Color(0xFFF3E9DC),
-          onDrawerChanged: (aberto) {
-            setState(() => _drawerAberto = aberto);
-          },
-          drawer: Drawer(
-            backgroundColor: const Color(0xFFC08552),
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 60, bottom: 12),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    height: 80,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.person),
-                  title: const Text('Perfil'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() => indice = 4);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.notifications),
-                  title: const Text('Notificações'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _selecionarAba(1);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: const Text('Configurações'),
-                  onTap: () {
-                    abrirConfiguracoes();
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.call),
-                  title: const Text('Ajuda e suporte'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() => indice = 0);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('Sair'),
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const InicioPage(),
-                      ),
-                    );
-                  },
-                ),
-              ],
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3E9DC),
+      drawer: Drawer(
+        backgroundColor: const Color(0xFFC08552),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 60, bottom: 12),
+              child: Image.asset(
+                'assets/images/logo.png',
+                height: 80,
+                fit: BoxFit.contain,
+              ),
             ),
-          ),
-          body: Column(
-            children: [
-              Builder(
-                builder: (context) => FeedHeader(
-                  onMenuPressed: () => Scaffold.of(context).openDrawer(),
-                  mostrarAcoes: indice != 2,
-                ),
-              ),
-              Expanded(child: telas[indice]),
-            ],
-          ),
-          bottomNavigationBar: NavigationBar(
-            backgroundColor: const Color(0xFFD7CBBD),
-            indicatorColor: Colors.transparent,
-            onDestinationSelected: _selecionarAba,
-            selectedIndex: indice,
-            destinations: [
-              NavigationDestination(
-                  icon: _TapScale(
-                      child: Icon(Icons.home_outlined,
-                          size: 33.0, color: Colors.black)),
-                  selectedIcon: _TapScale(
-                      child: Icon(
-                    Icons.home,
-                    size: 40.0,
-                    color: Colors.black,
-                  )),
-                  label: ''),
-              NavigationDestination(
-                  icon: _TapScale(
-                    child: _iconeNotificacoes(Icons.notifications_outlined, 33),
-                  ),
-                  selectedIcon: _TapScale(
-                    child: _iconeNotificacoes(Icons.notifications, 40),
-                  ),
-                  label: ''),
-              const NavigationDestination(
-                icon: SizedBox.shrink(),
-                selectedIcon: SizedBox.shrink(),
-                label: '',
-              ),
-              NavigationDestination(
-                  icon: _TapScale(
-                      child: const ImageIcon(
-                    AssetImage('assets/images/dump.png'),
-                    size: 33.0,
-                    color: Colors.black,
-                  )),
-                  selectedIcon: _TapScale(
-                      child: const ImageIcon(
-                    AssetImage('assets/images/dump.png'),
-                    size: 50.0,
-                    color: Colors.black,
-                  )),
-                  label: ''),
-              NavigationDestination(
-                  icon: _TapScale(child: _iconePerfil(30)),
-                  selectedIcon: _TapScale(child: _iconePerfil(37)),
-                  label: ''),
-            ],
-          ),
-        ),
-        Positioned(
-          left: 0,
-          top: 0,
-          right: 0,
-          bottom: 0,
-          child: AbsorbPointer(
-            absorbing: _animandoZoomPostagem,
-            child: AnimatedBuilder(
-              animation: _animacaoZoomPostagem,
-              builder: (context, child) {
-                final progresso =
-                    Curves.easeInCubic.transform(_animacaoZoomPostagem.value);
-                final raio = distanciaMaiorCanto * 1.15 * progresso;
-
-                return ClipPath(
-                  clipper: _CircularRevealClipper(
-                    center: Offset(tamanhoTela.width / 2, centroY),
-                    radius: raio,
-                  ),
-                  child: AnimatedOpacity(
-                    opacity: _revelarPostagem ? 1 : 0,
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.easeOut,
-                    onEnd: _finalizarAnimacaoPostagem,
-                    child: child,
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Perfil'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => indice = 4);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.notifications),
+              title: const Text('Notificações'),
+              onTap: () {
+                Navigator.pop(context);
+                _selecionarAba(1);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Configurações'),
+              onTap: () {
+                abrirConfiguracoes();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.call),
+              title: const Text('Ajuda e suporte'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => indice = 0);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Sair'),
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InicioPage(),
                   ),
                 );
               },
-              child: const ColoredBox(color: Color(0xFFF3E9DC)),
             ),
-          ),
+          ],
         ),
-        if (!_drawerAberto)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: distanciaInferior,
-            child: Center(
-              child: Semantics(
-                button: true,
-                label: 'Postar foto',
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _abrirPostagemComZoom,
-                  child: SizedBox(
-                    width: 64,
-                    height: 64,
-                    child: AnimatedBuilder(
-                      animation: _animacaoZoomPostagem,
-                      child: const Icon(
-                        Icons.add_circle,
-                        size: 40,
-                        color: Colors.black,
-                      ),
-                      builder: (context, child) {
-                        final progresso = _animacaoZoomPostagem.value;
-                        final fade =
-                            ((progresso - 0.72) / 0.28).clamp(0.0, 1.0);
-                        final opacidade = 1 - Curves.easeIn.transform(fade);
-                        final escala = 1 +
-                            (escalaFinalZoom - 1) *
-                                Curves.easeInCubic.transform(progresso);
-
-                        return IgnorePointer(
-                          child: Opacity(
-                            opacity: opacidade,
-                            child: Transform.scale(
-                              scale: escala,
-                              child: child,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
+      ),
+      body: Column(
+        children: [
+          Builder(
+            builder: (context) => FeedHeader(
+              onMenuPressed: () => Scaffold.of(context).openDrawer(),
+              mostrarAcoes: indice != 2,
             ),
           ),
-      ],
+          Expanded(child: telas[indice]),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        backgroundColor: const Color(0xFFD7CBBD),
+        indicatorColor: Colors.transparent,
+        onDestinationSelected: _selecionarAba,
+        selectedIndex: indice,
+        destinations: [
+          NavigationDestination(
+              icon: _TapScale(
+                  child: Icon(Icons.home_outlined,
+                      size: 33.0, color: Colors.black)),
+              selectedIcon: _TapScale(
+                  child: Icon(
+                Icons.home,
+                size: 40.0,
+                color: Colors.black,
+              )),
+              label: ''),
+          NavigationDestination(
+              icon: _TapScale(
+                child: _iconeNotificacoes(Icons.notifications_outlined, 33),
+              ),
+              selectedIcon: _TapScale(
+                child: _iconeNotificacoes(Icons.notifications, 40),
+              ),
+              label: ''),
+          NavigationDestination(
+              icon: _TapScale(
+                  child: Transform.translate(
+                offset: Offset(0, -30),
+                child: Icon(
+                  Icons.add_circle,
+                  size: 40,
+                  color: Colors.black,
+                ),
+              )),
+              selectedIcon: _TapScale(
+                  child: Transform.translate(
+                offset: Offset(0, -30),
+                child: Icon(
+                  Icons.add_circle,
+                  size: 50,
+                  color: Colors.black,
+                ),
+              )),
+              label: ''),
+          NavigationDestination(
+              icon: _TapScale(
+                  child: const ImageIcon(
+                AssetImage('assets/images/dump.png'),
+                size: 33.0,
+                color: Colors.black,
+              )),
+              selectedIcon: _TapScale(
+                  child: const ImageIcon(
+                AssetImage('assets/images/dump.png'),
+                size: 50.0,
+                color: Colors.black,
+              )),
+              label: ''),
+          NavigationDestination(
+              icon: _TapScale(child: _iconePerfil(30)),
+              selectedIcon: _TapScale(child: _iconePerfil(37)),
+              label: ''),
+        ],
+      ),
     );
-  }
-}
-
-class _CircularRevealClipper extends CustomClipper<Path> {
-  const _CircularRevealClipper({required this.center, required this.radius});
-
-  final Offset center;
-  final double radius;
-
-  @override
-  Path getClip(Size size) {
-    return Path()..addOval(Rect.fromCircle(center: center, radius: radius));
-  }
-
-  @override
-  bool shouldReclip(covariant _CircularRevealClipper oldClipper) {
-    return oldClipper.center != center || oldClipper.radius != radius;
   }
 }
 
