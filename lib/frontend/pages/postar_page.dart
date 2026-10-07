@@ -190,33 +190,47 @@ class _PostarPageState extends State<PostarPage> {
   Future<void> _selecionarProporcao() async {
     final selectedIndex = await showModalBottomSheet<int>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: const Color(0xFFF3E9DC),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Proporção da foto',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                ),
+      builder: (context) {
+        final maxHeight = MediaQuery.sizeOf(context).height * 0.75;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Proporção da foto',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  for (var index = 0;
+                      index < _aspectRatioOptions.length;
+                      index++)
+                    ListTile(
+                      title: Text(_aspectRatioOptions[index].label),
+                      trailing: index == _selectedAspectRatioIndex
+                          ? const Icon(Icons.check, color: Color(0xFF895737))
+                          : null,
+                      onTap: () => Navigator.pop(context, index),
+                    ),
+                  const SizedBox(height: 8),
+                ],
               ),
             ),
-            for (var index = 0; index < _aspectRatioOptions.length; index++)
-              ListTile(
-                title: Text(_aspectRatioOptions[index].label),
-                trailing: index == _selectedAspectRatioIndex
-                    ? const Icon(Icons.check, color: Color(0xFF895737))
-                    : null,
-                onTap: () => Navigator.pop(context, index),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
 
     if (selectedIndex == null || !mounted) return;
@@ -478,11 +492,20 @@ class _PostarPageState extends State<PostarPage> {
                               semanticLabel: 'Efeitos',
                             ),
                             const SizedBox(width: 4),
-                            Image.asset(
-                              'assets/images/proporcao.png',
-                              width: 32,
-                              height: 32,
-                              semanticLabel: 'Proporção',
+                            IconButton(
+                              onPressed: _selecionarProporcao,
+                              tooltip:
+                                  'Proporção: ${_aspectRatioOptions[_selectedAspectRatioIndex].label}',
+                              constraints: const BoxConstraints.tightFor(
+                                width: 40,
+                                height: 40,
+                              ),
+                              padding: EdgeInsets.zero,
+                              icon: Image.asset(
+                                'assets/images/proporcao.png',
+                                width: 32,
+                                height: 32,
+                              ),
                             ),
                           ],
                         ),
