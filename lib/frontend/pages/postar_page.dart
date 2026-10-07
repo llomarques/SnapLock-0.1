@@ -435,6 +435,8 @@ class _PostarPageState extends State<PostarPage> {
                           },
                           maxLines: 3,
                           minLines: 1,
+                          textInputAction: TextInputAction.send,
+                          onFieldSubmitted: (_) => publicar(),
                           textAlign: TextAlign.left,
                           decoration: InputDecoration(
                             hintText: 'Escreva sua legenda...',
