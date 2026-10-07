@@ -256,12 +256,10 @@ class ApiService {
   static Future<List<PostModel>> getMyGallery() async {
     final url = '${ApiConfig.baseUrl}/fotos/minhas';
 
-
     final response = await http.get(
       Uri.parse(url),
       headers: _friendHeaders,
     );
-
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -321,6 +319,7 @@ class ApiService {
         imageUrl: foto['midia_url']?.toString() ?? '',
         caption: foto['legenda']?.toString() ?? '',
         createdAt: foto['data_postagem']?.toString() ?? '',
+        aspectRatio: double.tryParse(foto['proporcao']?.toString() ?? ''),
         authorName: foto['nome']?.toString(),
         authorAvatar: foto['foto_perfil']?.toString(),
       );

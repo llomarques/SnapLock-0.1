@@ -91,7 +91,11 @@ Future<void> main() async {
 
       final resultados = await connection.execute(
         '''SELECT u.id_usuario, u.nome, u.username,
-            u.biografia, u.foto_perfil, u.ativo, a.status AS amizade_status
+            u.biografia, u.foto_perfil, u.ativo, a.status AS amizade_status,
+            (SELECT COUNT(*) FROM amizade a2
+             WHERE a2.status = 'aceito'
+               AND (a2.id_usuario_1 = u.id_usuario
+                    OR a2.id_usuario_2 = u.id_usuario)) AS friends_count
            FROM usuario u
            LEFT JOIN amizade a
              ON ((a.id_usuario_1 = :id_usuario AND a.id_usuario_2 = u.id_usuario)
@@ -277,6 +281,7 @@ Future<void> main() async {
           'avatarUrl': usuario['foto_perfil'] ?? '',
           'friendshipStatus': usuario['amizade_status'] ?? '',
           'isActive': usuario['ativo'] == '1',
+          'friendsCount': usuario['friends_count'] ?? '0',
         };
       }).toList();
       return _json(200, {'success': true, 'friends': amigos});
@@ -472,6 +477,56 @@ Future<void> main() async {
           {'id_recuperacao': idRecuperacao});
       return _json(200, {'mensagem': 'Senha redefinida com sucesso.'});
     })
+    ..get('/api/feed', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      try {
+        final resultado = await connection.execute(
+          '''SELECT f.id_foto, f.id_usuario, f.midia_url, f.legenda,
+                    f.data_postagem, f.proporcao, u.nome, u.username,
+                    u.foto_perfil,
+                    (SELECT COUNT(*) FROM curtida c
+                     WHERE c.id_foto = f.id_foto) AS reaction_count
+             FROM foto f
+             JOIN usuario u ON u.id_usuario = f.id_usuario
+             WHERE f.id_usuario = :id_usuario
+                OR EXISTS (
+                  SELECT 1 FROM amizade a
+                  WHERE a.status = 'aceito'
+                    AND ((a.id_usuario_1 = :id_usuario
+                          AND a.id_usuario_2 = f.id_usuario)
+                      OR (a.id_usuario_2 = :id_usuario
+                          AND a.id_usuario_1 = f.id_usuario))
+                )
+             ORDER BY f.data_postagem DESC, f.id_foto DESC''',
+          {'id_usuario': idUsuario},
+        );
+
+        final publicacoes = resultado.rows.map((row) {
+          final foto = row.assoc();
+          return <String, Object?>{
+            'id': foto['id_foto'] ?? '',
+            'userId': foto['id_usuario'] ?? '',
+            'imageUrl': foto['midia_url'] ?? '',
+            'caption': foto['legenda'] ?? '',
+            'createdAt': foto['data_postagem'] ?? '',
+            'aspectRatio': foto['proporcao'],
+            'authorName': foto['nome'] ?? '',
+            'authorUsername': foto['username'] ?? '',
+            'authorAvatar': foto['foto_perfil'] ?? '',
+            'reactionCount': foto['reaction_count'] ?? '0',
+            'userReaction': null,
+          };
+        }).toList();
+
+        return _json(200, {'success': true, 'posts': publicacoes});
+      } catch (error, stackTrace) {
+        print('Erro ao carregar feed: $error');
+        print(stackTrace);
+        return _json(500, {'message': 'Erro ao carregar o feed.'});
+      }
+    })
     ..get('/api/fotos/minhas', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
@@ -521,7 +576,7 @@ Future<void> main() async {
 
         final resultado = await connection.execute(
           '''SELECT f.id_foto, f.id_usuario, f.midia_url, f.legenda,
-                    f.data_postagem, u.nome, u.foto_perfil
+                    f.data_postagem, f.proporcao, u.nome, u.foto_perfil
              FROM foto f
              JOIN usuario u ON u.id_usuario = f.id_usuario
              WHERE f.id_usuario = :id_amigo
