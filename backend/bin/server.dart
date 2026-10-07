@@ -440,34 +440,73 @@ Future<void> main() async {
           {'id_recuperacao': idRecuperacao});
       return _json(200, {'mensagem': 'Senha redefinida com sucesso.'});
     })
-
-    
-
-    
     ..get('/api/fotos/minhas', (Request request) async {
-  final idUsuario = _idUsuarioAutenticado(request, sessoes);
-  if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
 
-  try {
-    final resultado = await connection.execute(
-      '''SELECT id_foto, id_usuario, midia_url, legenda,
+      try {
+        final resultado = await connection.execute(
+          '''SELECT id_foto, id_usuario, midia_url, legenda,
                 filtro_aplicado, data_postagem
          FROM foto
          WHERE id_usuario = :id_usuario
          ORDER BY data_postagem DESC, id_foto DESC''',
-      {'id_usuario': idUsuario},
-    );
+          {'id_usuario': idUsuario},
+        );
 
-    return _json(200, {
-      'success': true,
-      'fotos': resultado.rows.map((row) => row.assoc()).toList(),
-    });
-  } catch (error, stackTrace) {
-    print('Erro ao buscar fotos: $error');
-    print(stackTrace);
-    return _json(500, {'message': 'Erro ao carregar galeria.'});
-  }
-})
+        return _json(200, {
+          'success': true,
+          'fotos': resultado.rows.map((row) => row.assoc()).toList(),
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao buscar fotos: $error');
+        print(stackTrace);
+        return _json(500, {'message': 'Erro ao carregar galeria.'});
+      }
+    })
+    ..get('/api/friends/<friendId>/fotos', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idAmigo = int.tryParse(request.params['friendId'] ?? '');
+      if (idAmigo == null || idAmigo == idUsuario) {
+        return _json(422, {'message': 'Amigo inválido.'});
+      }
+
+      try {
+        final amizade = await connection.execute(
+          '''SELECT id_amizade FROM amizade
+             WHERE ((id_usuario_1 = :id_usuario AND id_usuario_2 = :id_amigo)
+                 OR (id_usuario_1 = :id_amigo AND id_usuario_2 = :id_usuario))
+               AND status = 'aceito'
+             LIMIT 1''',
+          {'id_usuario': idUsuario, 'id_amigo': idAmigo},
+        );
+        if (amizade.rows.isEmpty) {
+          return _json(403,
+              {'message': 'Este usuário não está na sua lista de amigos.'});
+        }
+
+        final resultado = await connection.execute(
+          '''SELECT f.id_foto, f.id_usuario, f.midia_url, f.legenda,
+                    f.data_postagem, u.nome, u.foto_perfil
+             FROM foto f
+             JOIN usuario u ON u.id_usuario = f.id_usuario
+             WHERE f.id_usuario = :id_amigo
+             ORDER BY f.data_postagem DESC, f.id_foto DESC''',
+          {'id_amigo': idAmigo},
+        );
+
+        return _json(200, {
+          'success': true,
+          'fotos': resultado.rows.map((row) => row.assoc()).toList(),
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao buscar fotos do amigo: $error');
+        print(stackTrace);
+        return _json(500, {'message': 'Erro ao carregar fotos do amigo.'});
+      }
+    })
     ..post('/api/fotos', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});

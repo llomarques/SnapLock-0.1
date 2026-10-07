@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/frontend/pages/configuracoes_page.dart';
+import 'package:snaplock/frontend/pages/postAmigos_page.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
 import 'package:snaplock/models/user_model.dart';
 import 'package:snaplock/services/api_service.dart';
@@ -92,6 +93,12 @@ class _AmigosPage extends State<AmigosPage> {
           dense: true,
           visualDensity: const VisualDensity(vertical: -2),
           contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostAmigosPage(amigo: amigo),
+            ),
+          ),
           leading: CircleAvatar(
             radius: 15,
             backgroundColor: Colors.black,
