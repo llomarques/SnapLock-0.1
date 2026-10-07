@@ -375,6 +375,14 @@ class _PerfilPage extends State<PerfilPage> {
             const SizedBox(
               height: 20,
             ),
+            Divider(
+              color: const Color.fromARGB(255, 202, 196, 186), // Cor da linha
+              thickness: 2.0, // Espessura da linha
+              height: 20.0, // Espaço ao redor da linha
+            ),
+            const SizedBox(
+              height: 20,
+            ),
             if (carregandoFotos)
               const Padding(
                 padding: EdgeInsets.all(24),

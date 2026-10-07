@@ -298,6 +298,45 @@ class ApiService {
     );
   }
 
+  throw Exception(
+    data['message']?.toString() ?? 'Erro ao carregar galeria.',
+  );
+}
+
+  static Future<List<PostModel>> getFriendGallery(String friendId) async {
+    final response = await http.get(
+      Uri.parse(
+        '${ApiConfig.baseUrl}/friends/${Uri.encodeComponent(friendId)}/fotos',
+      ),
+      headers: _friendHeaders,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Erro HTTP ${response.statusCode}: ${response.body}',
+      );
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao carregar fotos do amigo.');
+    }
+
+    final fotos = data['fotos'] as List;
+    return fotos.map((item) {
+      final foto = item as Map<String, dynamic>;
+      return PostModel(
+        id: foto['id_foto']?.toString() ?? '',
+        userId: foto['id_usuario']?.toString() ?? '',
+        imageUrl: foto['midia_url']?.toString() ?? '',
+        caption: foto['legenda']?.toString() ?? '',
+        createdAt: foto['data_postagem']?.toString() ?? '',
+        authorName: foto['nome']?.toString(),
+        authorAvatar: foto['foto_perfil']?.toString(),
+      );
+    }).toList();
+  }
+
   static Future<Map<String, dynamic>> createPostFromBytes(
     Uint8List imageBytes,
     String caption, {
