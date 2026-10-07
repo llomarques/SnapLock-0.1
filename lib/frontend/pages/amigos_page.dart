@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/frontend/pages/configuracoes_page.dart';
 import 'package:snaplock/frontend/pages/postAmigos_page.dart';
+import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
 import 'package:snaplock/models/user_model.dart';
 import 'package:snaplock/services/api_service.dart';
@@ -147,8 +148,9 @@ class _AmigosPage extends State<AmigosPage> {
               builder: (context) => PostAmigosPage(amigo: amigo),
             ),
           ),
-          leading: CircleAvatar(
-            radius: 15,
+          leading: AvatarSquareWidget(
+            imageUrl: amigo.avatarUrl,
+            size: 33,
             backgroundColor: Colors.black,
             iconColor: Colors.white,
           ),
