@@ -278,24 +278,6 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                                             ),
                                           ),
                                         ),
-                                        IconButton(
-                                          tooltip: 'Excluir solicitação',
-                                          onPressed: () => responderSolicitacao(
-                                            solicitacao,
-                                            aceitar: false,
-                                          ),
-                                          icon: const Icon(
-                                            Icons.close,
-                                            size: 16,
-                                          ),
-                                          color: Colors.black54,
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(
-                                            minWidth: 36,
-                                            minHeight: 36,
-                                          ),
-                                          visualDensity: VisualDensity.compact,
-                                        ),
                                       ],
                                     ),
                                   );
