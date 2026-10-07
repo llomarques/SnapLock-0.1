@@ -367,7 +367,7 @@ class _PostarPageState extends State<PostarPage> {
                                       tooltip: 'Adicionar foto',
                                       icon: const Icon(
                                           Icons.add_photo_alternate,
-                                          size: 48),
+                                          size: 40),
                                       style: IconButton.styleFrom(
                                         backgroundColor:
                                             const Color(0xFF895737),
@@ -453,12 +453,14 @@ class _PostarPageState extends State<PostarPage> {
                           ),
                         ),
                       ),
-                      if (legendaConfirmada && !legendaFocusNode.hasFocus)
-                        const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       AnimatedSize(
                         duration: const Duration(milliseconds: 180),
-                        child: legendaFocusNode.hasFocus
-                            ? IconButton(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (legendaFocusNode.hasFocus)
+                              IconButton(
                                 onPressed: () {
                                   setState(() {
                                     legendaConfirmada = true;
@@ -468,51 +470,22 @@ class _PostarPageState extends State<PostarPage> {
                                 tooltip: 'Concluir legenda',
                                 color: const Color(0xFF895737),
                                 icon: const Icon(Icons.check_circle),
-                              )
-                            : legendaConfirmada
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Image.asset(
-                                        'assets/images/efeitos.png',
-                                        width: 32,
-                                        height: 32,
-                                        semanticLabel: 'Efeitos',
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            onPressed: _selecionarProporcao,
-                                            tooltip:
-                                                'Proporção: ${_aspectRatioOptions[_selectedAspectRatioIndex].label}',
-                                            constraints:
-                                                const BoxConstraints.tightFor(
-                                              width: 40,
-                                              height: 40,
-                                            ),
-                                            padding: EdgeInsets.zero,
-                                            icon: Image.asset(
-                                              'assets/images/proporcao.png',
-                                              width: 32,
-                                              height: 32,
-                                            ),
-                                          ),
-                                          Text(
-                                            _aspectRatioOptions[
-                                                    _selectedAspectRatioIndex]
-                                                .label,
-                                            style: const TextStyle(
-                                              color: Color(0xFF6F5C4A),
-                                              fontSize: 9,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  )
-                                : const SizedBox(width: 0, height: 48),
+                              ),
+                            Image.asset(
+                              'assets/images/efeitos.png',
+                              width: 32,
+                              height: 32,
+                              semanticLabel: 'Efeitos',
+                            ),
+                            const SizedBox(width: 4),
+                            Image.asset(
+                              'assets/images/proporcao.png',
+                              width: 32,
+                              height: 32,
+                              semanticLabel: 'Proporção',
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
