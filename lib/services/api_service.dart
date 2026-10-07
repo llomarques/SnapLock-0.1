@@ -298,11 +298,6 @@ class ApiService {
     );
   }
 
-  throw Exception(
-    data['message']?.toString() ?? 'Erro ao carregar galeria.',
-  );
-}
-
   static Future<List<PostModel>> getFriendGallery(String friendId) async {
     final response = await http.get(
       Uri.parse(
