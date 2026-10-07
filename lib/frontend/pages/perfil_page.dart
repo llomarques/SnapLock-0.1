@@ -52,52 +52,37 @@ class _PerfilPage extends State<PerfilPage> {
   }
 
   Future<void> carregarFotos() async {
-  try {
-    print('========================================');
-    print('INICIANDO CARREGAMENTO DAS FOTOS');
-    print('========================================');
+    try {
+      final galeria = await ApiService.getMyGallery();
 
-    final galeria = await ApiService.getMyGallery();
+      if (!mounted) {
+        return;
+      }
 
-    print('FOTOS RECEBIDAS: ${galeria.length}');
-
-    for (final foto in galeria) {
-      print('ID: ${foto.id}');
-      print('URL: ${foto.imageUrl}');
-      print('LEGENDA: ${foto.caption}');
-      print('----------------------------------------');
-    }
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      fotos = galeria;
-      erroAoCarregarFotos = false;
-    });
-  } catch (e, stackTrace) {
-    print('========================================');
-    print('ERRO AO CARREGAR FOTOS');
-    print('========================================');
-    print('ERRO: $e');
-    print('STACK TRACE:');
-    print(stackTrace);
-    print('========================================');
-
-    if (mounted) {
       setState(() {
-        erroAoCarregarFotos = true;
+        fotos = galeria;
+        erroAoCarregarFotos = false;
       });
-    }
-  } finally {
-    if (mounted) {
-      setState(() {
-        carregandoFotos = false;
-      });
+    } catch (e, stackTrace) {
+      print('========================================');
+      print('ERRO AO CARREGAR FOTOS');
+      print('ERRO: $e');
+      print('STACK TRACE:');
+      print(stackTrace);
+
+      if (mounted) {
+        setState(() {
+          erroAoCarregarFotos = true;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          carregandoFotos = false;
+        });
+      }
     }
   }
-}
 
   Future<void> abrirEditarPerfil(BuildContext context) async {
     final usuario = await Navigator.push<Map<String, dynamic>>(
@@ -127,6 +112,9 @@ class _PerfilPage extends State<PerfilPage> {
       context: context,
       barrierColor: Colors.black.withOpacity(0.85),
       builder: (context) {
+        final screenSize = MediaQuery.sizeOf(context);
+        final imageHeight = screenSize.height * 0.58;
+
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(16),
@@ -143,43 +131,54 @@ class _PerfilPage extends State<PerfilPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // FOTO
-                    InteractiveViewer(
-                      minScale: 1,
-                      maxScale: 4,
-                      child: Image.network(
-                        foto.imageUrl,
-                        width: double.infinity,
-                        fit: BoxFit.contain,
-                        errorBuilder: (
-                          context,
-                          error,
-                          stackTrace,
-                        ) {
-                          return const SizedBox(
-                            height: 300,
-                            child: Center(
-                              child: Icon(
-                                Icons.broken_image_outlined,
-                                size: 50,
-                                color: Color(0xFF895737),
+                    SizedBox(
+                      width: double.infinity,
+                      height: imageHeight,
+                      child: InteractiveViewer(
+                        minScale: 1,
+                        maxScale: 4,
+                        child: Image.network(
+                          foto.imageUrl,
+                          width: double.infinity,
+                          height: imageHeight,
+                          fit: BoxFit.contain,
+                          errorBuilder: (
+                            context,
+                            error,
+                            stackTrace,
+                          ) {
+                            return const SizedBox.expand(
+                              child: Center(
+                                child: Icon(
+                                  Icons.broken_image_outlined,
+                                  size: 50,
+                                  color: Color(0xFF895737),
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
                     ),
 
                     // LEGENDA
                     if (foto.caption.isNotEmpty)
-                      Container(
+                      SizedBox(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          foto.caption,
-                          style: const TextStyle(
-                            color: Color(0xFF5E3023),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: screenSize.height * 0.18,
+                          ),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              foto.caption,
+                              style: const TextStyle(
+                                color: Color(0xFF5E3023),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -411,7 +410,16 @@ class _PerfilPage extends State<PerfilPage> {
   Widget _buildGalleryGrid() {
     const columnCount = 3;
     const spacing = 4.0;
-    const aspectRatios = [0.78, 1.2, 0.95, 1.35, 0.82, 1.05];
+    const fallbackAspectRatios = [0.78, 1.2, 0.95, 1.35, 0.82, 1.05];
+    final aspectRatios = List<double>.generate(fotos.length, (index) {
+      final savedAspectRatio = fotos[index].aspectRatio;
+      if (savedAspectRatio != null &&
+          savedAspectRatio.isFinite &&
+          savedAspectRatio > 0) {
+        return savedAspectRatio;
+      }
+      return fallbackAspectRatios[index % fallbackAspectRatios.length];
+    });
     final columns = List.generate(columnCount, (_) => <int>[]);
     final columnHeights = List<double>.filled(columnCount, 0);
 
@@ -423,7 +431,7 @@ class _PerfilPage extends State<PerfilPage> {
         }
       }
 
-      final aspectRatio = aspectRatios[index % aspectRatios.length];
+      final aspectRatio = aspectRatios[index];
       columns[shortestColumn].add(index);
       columnHeights[shortestColumn] += 1 / aspectRatio + spacing;
     }
@@ -442,7 +450,7 @@ class _PerfilPage extends State<PerfilPage> {
                       _abrirFoto(fotos[index]);
                     },
                     child: AspectRatio(
-                      aspectRatio: aspectRatios[index % aspectRatios.length],
+                      aspectRatio: aspectRatios[index],
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: Image.network(

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:crop_your_image/crop_your_image.dart';
 import 'package:snaplock/frontend/utils/foto_utils.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
 import 'package:snaplock/services/api_service.dart';
@@ -13,11 +14,22 @@ class PostarPage extends StatefulWidget {
 }
 
 class _PostarPageState extends State<PostarPage> {
+  static const _aspectRatioOptions = <({String label, double? ratio})>[
+    (label: 'Original', ratio: null),
+    (label: 'Quadrada 1:1', ratio: 1),
+    (label: 'Retrato 4:5', ratio: 4 / 5),
+    (label: 'Paisagem 16:9', ratio: 16 / 9),
+    (label: 'Personalizada', ratio: null),
+  ];
+
   final TextEditingController legendaController = TextEditingController();
   final FocusNode legendaFocusNode = FocusNode();
+  Uint8List? _imagemOriginal;
   Uint8List? fotoPerfil;
   bool legendaConfirmada = false;
   double fotoAspectRatio = 4 / 5;
+  double _originalAspectRatio = 4 / 5;
+  int _selectedAspectRatioIndex = 0;
   bool selecionandoImagem = false;
   bool salvando = false;
   String fotoPerfilUrl = '';
@@ -49,17 +61,25 @@ class _PostarPageState extends State<PostarPage> {
         return;
       }
 
-      final decodedImage = await decodeImageFromList(bytes);
-      final aspectRatio = decodedImage.width / decodedImage.height;
-      decodedImage.dispose();
+      final originalAspectRatio = await _aspectRatioDaImagem(bytes);
+      final targetAspectRatio = _aspectRatioDaOpcao(
+        _selectedAspectRatioIndex,
+        originalAspectRatio: originalAspectRatio,
+      );
+      final croppedImage = await _abrirEditorDeCorte(bytes, targetAspectRatio);
 
-      if (!mounted) {
+      if (croppedImage == null || !mounted) {
         return;
       }
 
+      final croppedAspectRatio = await _aspectRatioDaImagem(croppedImage);
+      if (!mounted) return;
+
       setState(() {
-        fotoPerfil = bytes;
-        fotoAspectRatio = aspectRatio;
+        _imagemOriginal = bytes;
+        fotoPerfil = croppedImage;
+        _originalAspectRatio = originalAspectRatio;
+        fotoAspectRatio = croppedAspectRatio;
       });
     } on PlatformException catch (error) {
       if (mounted && error.code != 'already_active') {
@@ -73,6 +93,158 @@ class _PostarPageState extends State<PostarPage> {
         setState(() => selecionandoImagem = false);
       }
     }
+  }
+
+  double? _aspectRatioDaOpcao(
+    int index, {
+    double? originalAspectRatio,
+  }) {
+    if (index == 0) return originalAspectRatio ?? _originalAspectRatio;
+    return _aspectRatioOptions[index].ratio;
+  }
+
+  Future<double> _aspectRatioDaImagem(Uint8List bytes) async {
+    final image = await decodeImageFromList(bytes);
+    final aspectRatio = image.width / image.height;
+    image.dispose();
+    return aspectRatio;
+  }
+
+  Future<Uint8List?> _abrirEditorDeCorte(
+    Uint8List imageBytes,
+    double? aspectRatio,
+  ) {
+    final controller = CropController();
+    var editorPronto = false;
+    var cortando = false;
+
+    return showDialog<Uint8List>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Ajustar foto'),
+          content: SizedBox(
+            width: MediaQuery.sizeOf(dialogContext).width * 0.82,
+            height: MediaQuery.sizeOf(dialogContext).height * 0.52,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Crop(
+                image: imageBytes,
+                controller: controller,
+                aspectRatio: aspectRatio,
+                interactive: true,
+                baseColor: const Color(0xFF241A14),
+                maskColor: Colors.black.withValues(alpha: 0.65),
+                progressIndicator: const CircularProgressIndicator(
+                  color: Color(0xFFC08552),
+                ),
+                onStatusChanged: (status) {
+                  if (!dialogContext.mounted) return;
+                  setDialogState(() {
+                    editorPronto = status == CropStatus.ready;
+                    cortando = status == CropStatus.cropping;
+                  });
+                },
+                onCropped: (result) {
+                  if (result is CropSuccess) {
+                    Navigator.of(dialogContext).pop(result.croppedImage);
+                  } else if (result is CropFailure) {
+                    if (dialogContext.mounted) {
+                      setDialogState(() => cortando = false);
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Não foi possível cortar a imagem: ${result.cause}',
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed:
+                  cortando ? null : () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: editorPronto && !cortando ? controller.crop : null,
+              child: cortando
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Aplicar corte'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selecionarProporcao() async {
+    final selectedIndex = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: const Color(0xFFF3E9DC),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Proporção da foto',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            for (var index = 0; index < _aspectRatioOptions.length; index++)
+              ListTile(
+                title: Text(_aspectRatioOptions[index].label),
+                trailing: index == _selectedAspectRatioIndex
+                    ? const Icon(Icons.check, color: Color(0xFF895737))
+                    : null,
+                onTap: () => Navigator.pop(context, index),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (selectedIndex == null || !mounted) return;
+
+    final sourceImage = _imagemOriginal;
+    if (sourceImage != null) {
+      final targetAspectRatio = _aspectRatioDaOpcao(selectedIndex);
+      final croppedImage = await _abrirEditorDeCorte(
+        sourceImage,
+        targetAspectRatio,
+      );
+      if (croppedImage == null || !mounted) return;
+
+      final croppedAspectRatio = await _aspectRatioDaImagem(croppedImage);
+      if (!mounted) return;
+
+      setState(() {
+        _selectedAspectRatioIndex = selectedIndex;
+        fotoPerfil = croppedImage;
+        fotoAspectRatio = croppedAspectRatio;
+      });
+      return;
+    }
+
+    setState(() {
+      _selectedAspectRatioIndex = selectedIndex;
+      fotoAspectRatio = _aspectRatioDaOpcao(selectedIndex) ?? fotoAspectRatio;
+    });
   }
 
   Future<void> publicar() async {
@@ -92,13 +264,17 @@ class _PostarPageState extends State<PostarPage> {
         imagem,
         legendaController.text.trim(),
         filtroAplicado: filtroAplicado,
+        aspectRatio: fotoAspectRatio,
       );
       if (!mounted) return;
 
       legendaController.clear();
       setState(() {
+        _imagemOriginal = null;
         fotoPerfil = null;
         fotoAspectRatio = 4 / 5;
+        _originalAspectRatio = 4 / 5;
+        _selectedAspectRatioIndex = 0;
         legendaConfirmada = false;
         filtroAplicado = null;
       });
@@ -108,7 +284,8 @@ class _PostarPageState extends State<PostarPage> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+          SnackBar(
+              content: Text(error.toString().replaceFirst('Exception: ', ''))),
         );
       }
     } finally {
@@ -188,17 +365,21 @@ class _PostarPageState extends State<PostarPage> {
                                     child: IconButton(
                                       onPressed: escolherDaGaleria,
                                       tooltip: 'Adicionar foto',
-                                      icon: const Icon(Icons.add_photo_alternate, size: 48),
+                                      icon: const Icon(
+                                          Icons.add_photo_alternate,
+                                          size: 48),
                                       style: IconButton.styleFrom(
-                                        backgroundColor: const Color(0xFF895737),
-                                        foregroundColor: const Color(0xFFF3E9DC),
+                                        backgroundColor:
+                                            const Color(0xFF895737),
+                                        foregroundColor:
+                                            const Color(0xFFF3E9DC),
                                         fixedSize: const Size(72, 72),
                                       ),
                                     ),
                                   )
                                 : Image(
                                     image: imagemPerfil!,
-                                    fit: BoxFit.contain,
+                                    fit: BoxFit.cover,
                                   ),
                           ),
                         ),
@@ -299,11 +480,35 @@ class _PostarPageState extends State<PostarPage> {
                                         semanticLabel: 'Efeitos',
                                       ),
                                       const SizedBox(width: 8),
-                                      Image.asset(
-                                        'assets/images/proporcao.png',
-                                        width: 32,
-                                        height: 32,
-                                        semanticLabel: 'Proporção',
+                                      Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            onPressed: _selecionarProporcao,
+                                            tooltip:
+                                                'Proporção: ${_aspectRatioOptions[_selectedAspectRatioIndex].label}',
+                                            constraints:
+                                                const BoxConstraints.tightFor(
+                                              width: 40,
+                                              height: 40,
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                            icon: Image.asset(
+                                              'assets/images/proporcao.png',
+                                              width: 32,
+                                              height: 32,
+                                            ),
+                                          ),
+                                          Text(
+                                            _aspectRatioOptions[
+                                                    _selectedAspectRatioIndex]
+                                                .label,
+                                            style: const TextStyle(
+                                              color: Color(0xFF6F5C4A),
+                                              fontSize: 9,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   )
