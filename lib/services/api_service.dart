@@ -256,17 +256,12 @@ class ApiService {
   static Future<List<PostModel>> getMyGallery() async {
     final url = '${ApiConfig.baseUrl}/fotos/minhas';
 
-    print('========================================');
-    print('URL DA GALERIA: $url');
-    print('========================================');
 
     final response = await http.get(
       Uri.parse(url),
       headers: _friendHeaders,
     );
 
-    print('STATUS CODE: ${response.statusCode}');
-    print('RESPONSE BODY: ${response.body}');
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -330,6 +325,18 @@ class ApiService {
         authorAvatar: foto['foto_perfil']?.toString(),
       );
     }).toList();
+  }
+
+  static Future<Map<String, dynamic>> createPost(
+    String imageBase64,
+    String caption,
+    String fileName,
+  ) {
+    return createPostFromBytes(
+      base64Decode(imageBase64),
+      caption,
+      fileName: fileName,
+    );
   }
 
   static Future<Map<String, dynamic>> createPostFromBytes(
