@@ -81,7 +81,8 @@ class _PesquisaPage extends State<PesquisaPage> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+          SnackBar(
+              content: Text(error.toString().replaceFirst('Exception: ', ''))),
         );
       }
     } finally {
@@ -91,7 +92,8 @@ class _PesquisaPage extends State<PesquisaPage> {
 
   Widget resultadosBusca() {
     if (!iniciouBusca) {
-      return const Center(child: Text('Busque usuários pelo nome ou username.'));
+      return const Center(
+          child: Text('Busque usuários pelo nome ou username.'));
     }
     if (buscando) {
       return const Center(child: CircularProgressIndicator());
@@ -120,19 +122,23 @@ class _PesquisaPage extends State<PesquisaPage> {
             backgroundColor: Colors.black,
             iconColor: Colors.white,
           ),
-          title: Text('@${usuario.username}'),
+          title: Text(
+            usuario.name,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text('@${usuario.username}'),
           trailing: BotoesWidget(
             texto: enviando
-              ? 'Enviando...'
-              : status == 'aceito'
-                ? 'Amigos'
-                : status == 'pendente'
-                  ? 'Pendente'
-                  : 'Fazer amizade',
+                ? 'Enviando...'
+                : status == 'aceito'
+                    ? 'Amigos'
+                    : status == 'pendente'
+                        ? 'Pendente'
+                        : 'Fazer amizade',
             compacto: true,
             aoTocar: status.isNotEmpty || enviando
-              ? () {}
-              : () => enviarSolicitacao(usuario),
+                ? () {}
+                : () => enviarSolicitacao(usuario),
           ),
         );
       },

@@ -239,7 +239,7 @@ class ApiService {
   static Future<List<PostModel>> getFeed() async {
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/feed'),
-      headers: _headers,
+      headers: _friendHeaders,
     );
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -254,42 +254,48 @@ class ApiService {
   }
 
   static Future<List<PostModel>> getMyGallery() async {
-  final url = '${ApiConfig.baseUrl}/fotos/minhas';
+    final url = '${ApiConfig.baseUrl}/fotos/minhas';
 
-  print('========================================');
-  print('URL DA GALERIA: $url');
-  print('========================================');
+    print('========================================');
+    print('URL DA GALERIA: $url');
+    print('========================================');
 
-  final response = await http.get(
-    Uri.parse(url),
-    headers: _friendHeaders,
-  );
-
-  print('STATUS CODE: ${response.statusCode}');
-  print('RESPONSE BODY: ${response.body}');
-
-  if (response.statusCode != 200) {
-    throw Exception(
-      'Erro HTTP ${response.statusCode}: ${response.body}',
+    final response = await http.get(
+      Uri.parse(url),
+      headers: _friendHeaders,
     );
-  }
 
-  final data = jsonDecode(response.body) as Map<String, dynamic>;
+    print('STATUS CODE: ${response.statusCode}');
+    print('RESPONSE BODY: ${response.body}');
 
-  if (data['success'] == true) {
-    final list = data['fotos'] as List;
-
-    return list.map((item) {
-      final foto = item as Map<String, dynamic>;
-
-      return PostModel(
-        id: foto['id_foto'].toString(),
-        userId: foto['id_usuario'].toString(),
-        imageUrl: foto['midia_url']?.toString() ?? '',
-        caption: foto['legenda']?.toString() ?? '',
-        createdAt: foto['data_postagem']?.toString() ?? '',
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Erro HTTP ${response.statusCode}: ${response.body}',
       );
-    }).toList();
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (data['success'] == true) {
+      final list = data['fotos'] as List;
+
+      return list.map((item) {
+        final foto = item as Map<String, dynamic>;
+
+        return PostModel(
+          id: foto['id_foto'].toString(),
+          userId: foto['id_usuario'].toString(),
+          imageUrl: foto['midia_url']?.toString() ?? '',
+          caption: foto['legenda']?.toString() ?? '',
+          createdAt: foto['data_postagem']?.toString() ?? '',
+          aspectRatio: double.tryParse(foto['proporcao']?.toString() ?? ''),
+        );
+      }).toList();
+    }
+
+    throw Exception(
+      data['message']?.toString() ?? 'Erro ao carregar galeria.',
+    );
   }
 
   throw Exception(
@@ -336,6 +342,7 @@ class ApiService {
     String caption, {
     String? filtroAplicado,
     String fileName = 'postagem.jpg',
+    double? aspectRatio,
   }) async {
     final request = http.MultipartRequest(
       'POST',
@@ -343,6 +350,7 @@ class ApiService {
     )
       ..fields['legenda'] = caption
       ..fields['filtro_aplicado'] = filtroAplicado ?? ''
+      ..fields['proporcao'] = aspectRatio?.toString() ?? ''
       ..files.add(
         http.MultipartFile.fromBytes(
           'midia',
@@ -567,5 +575,5 @@ class ApiService {
     }
   }
 
-  static Future<Object?> getFotos() async {}
+  static Future<List<PostModel>> getFotos() => getMyGallery();
 }

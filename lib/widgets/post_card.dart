@@ -27,6 +27,24 @@ class _PostCardState extends _PostCardStateBase {
     final imageUrl = widget.post.imageUrl.startsWith('http')
         ? widget.post.imageUrl
         : '${ApiConfig.mediaBaseUrl}${widget.post.imageUrl}';
+    final postImage = Image.network(
+      imageUrl,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          height: 220,
+          color: AppTheme.surfaceLight,
+          child: const Center(
+            child: Icon(
+              Icons.broken_image,
+              color: AppTheme.textSecondary,
+              size: 44,
+            ),
+          ),
+        );
+      },
+    );
 
     String formattedDate = '';
     try {
@@ -51,7 +69,10 @@ class _PostCardState extends _PostCardStateBase {
                   radius: 20,
                   child: Text(
                     (widget.post.authorName ?? 'U')[0].toUpperCase(),
-                    style: GoogleFonts.cormorantGaramond(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                    style: GoogleFonts.cormorantGaramond(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -79,12 +100,14 @@ class _PostCardState extends _PostCardStateBase {
                 ),
                 if (isAuthor)
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, color: AppTheme.danger, size: 20),
+                    icon: const Icon(Icons.delete_outline,
+                        color: AppTheme.danger, size: 20),
                     onPressed: _showDeleteConfirmDialog,
                   )
                 else
                   IconButton(
-                    icon: const Icon(Icons.flag_outlined, color: AppTheme.mediumBrown, size: 20),
+                    icon: const Icon(Icons.flag_outlined,
+                        color: AppTheme.mediumBrown, size: 20),
                     onPressed: _showReportDialog,
                   ),
               ],
@@ -96,20 +119,12 @@ class _PostCardState extends _PostCardStateBase {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                imageUrl,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 220,
-                    color: AppTheme.surfaceLight,
-                    child: const Center(
-                      child: Icon(Icons.broken_image, color: AppTheme.textSecondary, size: 44),
+              child: widget.post.aspectRatio == null
+                  ? postImage
+                  : AspectRatio(
+                      aspectRatio: widget.post.aspectRatio!,
+                      child: SizedBox.expand(child: postImage),
                     ),
-                  );
-                },
-              ),
             ),
           ),
 
@@ -132,7 +147,8 @@ class _PostCardState extends _PostCardStateBase {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             child: Row(
               children: [
-                const Icon(Icons.lock_outline, size: 14, color: AppTheme.mediumBrown),
+                const Icon(Icons.lock_outline,
+                    size: 14, color: AppTheme.mediumBrown),
                 const SizedBox(width: 6),
                 Text(
                   'Visível apenas para amigos autorizados (RN13)',
@@ -182,7 +198,9 @@ class _PostCardState extends _PostCardStateBase {
         margin: const EdgeInsets.only(right: 6),
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.darkBrown.withValues(alpha: 0.15) : Colors.transparent,
+          color: isSelected
+              ? AppTheme.darkBrown.withValues(alpha: 0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? AppTheme.darkBrown : Colors.transparent,
@@ -216,17 +234,22 @@ abstract class _PostCardStateBase extends State<PostCard> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Excluir Publicação', style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold)),
-        content: Text('Tem certeza que deseja excluir esta foto permanentemente?', style: GoogleFonts.poppins()),
+        title: Text('Excluir Publicação',
+            style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold)),
+        content: Text(
+            'Tem certeza que deseja excluir esta foto permanentemente?',
+            style: GoogleFonts.poppins()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancelar', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+            child: Text('Cancelar',
+                style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Excluir', style: GoogleFonts.poppins(color: Colors.white)),
+            child: Text('Excluir',
+                style: GoogleFonts.poppins(color: Colors.white)),
           ),
         ],
       ),
@@ -251,12 +274,14 @@ abstract class _PostCardStateBase extends State<PostCard> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Denunciar Publicação (RN11)', style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold)),
+        title: Text('Denunciar Publicação (RN11)',
+            style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Informe o motivo da denúncia para análise da administração:', style: GoogleFonts.poppins(fontSize: 13)),
+            Text('Informe o motivo da denúncia para análise da administração:',
+                style: GoogleFonts.poppins(fontSize: 13)),
             const SizedBox(height: 12),
             TextField(
               controller: reasonController,
@@ -270,7 +295,8 @@ abstract class _PostCardStateBase extends State<PostCard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancelar', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+            child: Text('Cancelar',
+                style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -282,10 +308,13 @@ abstract class _PostCardStateBase extends State<PostCard> {
 
     if (confirm == true && reasonController.text.trim().isNotEmpty) {
       try {
-        await ApiService.reportPost(widget.post.id, reasonController.text.trim());
+        await ApiService.reportPost(
+            widget.post.id, reasonController.text.trim());
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Denúncia enviada com sucesso para a administração!')),
+            const SnackBar(
+                content:
+                    Text('Denúncia enviada com sucesso para a administração!')),
           );
         }
       } catch (e) {

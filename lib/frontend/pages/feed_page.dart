@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:snaplock/controller/controller.login.dart';
+import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
@@ -90,14 +91,195 @@ class FeedHeader extends StatelessWidget {
   }
 }
 
-class FeedConteudoPage extends StatelessWidget {
+class FeedConteudoPage extends StatefulWidget {
   const FeedConteudoPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: const Text('Feed'),
+  State<FeedConteudoPage> createState() => _FeedConteudoPageState();
+}
+
+class _FeedConteudoPageState extends State<FeedConteudoPage> {
+  static const _fallbackAspectRatios = [0.8, 1.0, 1.2, 1.4];
+  List<PostModel> _posts = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFeed();
+  }
+
+  Future<void> _loadFeed() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final posts = await ApiService.getFeed();
+      if (!mounted) return;
+
+      setState(() {
+        _posts = posts;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = error.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<double> get _aspectRatios =>
+      List<double>.generate(_posts.length, (index) {
+        final ratio = _posts[index].aspectRatio;
+        if (ratio != null && ratio.isFinite && ratio > 0) return ratio;
+        return _fallbackAspectRatios[index % _fallbackAspectRatios.length];
+      });
+
+  Widget _buildGrid() {
+    const spacing = 10.0;
+    final ratios = _aspectRatios;
+    final columns = List.generate(2, (_) => <int>[]);
+    final heights = List<double>.filled(2, 0);
+
+    for (var index = 0; index < _posts.length; index++) {
+      final column = heights[0] <= heights[1] ? 0 : 1;
+      columns[column].add(index);
+      heights[column] += 1 / ratios[index] + spacing;
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadFeed,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var column = 0; column < 2; column++) ...[
+              if (column > 0) const SizedBox(width: spacing),
+              Expanded(
+                child: Column(
+                  children: [
+                    for (final index in columns[column]) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: AspectRatio(
+                          aspectRatio: ratios[index],
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(
+                                _posts[index].imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const ColoredBox(
+                                  color: Color(0xFFD7CBBD),
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.broken_image_outlined,
+                                      color: Color(0xFF6F5C4A),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.fromLTRB(
+                                    8,
+                                    22,
+                                    8,
+                                    8,
+                                  ),
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.transparent,
+                                        Color(0xB3000000),
+                                      ],
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '@${_posts[index].authorUsername ?? 'usuario'}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black54,
+                                          blurRadius: 3,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: spacing),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading && _posts.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF895737)),
+      );
+    }
+
+    if (_errorMessage != null && _posts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_errorMessage!, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            TextButton(
+                onPressed: _loadFeed, child: const Text('Tentar novamente')),
+          ],
+        ),
+      );
+    }
+
+    if (_posts.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _loadFeed,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(
+              height: 260,
+              child: Center(child: Text('Nenhuma publicação no feed.')),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return _buildGrid();
   }
 }
 

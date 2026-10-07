@@ -29,6 +29,14 @@ Future<void> main() async {
   );
   await connection.connect();
 
+  final ratioColumn =
+      await connection.execute("SHOW COLUMNS FROM foto LIKE 'proporcao'");
+  if (ratioColumn.rows.isEmpty) {
+    await connection.execute(
+      'ALTER TABLE foto ADD COLUMN proporcao DOUBLE NULL',
+    );
+  }
+
   final router = Router()
     ..post('/api/login', (Request request) async {
       final dados = await _lerJson(request);
@@ -272,6 +280,30 @@ Future<void> main() async {
         };
       }).toList();
       return _json(200, {'success': true, 'friends': amigos});
+    })
+    ..delete('/api/friends/<friendId>',
+        (Request request, String friendId) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idAmigo = int.tryParse(friendId);
+      if (idAmigo == null || idAmigo == idUsuario) {
+        return _json(422, {'message': 'Amigo inválido.'});
+      }
+
+      final removida = await connection.execute(
+        '''DELETE FROM amizade
+           WHERE status = 'aceito'
+             AND ((id_usuario_1 = :id_usuario AND id_usuario_2 = :id_amigo)
+               OR (id_usuario_1 = :id_amigo AND id_usuario_2 = :id_usuario))''',
+        {'id_usuario': idUsuario, 'id_amigo': idAmigo},
+      );
+
+      if (removida.affectedRows == 0) {
+        return _json(404, {'message': 'Amizade não encontrada.'});
+      }
+
+      return _json(200, {'success': true});
     })
     ..post('/api/usuarios', (Request request) async {
       final dados = await _lerJson(request);
@@ -517,6 +549,7 @@ Future<void> main() async {
 
       String? legenda;
       String? filtroAplicado;
+      double? proporcao;
       File? tempFile;
 
       await for (final formData in request.multipartFormData) {
@@ -525,6 +558,9 @@ Future<void> main() async {
         } else if (formData.name == 'filtro_aplicado') {
           final valor = (await _coletarString(formData.part)).trim();
           filtroAplicado = valor.isEmpty ? null : valor;
+        } else if (formData.name == 'proporcao') {
+          final valor = (await _coletarString(formData.part)).trim();
+          proporcao = double.tryParse(valor);
         } else if (formData.name == 'midia') {
           final bytes = await _coletarBytes(formData.part);
           final contentType = formData.part.headers['content-type'];
@@ -564,19 +600,20 @@ Future<void> main() async {
       try {
         final result = await connection.execute(
           '''INSERT INTO foto
-               (id_usuario, midia_url, legenda, filtro_aplicado)
-             VALUES (:id_usuario, :midia_url, :legenda, :filtro_aplicado)''',
+               (id_usuario, midia_url, legenda, filtro_aplicado, proporcao)
+             VALUES (:id_usuario, :midia_url, :legenda, :filtro_aplicado, :proporcao)''',
           {
             'id_usuario': idUsuario,
             'midia_url': midiaUrl,
             'legenda': legenda ?? '',
             'filtro_aplicado': filtroAplicado,
+            'proporcao': proporcao,
           },
         );
         final idFoto = int.parse(result.lastInsertID.toString());
         final fotos = await connection.execute(
           '''SELECT id_foto, id_usuario, midia_url, legenda,
-                    filtro_aplicado, data_postagem
+                    filtro_aplicado, data_postagem, proporcao
              FROM foto WHERE id_foto = :id_foto LIMIT 1''',
           {'id_foto': idFoto},
         );
@@ -592,6 +629,7 @@ Future<void> main() async {
             'legenda': foto['legenda'] ?? legenda ?? '',
             'filtro_aplicado': foto['filtro_aplicado'],
             'data_postagem': foto['data_postagem'],
+            'proporcao': foto['proporcao'],
           },
         });
       } catch (error, stackTrace) {

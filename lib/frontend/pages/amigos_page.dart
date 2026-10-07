@@ -15,6 +15,7 @@ class AmigosPage extends StatefulWidget {
 class _AmigosPage extends State<AmigosPage> {
   final TextEditingController pesquisaController = TextEditingController();
   List<UserModel> amigos = [];
+  final Set<String> removendoAmigos = {};
   bool carregando = true;
   String? erro;
 
@@ -55,6 +56,52 @@ class _AmigosPage extends State<AmigosPage> {
     }).toList();
   }
 
+  Future<void> cortarLacos(UserModel amigo) async {
+    if (removendoAmigos.contains(amigo.id)) return;
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cortar laços?'),
+        content: Text('Deseja remover @${amigo.username} dos seus amigos?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
+            child: const Text('Cortar laços'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado != true || !mounted) return;
+
+    setState(() => removendoAmigos.add(amigo.id));
+    try {
+      await ApiService.removeFriend(amigo.id);
+      if (!mounted) return;
+
+      setState(() => amigos.removeWhere((item) => item.id == amigo.id));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('@${amigo.username} removido dos seus amigos.')),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => removendoAmigos.remove(amigo.id));
+    }
+  }
+
   Widget listaAmigos() {
     if (carregando) {
       return const Center(child: CircularProgressIndicator());
@@ -89,6 +136,7 @@ class _AmigosPage extends State<AmigosPage> {
       itemCount: resultados.length,
       itemBuilder: (context, index) {
         final amigo = resultados[index];
+        final removendo = removendoAmigos.contains(amigo.id);
         return ListTile(
           dense: true,
           visualDensity: const VisualDensity(vertical: -2),
@@ -102,20 +150,17 @@ class _AmigosPage extends State<AmigosPage> {
           leading: CircleAvatar(
             radius: 15,
             backgroundColor: Colors.black,
-            backgroundImage: amigo.avatarUrl.isNotEmpty
-                ? NetworkImage(amigo.avatarUrl)
-                : null,
-            child: amigo.avatarUrl.isEmpty
-                ? const Icon(Icons.person, color: Colors.white, size: 19)
-                : null,
+            iconColor: Colors.white,
           ),
-          title: Text(amigo.name),
-          subtitle: Text(
-              amigo.username.isNotEmpty ? '@${amigo.username}' : amigo.email),
+          title: Text(
+            amigo.name,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text('@${amigo.username}'),
           trailing: BotoesWidget(
-            texto: 'Amigos',
+            texto: removendo ? 'Cortando...' : 'Cortar laços',
             compacto: true,
-            aoTocar: () {},
+            aoTocar: () => cortarLacos(amigo),
           ),
         );
       },

@@ -4,7 +4,9 @@ class PostModel {
   final String imageUrl;
   final String caption;
   final String createdAt;
+  final double? aspectRatio;
   final String? authorName;
+  final String? authorUsername;
   final String? authorAvatar;
   final int reactionCount;
   final String? userReaction;
@@ -15,7 +17,9 @@ class PostModel {
     required this.imageUrl,
     required this.caption,
     required this.createdAt,
+    this.aspectRatio,
     this.authorName,
+    this.authorUsername,
     this.authorAvatar,
     this.reactionCount = 0,
     this.userReaction,
@@ -28,7 +32,9 @@ class PostModel {
       imageUrl: json['imageUrl']?.toString() ?? '',
       caption: json['caption']?.toString() ?? '',
       createdAt: json['createdAt']?.toString() ?? '',
+      aspectRatio: double.tryParse(json['aspectRatio']?.toString() ?? ''),
       authorName: json['authorName']?.toString(),
+      authorUsername: json['authorUsername']?.toString(),
       authorAvatar: json['authorAvatar']?.toString(),
       reactionCount: int.tryParse(
             json['reactionCount']?.toString() ?? '0',
