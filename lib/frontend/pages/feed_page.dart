@@ -106,6 +106,7 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
   late final AnimationController _animacaoZoomPostagem;
   bool _animandoZoomPostagem = false;
   bool _revelarPostagem = false;
+  bool _drawerAberto = false;
   Timer? _timerNotificacoes;
   final Set<String> _solicitacoesConhecidas = {};
   bool _temNotificacaoNova = false;
@@ -270,6 +271,9 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
       children: [
         Scaffold(
           backgroundColor: const Color(0xFFF3E9DC),
+          onDrawerChanged: (aberto) {
+            setState(() => _drawerAberto = aberto);
+          },
           drawer: Drawer(
             backgroundColor: const Color(0xFFC08552),
             child: ListView(
@@ -423,51 +427,53 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
             ),
           ),
         ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: distanciaInferior,
-          child: Center(
-            child: Semantics(
-              button: true,
-              label: 'Postar foto',
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _abrirPostagemComZoom,
-                child: SizedBox(
-                  width: 64,
-                  height: 64,
-                  child: AnimatedBuilder(
-                    animation: _animacaoZoomPostagem,
-                    child: const Icon(
-                      Icons.add_circle,
-                      size: 40,
-                      color: Colors.black,
-                    ),
-                    builder: (context, child) {
-                      final progresso = _animacaoZoomPostagem.value;
-                      final fade = ((progresso - 0.72) / 0.28).clamp(0.0, 1.0);
-                      final opacidade = 1 - Curves.easeIn.transform(fade);
-                      final escala = 1 +
-                          (escalaFinalZoom - 1) *
-                              Curves.easeInCubic.transform(progresso);
+        if (!_drawerAberto)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: distanciaInferior,
+            child: Center(
+              child: Semantics(
+                button: true,
+                label: 'Postar foto',
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _abrirPostagemComZoom,
+                  child: SizedBox(
+                    width: 64,
+                    height: 64,
+                    child: AnimatedBuilder(
+                      animation: _animacaoZoomPostagem,
+                      child: const Icon(
+                        Icons.add_circle,
+                        size: 40,
+                        color: Colors.black,
+                      ),
+                      builder: (context, child) {
+                        final progresso = _animacaoZoomPostagem.value;
+                        final fade =
+                            ((progresso - 0.72) / 0.28).clamp(0.0, 1.0);
+                        final opacidade = 1 - Curves.easeIn.transform(fade);
+                        final escala = 1 +
+                            (escalaFinalZoom - 1) *
+                                Curves.easeInCubic.transform(progresso);
 
-                      return IgnorePointer(
-                        child: Opacity(
-                          opacity: opacidade,
-                          child: Transform.scale(
-                            scale: escala,
-                            child: child,
+                        return IgnorePointer(
+                          child: Opacity(
+                            opacity: opacidade,
+                            child: Transform.scale(
+                              scale: escala,
+                              child: child,
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -487,7 +493,7 @@ class _CircularRevealClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(covariant _CircularRevealClipper oldClipper) {
     return oldClipper.center != center || oldClipper.radius != radius;
-      }
+  }
 }
 
 class _TapScale extends StatefulWidget {
