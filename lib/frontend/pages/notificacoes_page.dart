@@ -12,6 +12,7 @@ class NotificacoesPage extends StatefulWidget {
 
 class _NotificacoesPage extends State<NotificacoesPage> {
   List<Map<String, dynamic>> solicitacoes = [];
+  List<Map<String, dynamic>> avisosAceite = [];
   bool carregando = true;
   String? erro;
 
@@ -27,12 +28,28 @@ class _NotificacoesPage extends State<NotificacoesPage> {
       erro = null;
     });
     try {
-      final pendentes = await ApiService.getPendingRequests();
+      final resultados = await Future.wait<List<Map<String, dynamic>>>([
+        ApiService.getPendingRequests(),
+        ApiService.getAcceptedFriendNotifications(),
+      ]);
       if (!mounted) return;
       setState(() {
-        solicitacoes = pendentes;
+        solicitacoes = resultados[0];
+        avisosAceite = resultados[1];
         carregando = false;
       });
+
+      final naoLidos = avisosAceite.where((item) => item['read'] != true);
+      if (naoLidos.isNotEmpty) {
+        try {
+          await ApiService.markAcceptedFriendNotificationsRead(naoLidos);
+          if (!mounted) return;
+          setState(() {
+            avisosAceite =
+                avisosAceite.map((item) => {...item, 'read': true}).toList();
+          });
+        } catch (_) {}
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -50,6 +67,8 @@ class _NotificacoesPage extends State<NotificacoesPage> {
     try {
       if (aceitar) {
         await ApiService.acceptFriendRequest(requestId);
+        await carregarSolicitacoes();
+        return;
       } else {
         await ApiService.declineFriendRequest(requestId);
       }
@@ -67,6 +86,35 @@ class _NotificacoesPage extends State<NotificacoesPage> {
         ),
       );
     }
+  }
+
+  Widget _construirAvisoAceite(Map<String, dynamic> aviso) {
+    final lido = aviso['read'] == true;
+    final username = aviso['username']?.toString() ?? '';
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 5),
+      color: lido ? const Color(0xFFD7CBBD) : const Color(0xFFE9D1B4),
+      child: ListTile(
+        leading: AvatarSquareWidget(
+          imageUrl: aviso['avatarUrl']?.toString() ?? '',
+          size: 36,
+        ),
+        title: Text(
+          aviso['message']?.toString() ?? '',
+          style: TextStyle(
+            color: const Color(0xFF3E3A36),
+            fontSize: 14,
+            fontWeight: lido ? FontWeight.normal : FontWeight.w600,
+          ),
+        ),
+        subtitle: username.isEmpty ? null : Text('@$username'),
+        trailing: lido
+            ? const Icon(Icons.check, color: Colors.black38, size: 18)
+            : const Icon(Icons.fiber_manual_record,
+                color: Color(0xFFC08552), size: 12),
+      ),
+    );
   }
 
   DateTime? parseDataBackend(dynamic valor) {
@@ -118,13 +166,15 @@ class _NotificacoesPage extends State<NotificacoesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final quantidadeNotificacoes = solicitacoes.length;
+    final quantidadeNotificacoes = solicitacoes.length +
+        avisosAceite.where((item) => item['read'] != true).length;
     final notificacoesAgrupadas = agruparNotificacoes();
+    final temConteudo = solicitacoes.isNotEmpty || avisosAceite.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!carregando && erro == null && quantidadeNotificacoes > 0)
+        if (!carregando && erro == null && temConteudo)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
@@ -139,28 +189,29 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Container(
-                  constraints: const BoxConstraints(
-                    minWidth: 24,
-                    minHeight: 24,
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFC08552),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    quantidadeNotificacoes > 99
-                        ? '99+'
-                        : '$quantidadeNotificacoes',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                if (quantidadeNotificacoes > 0)
+                  Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFC08552),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      quantidadeNotificacoes > 99
+                          ? '99+'
+                          : '$quantidadeNotificacoes',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -169,7 +220,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
               ? const Center(child: CircularProgressIndicator())
               : erro != null
                   ? Center(child: Text(erro!))
-                  : solicitacoes.isEmpty
+                  : !temConteudo
                       ? const Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -182,10 +233,33 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          itemCount: notificacoesAgrupadas.keys.length,
+                          itemCount: notificacoesAgrupadas.keys.length +
+                              (avisosAceite.isEmpty ? 0 : 1),
                           itemBuilder: (context, indexGrupo) {
+                            if (avisosAceite.isNotEmpty && indexGrupo == 0) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Text(
+                                      'Atualizações de amizade',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  ...avisosAceite.map(_construirAvisoAceite),
+                                ],
+                              );
+                            }
+
+                            final indiceGrupoSolicitacao =
+                                indexGrupo - (avisosAceite.isEmpty ? 0 : 1);
                             final categoria = notificacoesAgrupadas.keys
-                                .elementAt(indexGrupo);
+                                .elementAt(indiceGrupoSolicitacao);
                             final itensDoGrupo =
                                 notificacoesAgrupadas[categoria]!;
 

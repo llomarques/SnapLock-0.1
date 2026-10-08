@@ -256,12 +256,10 @@ class ApiService {
   static Future<List<PostModel>> getMyGallery() async {
     final url = '${ApiConfig.baseUrl}/fotos/minhas';
 
-
     final response = await http.get(
       Uri.parse(url),
       headers: _friendHeaders,
     );
-
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -531,6 +529,55 @@ class ApiService {
       throw Exception(
           data['message'] ?? 'Erro ao carregar solicitações pendentes.');
     }
+  }
+
+  static String get _acceptedFriendNotificationsReadKey {
+    final userId = _currentUser?.id ??
+        LoginController.usuarioAtual?['id']?.toString() ??
+        LoginController.usuarioAtual?['id_usuario']?.toString() ??
+        'current';
+    return 'snaplock_read_friend_notifications_$userId';
+  }
+
+  static Future<List<Map<String, dynamic>>>
+      getAcceptedFriendNotifications() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/friends/accepted-notifications'),
+      headers: _friendHeaders,
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao carregar notificações.');
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final lidas =
+        prefs.getStringList(_acceptedFriendNotificationsReadKey)?.toSet() ??
+            <String>{};
+    final items = data['notifications'] as List;
+    return items.map((item) {
+      final notification = Map<String, dynamic>.from(item as Map);
+      final id = notification['notificationId']?.toString() ?? '';
+      notification['read'] = lidas.contains(id);
+      return notification;
+    }).toList();
+  }
+
+  static Future<void> markAcceptedFriendNotificationsRead(
+    Iterable<Map<String, dynamic>> notifications,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids =
+        prefs.getStringList(_acceptedFriendNotificationsReadKey)?.toSet() ??
+            <String>{};
+    ids.addAll(
+      notifications
+          .map((item) => item['notificationId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty),
+    );
+    await prefs.setStringList(
+        _acceptedFriendNotificationsReadKey, ids.toList());
   }
 
   // --- DENÚNCIAS & DUMPS ---
