@@ -291,6 +291,7 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
   bool _drawerAberto = false;
   Timer? _timerNotificacoes;
   final Set<String> _solicitacoesConhecidas = {};
+  final Set<String> _avisosAmizadeConhecidos = {};
   bool _temNotificacaoNova = false;
   bool _inicializouNotificacoes = false;
   int _versaoLeituraNotificacoes = 0;
@@ -367,22 +368,45 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
   Future<void> _atualizarNotificacoes({bool marcarComoLidas = false}) async {
     final versaoNoInicio = _versaoLeituraNotificacoes;
     try {
-      final pendentes = await ApiService.getPendingRequests();
+      final resultados = await Future.wait<List<Map<String, dynamic>>>([
+        ApiService.getPendingRequests(),
+        ApiService.getAcceptedFriendNotifications(),
+      ]);
       if (!mounted) return;
 
+      final pendentes = resultados[0];
+      final avisosAmizade = resultados[1];
       final idsAtuais = pendentes
           .map((solicitacao) => solicitacao['requestId']?.toString() ?? '')
           .where((id) => id.isNotEmpty)
           .toSet();
       final idsNovos = idsAtuais.difference(_solicitacoesConhecidas);
+      final idsAvisos = avisosAmizade
+          .map((aviso) => aviso['notificationId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      final idsAvisosNaoLidos = avisosAmizade
+          .where((aviso) => aviso['read'] != true)
+          .map((aviso) => aviso['notificationId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      final avisosNovos = idsAvisosNaoLidos.difference(
+        _avisosAmizadeConhecidos,
+      );
+
+      if (marcarComoLidas) {
+        await ApiService.markAcceptedFriendNotificationsRead(avisosAmizade);
+      }
+      if (!mounted) return;
 
       setState(() {
         if (!_inicializouNotificacoes) {
-          _temNotificacaoNova = indice != 1 && idsAtuais.isNotEmpty;
+          _temNotificacaoNova = indice != 1 &&
+              (idsAtuais.isNotEmpty || idsAvisosNaoLidos.isNotEmpty);
           _inicializouNotificacoes = true;
         } else if (marcarComoLidas) {
           _temNotificacaoNova = false;
-        } else if (idsNovos.isNotEmpty &&
+        } else if ((idsNovos.isNotEmpty || avisosNovos.isNotEmpty) &&
             versaoNoInicio == _versaoLeituraNotificacoes) {
           _temNotificacaoNova = true;
         }
@@ -390,6 +414,9 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
         _solicitacoesConhecidas
           ..clear()
           ..addAll(idsAtuais);
+        _avisosAmizadeConhecidos
+          ..clear()
+          ..addAll(idsAvisos);
       });
     } catch (_) {
       // Mantém o indicador atual se a API estiver indisponível.
