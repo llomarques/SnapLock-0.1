@@ -5,6 +5,7 @@ import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/models/user_model.dart';
 import 'package:snaplock/services/api_service.dart';
+import 'post_page.dart';
 
 class PerfilAmigoPage extends StatefulWidget {
   const PerfilAmigoPage({super.key, required this.amigo});
@@ -272,84 +273,14 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
   }
 
   void _abrirFoto(PostModel foto) {
-    showDialog<void>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.85),
-      builder: (context) {
-        final tamanhoTela = MediaQuery.sizeOf(context);
-
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.all(16),
-          child: Stack(
-            children: [
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3E9DC),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      height: tamanhoTela.height * 0.58,
-                      child: InteractiveViewer(
-                        minScale: 1,
-                        maxScale: 4,
-                        child: Image.network(
-                          foto.imageUrl,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Center(
-                            child: Icon(
-                              Icons.broken_image_outlined,
-                              size: 50,
-                              color: Color(0xFF895737),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (foto.caption.isNotEmpty)
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxHeight: tamanhoTela.height * 0.18,
-                        ),
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            foto.caption,
-                            style: const TextStyle(
-                              color: Color(0xFF5E3023),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.black.withValues(alpha: 0.65),
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostMaximizadoPage(post: foto),
+      ),
+    ).then((excluido) {
+      if (excluido == true && mounted) _carregarPublicacoes();
+    });
   }
 
   @override

@@ -2,12 +2,16 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:crop_your_image/crop_your_image.dart';
+import 'package:snaplock/frontend/pages/configuracoes_page.dart';
+import 'package:snaplock/frontend/pages/feed_page.dart';
 import 'package:snaplock/frontend/utils/foto_utils.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
 import 'package:snaplock/services/api_service.dart';
 
 class PostarPage extends StatefulWidget {
-  const PostarPage({super.key});
+  const PostarPage({super.key, this.mostrarNavegacao = false});
+
+  final bool mostrarNavegacao;
 
   @override
   State<PostarPage> createState() => _PostarPageState();
@@ -332,196 +336,263 @@ class _PostarPageState extends State<PostarPage> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: const Color(0xFFF3E9DC),
-        body: Align(
-          alignment: Alignment.topCenter,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 12),
-                const Text('Nova memória', style: TextStyle(fontSize: 17)),
-                const SizedBox(height: 18),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final maxPhotoHeight =
-                        MediaQuery.sizeOf(context).height * 0.55;
-                    final photoWidth = math
-                        .min(
-                          300.0,
-                          math.min(
-                            constraints.maxWidth,
-                            maxPhotoHeight * fotoAspectRatio,
-                          ),
-                        )
-                        .toDouble();
-                    final photoHeight = photoWidth / fotoAspectRatio;
-
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          width: photoWidth,
-                          height: photoHeight,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD7CBBD),
-                            border: Border.all(
-                              color: const Color(0xFF895737),
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
-                            child: imagemPerfil == null
-                                ? Center(
-                                    child: IconButton(
-                                      onPressed: escolherDaGaleria,
-                                      tooltip: 'Adicionar foto',
-                                      icon: const Icon(
-                                          Icons.add_photo_alternate,
-                                          size: 40),
-                                      style: IconButton.styleFrom(
-                                        backgroundColor:
-                                            const Color(0xFF895737),
-                                        foregroundColor:
-                                            const Color(0xFFF3E9DC),
-                                        fixedSize: const Size(72, 72),
-                                      ),
-                                    ),
-                                  )
-                                : Image(
-                                    image: imagemPerfil!,
-                                    fit: BoxFit.cover,
-                                  ),
-                          ),
-                        ),
-                        if (imagemPerfil != null)
-                          Positioned(
-                            right: -4,
-                            bottom: -4,
-                            child: IconButton(
-                              onPressed: escolherDaGaleria,
-                              tooltip: 'Trocar foto',
-                              icon: const Icon(Icons.edit, size: 17),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                foregroundColor: const Color(0xFFF3E9DC),
-                                minimumSize: const Size(32, 32),
-                                padding: EdgeInsets.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                            ),
-                          ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 18),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 300),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: legendaController,
-                          focusNode: legendaFocusNode,
-                          onTap: () {
-                            if (legendaConfirmada) {
-                              setState(() => legendaConfirmada = false);
-                            }
-                          },
-                          maxLines: 3,
-                          minLines: 1,
-                          textAlign: TextAlign.left,
-                          decoration: InputDecoration(
-                            hintText: 'Escreva sua legenda...',
-                            filled: legendaController.text.trim().isNotEmpty,
-                            fillColor: const Color(0xFFD7CBBD),
-                            hintStyle: const TextStyle(
-                              color: Color(0xFF6F5C4A),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
-                            ),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                          ),
-                          style: const TextStyle(
-                            color: Color(0xFF5E3023),
-                            fontSize: 16,
-                          ),
+        drawer: widget.mostrarNavegacao
+            ? Drawer(
+                backgroundColor: const Color(0xFFC08552),
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 60, bottom: 12),
+                      child: Image.asset('assets/images/logo.png', height: 80),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.home),
+                      title: const Text('Início'),
+                      onTap: () => _abrirAba(0),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.notifications),
+                      title: const Text('Notificações'),
+                      onTap: () => _abrirAba(1),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.person),
+                      title: const Text('Perfil'),
+                      onTap: () => _abrirAba(4),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.settings),
+                      title: const Text('Configurações'),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ConfiguracoesPage(),
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 180),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (legendaFocusNode.hasFocus)
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    legendaConfirmada = true;
-                                  });
-                                  FocusScope.of(context).unfocus();
-                                },
-                                tooltip: 'Concluir legenda',
-                                color: const Color(0xFF895737),
-                                icon: const Icon(Icons.check_circle),
+                    ),
+                  ],
+                ),
+              )
+            : null,
+        body: Column(
+          children: [
+            if (widget.mostrarNavegacao)
+              Builder(
+                builder: (context) => FeedHeader(
+                  onMenuPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
+            Expanded(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 12),
+                      const Text('Nova memória',
+                          style: TextStyle(fontSize: 17)),
+                      const SizedBox(height: 18),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final maxPhotoHeight =
+                              MediaQuery.sizeOf(context).height * 0.55;
+                          final photoWidth = math
+                              .min(
+                                300.0,
+                                math.min(
+                                  constraints.maxWidth,
+                                  maxPhotoHeight * fotoAspectRatio,
+                                ),
+                              )
+                              .toDouble();
+                          final photoHeight = photoWidth / fotoAspectRatio;
+
+                          return Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: photoWidth,
+                                height: photoHeight,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD7CBBD),
+                                  border: Border.all(
+                                    color: const Color(0xFF895737),
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: imagemPerfil == null
+                                      ? Center(
+                                          child: IconButton(
+                                            onPressed: escolherDaGaleria,
+                                            tooltip: 'Adicionar foto',
+                                            icon: const Icon(
+                                                Icons.add_photo_alternate,
+                                                size: 40),
+                                            style: IconButton.styleFrom(
+                                              backgroundColor:
+                                                  const Color(0xFF895737),
+                                              foregroundColor:
+                                                  const Color(0xFFF3E9DC),
+                                              fixedSize: const Size(72, 72),
+                                            ),
+                                          ),
+                                        )
+                                      : Image(
+                                          image: imagemPerfil!,
+                                          fit: BoxFit.cover,
+                                        ),
+                                ),
                               ),
-                            Image.asset(
-                              'assets/images/efeitos.png',
-                              width: 32,
-                              height: 32,
-                              semanticLabel: 'Efeitos',
+                              if (imagemPerfil != null)
+                                Positioned(
+                                  right: -4,
+                                  bottom: -4,
+                                  child: IconButton(
+                                    onPressed: escolherDaGaleria,
+                                    tooltip: 'Trocar foto',
+                                    icon: const Icon(Icons.edit, size: 17),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Colors.black,
+                                      foregroundColor: const Color(0xFFF3E9DC),
+                                      minimumSize: const Size(32, 32),
+                                      padding: EdgeInsets.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 18),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 300),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: legendaController,
+                                focusNode: legendaFocusNode,
+                                onTap: () {
+                                  if (legendaConfirmada) {
+                                    setState(() => legendaConfirmada = false);
+                                  }
+                                },
+                                maxLines: 3,
+                                minLines: 1,
+                                textAlign: TextAlign.left,
+                                decoration: InputDecoration(
+                                  hintText: 'Escreva sua legenda...',
+                                  filled:
+                                      legendaController.text.trim().isNotEmpty,
+                                  fillColor: const Color(0xFFD7CBBD),
+                                  hintStyle: const TextStyle(
+                                    color: Color(0xFF6F5C4A),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                style: const TextStyle(
+                                  color: Color(0xFF5E3023),
+                                  fontSize: 16,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 4),
-                            IconButton(
-                              onPressed: _selecionarProporcao,
-                              tooltip:
-                                  'Proporção: ${_aspectRatioOptions[_selectedAspectRatioIndex].label}',
-                              constraints: const BoxConstraints.tightFor(
-                                width: 40,
-                                height: 40,
-                              ),
-                              padding: EdgeInsets.zero,
-                              icon: Image.asset(
-                                'assets/images/proporcao.png',
-                                width: 32,
-                                height: 32,
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 180),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (legendaFocusNode.hasFocus)
+                                    IconButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          legendaConfirmada = true;
+                                        });
+                                        FocusScope.of(context).unfocus();
+                                      },
+                                      tooltip: 'Concluir legenda',
+                                      color: const Color(0xFF895737),
+                                      icon: const Icon(Icons.check_circle),
+                                    ),
+                                  Image.asset(
+                                    'assets/images/efeitos.png',
+                                    width: 32,
+                                    height: 32,
+                                    semanticLabel: 'Efeitos',
+                                  ),
+                                  const SizedBox(width: 4),
+                                  IconButton(
+                                    onPressed: _selecionarProporcao,
+                                    tooltip:
+                                        'Proporção: ${_aspectRatioOptions[_selectedAspectRatioIndex].label}',
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 40,
+                                      height: 40,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                    icon: Image.asset(
+                                      'assets/images/proporcao.png',
+                                      width: 32,
+                                      height: 32,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
+                      BotoesWidget(
+                        texto: salvando ? 'Publicando...' : 'Postar',
+                        aoTocar: publicar,
+                      ),
                     ],
                   ),
                 ),
-                BotoesWidget(
-                  texto: salvando ? 'Publicando...' : 'Postar',
-                  aoTocar: publicar,
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
+        bottomNavigationBar: widget.mostrarNavegacao
+            ? FeedNavigationBar(
+                selectedIndex: 2,
+                onDestinationSelected: _abrirAba,
+              )
+            : null,
       ),
+    );
+  }
+
+  void _abrirAba(int index) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => FeedPage(initialIndex: index)),
     );
   }
 }

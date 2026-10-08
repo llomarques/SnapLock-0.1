@@ -13,6 +13,7 @@ import 'dump_page.dart';
 import 'perfil_page.dart';
 import 'configuracoes_page.dart';
 import 'pesquisa_page.dart';
+import 'post_page.dart';
 
 class FeedPage extends StatefulWidget {
   final int initialIndex;
@@ -28,10 +29,14 @@ class FeedHeader extends StatelessWidget {
     super.key,
     required this.onMenuPressed,
     this.mostrarAcoes = true,
+    this.mostrarVoltar = false,
+    this.trailingAction,
   });
 
   final VoidCallback onMenuPressed;
   final bool mostrarAcoes;
+  final bool mostrarVoltar;
+  final Widget? trailingAction;
 
   void abrirPesquisa(BuildContext context) {
     Navigator.push(
@@ -55,23 +60,34 @@ class FeedHeader extends StatelessWidget {
           child: AppBar(
             automaticallyImplyLeading: false,
             toolbarHeight: 110,
-            leading: mostrarAcoes
+            leading: mostrarVoltar
                 ? IconButton(
-                    onPressed: onMenuPressed,
+                    onPressed: () => Navigator.maybePop(context),
                     icon: const Icon(
-                      Icons.menu,
-                      size: 35.0,
+                      Icons.arrow_back,
+                      size: 30,
                       color: Colors.black,
                     ),
                   )
-                : null,
+                : (mostrarAcoes
+                    ? IconButton(
+                        onPressed: onMenuPressed,
+                        icon: const Icon(
+                          Icons.menu,
+                          size: 35.0,
+                          color: Colors.black,
+                        ),
+                      )
+                    : null),
             centerTitle: true,
             title: Image.asset(
               'assets/images/logo.png',
               height: 80,
               width: 80,
             ),
-            actions: mostrarAcoes
+            actions: trailingAction != null
+                ? [trailingAction!]
+                : mostrarAcoes
                 ? [
                     IconButton(
                       onPressed: () => abrirPesquisa(context),
@@ -87,6 +103,119 @@ class FeedHeader extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class FeedNavigationBar extends StatelessWidget {
+  const FeedNavigationBar({
+    super.key,
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    this.temNotificacaoNova = false,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final bool temNotificacaoNova;
+
+  Widget _iconePerfil(double tamanho) {
+    return ValueListenableBuilder<Map<String, dynamic>?>(
+      valueListenable: LoginController.usuarioNotifier,
+      builder: (context, usuario, child) => AvatarSquareWidget(
+        imageUrl: usuario?['avatarUrl']?.toString() ?? '',
+        size: tamanho,
+        backgroundColor: Colors.transparent,
+        iconColor: Colors.black,
+        fallbackAsset: 'assets/images/monalisaPerfil.png',
+      ),
+    );
+  }
+
+  Widget _iconeNotificacoes(IconData icone, double tamanho) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icone, size: tamanho, color: Colors.black),
+        if (temNotificacaoNova)
+          Positioned(
+            top: 0,
+            right: -1,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: const Color(0xFFC08552),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFD7CBBD),
+                  width: 1.5,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NavigationBar(
+      backgroundColor: const Color(0xFFD7CBBD),
+      indicatorColor: Colors.transparent,
+      onDestinationSelected: onDestinationSelected,
+      selectedIndex: selectedIndex,
+      destinations: [
+        NavigationDestination(
+          icon: _TapScale(
+            child: const Icon(
+              Icons.home_outlined,
+              size: 33,
+              color: Colors.black,
+            ),
+          ),
+          selectedIcon: _TapScale(
+            child: const Icon(Icons.home, size: 40, color: Colors.black),
+          ),
+          label: '',
+        ),
+        NavigationDestination(
+          icon: _TapScale(
+            child: _iconeNotificacoes(Icons.notifications_outlined, 33),
+          ),
+          selectedIcon: _TapScale(
+            child: _iconeNotificacoes(Icons.notifications, 40),
+          ),
+          label: '',
+        ),
+        const NavigationDestination(
+          icon: SizedBox.shrink(),
+          selectedIcon: SizedBox.shrink(),
+          label: '',
+        ),
+        NavigationDestination(
+          icon: _TapScale(
+            child: const ImageIcon(
+              AssetImage('assets/images/dump.png'),
+              size: 33,
+              color: Colors.black,
+            ),
+          ),
+          selectedIcon: _TapScale(
+            child: const ImageIcon(
+              AssetImage('assets/images/dump.png'),
+              size: 50,
+              color: Colors.black,
+            ),
+          ),
+          label: '',
+        ),
+        NavigationDestination(
+          icon: _TapScale(child: _iconePerfil(30)),
+          selectedIcon: _TapScale(child: _iconePerfil(37)),
+          label: '',
+        ),
+      ],
     );
   }
 }
@@ -141,6 +270,16 @@ class _FeedConteudoPageState extends State<FeedConteudoPage> {
         return _fallbackAspectRatios[index % _fallbackAspectRatios.length];
       });
 
+  Future<void> _openPost(PostModel post) async {
+    final excluido = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostMaximizadoPage(post: post),
+      ),
+    );
+    if (excluido == true) await _loadFeed();
+  }
+
   Widget _buildGrid() {
     const spacing = 10.0;
     final ratios = _aspectRatios;
@@ -167,66 +306,69 @@ class _FeedConteudoPageState extends State<FeedConteudoPage> {
                 child: Column(
                   children: [
                     for (final index in columns[column]) ...[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(9),
-                        child: AspectRatio(
-                          aspectRatio: ratios[index],
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.network(
-                                _posts[index].imageUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const ColoredBox(
-                                  color: Color(0xFFD7CBBD),
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.broken_image_outlined,
-                                      color: Color(0xFF6F5C4A),
+                      GestureDetector(
+                        onTap: () => _openPost(_posts[index]),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(9),
+                          child: AspectRatio(
+                            aspectRatio: ratios[index],
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.network(
+                                  _posts[index].imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const ColoredBox(
+                                    color: Color(0xFFD7CBBD),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.broken_image_outlined,
+                                        color: Color(0xFF6F5C4A),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.fromLTRB(
-                                    8,
-                                    22,
-                                    8,
-                                    8,
-                                  ),
-                                  decoration: const BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.transparent,
-                                        Color(0xB3000000),
-                                      ],
+                                Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.fromLTRB(
+                                      8,
+                                      22,
+                                      8,
+                                      8,
                                     ),
-                                  ),
-                                  child: Text(
-                                    '@${_posts[index].authorUsername ?? 'usuario'}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black54,
-                                          blurRadius: 3,
-                                        ),
-                                      ],
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Color(0xB3000000),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '@${_posts[index].authorUsername ?? 'usuario'}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black54,
+                                            blurRadius: 3,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -294,45 +436,6 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
   bool _temNotificacaoNova = false;
   bool _inicializouNotificacoes = false;
   int _versaoLeituraNotificacoes = 0;
-
-  Widget _iconePerfil(double tamanho) {
-    return ValueListenableBuilder<Map<String, dynamic>?>(
-      valueListenable: LoginController.usuarioNotifier,
-      builder: (context, usuario, child) => AvatarSquareWidget(
-        imageUrl: usuario?['avatarUrl']?.toString() ?? '',
-        size: tamanho,
-        backgroundColor: Colors.transparent,
-        iconColor: Colors.black,
-        fallbackAsset: 'assets/images/monalisaPerfil.png',
-      ),
-    );
-  }
-
-  Widget _iconeNotificacoes(IconData icone, double tamanho) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Icon(icone, size: tamanho, color: Colors.black),
-        if (_temNotificacaoNova)
-          Positioned(
-            top: 0,
-            right: -1,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: const Color(0xFFC08552),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFFD7CBBD),
-                  width: 1.5,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
 
   final telas = const [
     FeedConteudoPage(),
@@ -526,55 +629,10 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
               Expanded(child: telas[indice]),
             ],
           ),
-          bottomNavigationBar: NavigationBar(
-            backgroundColor: const Color(0xFFD7CBBD),
-            indicatorColor: Colors.transparent,
-            onDestinationSelected: _selecionarAba,
+          bottomNavigationBar: FeedNavigationBar(
             selectedIndex: indice,
-            destinations: [
-              NavigationDestination(
-                  icon: _TapScale(
-                      child: Icon(Icons.home_outlined,
-                          size: 33.0, color: Colors.black)),
-                  selectedIcon: _TapScale(
-                      child: Icon(
-                    Icons.home,
-                    size: 40.0,
-                    color: Colors.black,
-                  )),
-                  label: ''),
-              NavigationDestination(
-                  icon: _TapScale(
-                    child: _iconeNotificacoes(Icons.notifications_outlined, 33),
-                  ),
-                  selectedIcon: _TapScale(
-                    child: _iconeNotificacoes(Icons.notifications, 40),
-                  ),
-                  label: ''),
-              const NavigationDestination(
-                icon: SizedBox.shrink(),
-                selectedIcon: SizedBox.shrink(),
-                label: '',
-              ),
-              NavigationDestination(
-                  icon: _TapScale(
-                      child: const ImageIcon(
-                    AssetImage('assets/images/dump.png'),
-                    size: 33.0,
-                    color: Colors.black,
-                  )),
-                  selectedIcon: _TapScale(
-                      child: const ImageIcon(
-                    AssetImage('assets/images/dump.png'),
-                    size: 50.0,
-                    color: Colors.black,
-                  )),
-                  label: ''),
-              NavigationDestination(
-                  icon: _TapScale(child: _iconePerfil(30)),
-                  selectedIcon: _TapScale(child: _iconePerfil(37)),
-                  label: ''),
-            ],
+            onDestinationSelected: _selecionarAba,
+            temNotificacaoNova: _temNotificacaoNova,
           ),
         ),
         Positioned(

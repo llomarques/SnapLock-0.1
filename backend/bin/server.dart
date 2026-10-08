@@ -594,6 +594,112 @@ Future<void> main() async {
         return _json(500, {'message': 'Erro ao carregar fotos do amigo.'});
       }
     })
+    ..put('/api/posts/<postId>', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idFoto = int.tryParse(request.params['postId'] ?? '');
+      if (idFoto == null) {
+        return _json(422, {'message': 'Publicação inválida.'});
+      }
+      if (!request.isMultipart) {
+        return _json(422, {'message': 'Envie como multipart/form-data.'});
+      }
+
+      final publicacoes = await connection.execute(
+        '''SELECT id_foto FROM foto
+           WHERE id_foto = :id_foto AND id_usuario = :id_usuario
+           LIMIT 1''',
+        {'id_foto': idFoto, 'id_usuario': idUsuario},
+      );
+      if (publicacoes.rows.isEmpty) {
+        return _json(404, {'message': 'Publicação não encontrada.'});
+      }
+
+      String? legenda;
+      File? tempFile;
+      await for (final formData in request.multipartFormData) {
+        if (formData.name == 'legenda') {
+          legenda = await _coletarString(formData.part);
+        } else if (formData.name == 'midia') {
+          final bytes = await _coletarBytes(formData.part);
+          final contentType = formData.part.headers['content-type'];
+          final extensao = _extensaoPorContentType(contentType);
+          tempFile = File(
+            '${Directory.systemTemp.path}/update_${DateTime.now().microsecondsSinceEpoch}$extensao',
+          );
+          await tempFile.writeAsBytes(bytes);
+        }
+      }
+
+      if (legenda == null && tempFile == null) {
+        return _json(422, {'message': 'Informe uma legenda ou uma nova foto.'});
+      }
+
+      String? midiaUrl;
+      if (tempFile != null) {
+        try {
+          final response = await cloudinary.uploader().upload(
+                tempFile,
+                params: UploadParams(folder: 'fotos'),
+              );
+          midiaUrl = response?.data?.secureUrl;
+        } catch (error, stackTrace) {
+          print('Erro ao substituir a foto da publicação: $error');
+          print(stackTrace);
+          return _json(502, {'message': 'Falha ao enviar a nova foto.'});
+        } finally {
+          if (await tempFile.exists()) await tempFile.delete();
+        }
+
+        if (midiaUrl == null) {
+          return _json(502, {'message': 'Falha ao processar a nova foto.'});
+        }
+      }
+
+      try {
+        if (midiaUrl != null) {
+          await connection.execute(
+            '''UPDATE foto
+               SET legenda = COALESCE(:legenda, legenda), midia_url = :midia_url
+               WHERE id_foto = :id_foto AND id_usuario = :id_usuario''',
+            {
+              'legenda': legenda,
+              'midia_url': midiaUrl,
+              'id_foto': idFoto,
+              'id_usuario': idUsuario,
+            },
+          );
+        } else {
+          await connection.execute(
+            '''UPDATE foto SET legenda = :legenda
+               WHERE id_foto = :id_foto AND id_usuario = :id_usuario''',
+            {
+              'legenda': legenda,
+              'id_foto': idFoto,
+              'id_usuario': idUsuario,
+            },
+          );
+        }
+
+        final atualizada = await connection.execute(
+          '''SELECT legenda, midia_url FROM foto
+             WHERE id_foto = :id_foto AND id_usuario = :id_usuario
+             LIMIT 1''',
+          {'id_foto': idFoto, 'id_usuario': idUsuario},
+        );
+        final dados = atualizada.rows.first.assoc();
+        return _json(200, {
+          'success': true,
+          'caption': dados['legenda'] ?? '',
+          'imageUrl': dados['midia_url'] ?? '',
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao editar publicação: $error');
+        print(stackTrace);
+        return _json(500, {'message': 'Não foi possível editar a publicação.'});
+      }
+    })
     ..post('/api/fotos', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
