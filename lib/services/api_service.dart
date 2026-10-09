@@ -185,6 +185,35 @@ class ApiService {
       throw Exception(data['message'] ?? 'Erro ao atualizar perfil.');
     }
   }
+    static Future<UserModel> updateProfile({
+    required String name,
+    required String bio,
+    required String gender,
+    String? avatarUrl,
+  }) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/profile'),
+      headers: _headers,
+      body: jsonEncode({
+        'name': name,
+        'bio': bio,
+        'gender': gender,
+        if (avatarUrl != null) 'avatarUrl': avatarUrl,
+      }),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] == true) {
+      final userMap = data['user'] as Map<String, dynamic>;
+      _currentUser = UserModel.fromJson(userMap);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userKey, jsonEncode(userMap));
+      return _currentUser!;
+    } else {
+      throw Exception(data['message'] ?? 'Erro ao atualizar perfil.');
+    }
+  }
+
 
   static Future<void> changePassword(
     String currentPassword,
@@ -574,11 +603,105 @@ class ApiService {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (data['success'] == true) {
       final list = data['pending'] as List;
-      return list.cast<Map<String, dynamic>>();
+      final prefs = await SharedPreferences.getInstance();
+      final descartadas =
+          prefs.getStringList(_dismissedFriendRequestsKey)?.toSet() ??
+              <String>{};
+      return list.map((item) {
+        final request = Map<String, dynamic>.from(item as Map);
+        request['dismissed'] =
+            descartadas.contains(request['requestId']?.toString());
+        return request;
+      }).toList();
     } else {
       throw Exception(
           data['message'] ?? 'Erro ao carregar solicitações pendentes.');
     }
+  }
+
+  static String get _notificationUserId =>
+      _currentUser?.id ??
+      LoginController.usuarioAtual?['id']?.toString() ??
+      LoginController.usuarioAtual?['id_usuario']?.toString() ??
+      'current';
+
+  static String get _acceptedFriendNotificationsReadKey {
+    return 'snaplock_read_friend_notifications_$_notificationUserId';
+  }
+
+  static String get _dismissedFriendRequestsKey =>
+      'snaplock_dismissed_friend_requests_$_notificationUserId';
+
+  static String get _dismissedAcceptedFriendNotificationsKey =>
+      'snaplock_dismissed_accepted_friend_notifications_$_notificationUserId';
+
+  static Future<List<Map<String, dynamic>>>
+      getAcceptedFriendNotifications() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/friends/accepted-notifications'),
+      headers: _friendHeaders,
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao carregar notificações.');
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final lidas =
+        prefs.getStringList(_acceptedFriendNotificationsReadKey)?.toSet() ??
+            <String>{};
+    final descartadas = prefs
+        .getStringList(_dismissedAcceptedFriendNotificationsKey)
+        ?.toSet() ??
+      <String>{};
+    final items = data['notifications'] as List;
+    return items.map((item) {
+      final notification = Map<String, dynamic>.from(item as Map);
+      final id = notification['notificationId']?.toString() ?? '';
+      notification['read'] = lidas.contains(id);
+      notification['dismissed'] = descartadas.contains(id);
+      return notification;
+    }).toList();
+  }
+
+  static Future<void> dismissFriendRequestNotification(String requestId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids =
+        prefs.getStringList(_dismissedFriendRequestsKey)?.toSet() ?? <String>{};
+    ids.add(requestId);
+    await prefs.setStringList(_dismissedFriendRequestsKey, ids.toList());
+  }
+
+  static Future<void> dismissAcceptedFriendNotification(
+    String notificationId,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs
+            .getStringList(_dismissedAcceptedFriendNotificationsKey)
+            ?.toSet() ??
+        <String>{};
+    ids.add(notificationId);
+    await prefs.setStringList(
+      _dismissedAcceptedFriendNotificationsKey,
+      ids.toList(),
+    );
+  }
+
+  static Future<void> markAcceptedFriendNotificationsRead(
+    Iterable<Map<String, dynamic>> notifications,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids =
+        prefs.getStringList(_acceptedFriendNotificationsReadKey)?.toSet() ??
+            <String>{};
+    ids.addAll(
+      notifications
+          .map((item) => item['notificationId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty),
+    );
+    await prefs.setStringList(
+        _acceptedFriendNotificationsReadKey, ids.toList());
   }
 
   // --- DENÚNCIAS & DUMPS ---

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:crop_your_image/crop_your_image.dart';
@@ -278,8 +279,15 @@ class _PostarPageState extends State<PostarPage> {
     FocusScope.of(context).unfocus();
     setState(() => salvando = true);
     try {
+      // Processa a imagem aplicando o filtro nos bytes antes do envio, se houver filtro selecionado
+      Uint8List imagemParaPostar = imagem;
+      if (filtroAplicado != null) {
+        final filtroCor = _obterFiltroDeCor(filtroAplicado);
+        imagemParaPostar = await _processarBytesComFiltro(imagem, filtroCor);
+      }
+
       await ApiService.createPostFromBytes(
-        imagem,
+        imagemParaPostar,
         legendaController.text.trim(),
         filtroAplicado: filtroAplicado,
         aspectRatio: fotoAspectRatio,
@@ -308,6 +316,194 @@ class _PostarPageState extends State<PostarPage> {
       }
     } finally {
       if (mounted) setState(() => salvando = false);
+    }
+  }
+
+  Future<Uint8List> _processarBytesComFiltro(
+    Uint8List imageBytes,
+    ColorFilter colorFilter,
+  ) async {
+    final codec = await ui.instantiateImageCodec(imageBytes);
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final paint = Paint()..colorFilter = colorFilter;
+
+    canvas.drawImage(image, Offset.zero, paint);
+
+    final picture = recorder.endRecording();
+    final img = await picture.toImage(image.width, image.height);
+    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+
+    image.dispose();
+    img.dispose();
+
+    return byteData!.buffer.asUint8List();
+  }
+
+  Future<void> _aplicarEfeito() async {
+    if (fotoPerfil == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione uma foto antes de aplicar um efeito.'),
+        ),
+      );
+      return;
+    }
+
+    // Lista com a definição explícita do tipo ColorFilter
+    final filtrosDisponiveis = <({
+      String nome,
+      String? id,
+      ColorFilter colorFilter,
+    })>[
+      (
+        nome: 'Original',
+        id: null,
+        colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.dst),
+      ),
+      (
+        nome: 'Preto & Branco',
+        id: 'pb',
+        colorFilter: const ColorFilter.matrix(<double>[
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+        ]),
+      ),
+      (
+        nome: 'Sépia',
+        id: 'sepia',
+        colorFilter: ColorFilter.mode(
+          const Color(0xFF704214).withValues(alpha: 0.35),
+          BlendMode.color,
+        ),
+      ),
+      (
+        nome: 'Vintage',
+        id: 'vintage',
+        colorFilter: ColorFilter.mode(
+          const Color(0xFFFFB703).withValues(alpha: 0.25),
+          BlendMode.color,
+        ),
+      ),
+      (
+        nome: 'Frio',
+        id: 'frio',
+        colorFilter: ColorFilter.mode(
+          const Color(0xFF0077B6).withValues(alpha: 0.25),
+          BlendMode.color,
+        ),
+      ),
+    ];
+
+    final filtroSelecionado = await showModalBottomSheet<String?>(
+      context: context,
+      backgroundColor: const Color(0xFFF3E9DC),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Escolha um efeito',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF5E3023),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 100,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: filtrosDisponiveis.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final item = filtrosDisponiveis[index];
+                      final isSelected = filtroAplicado == item.id;
+
+                      return GestureDetector(
+                        onTap: () => Navigator.pop(modalContext, item.id),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? const Color(0xFF895737)
+                                      : Colors.transparent,
+                                  width: 3,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(9),
+                                child: ColorFiltered(
+                                  colorFilter: item.colorFilter,
+                                  child: Image.memory(
+                                    fotoPerfil!,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              item.nome,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: const Color(0xFF5E3023),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (mounted && filtroSelecionado != filtroAplicado) {
+      setState(() {
+        filtroAplicado = filtroSelecionado;
+      });
     }
   }
 
