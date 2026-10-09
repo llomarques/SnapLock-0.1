@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:snaplock/controller/controller.login.dart';
 import 'package:snaplock/frontend/pages/feed_page.dart';
 import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
+import 'package:snaplock/theme/app_theme.dart';
 
 class PostMaximizadoPage extends StatefulWidget {
   const PostMaximizadoPage({super.key, required this.post});
@@ -87,18 +90,68 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
   Future<void> _deletePost() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Excluir publicação?'),
-        content: const Text('Essa ação não pode ser desfeita.'),
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.textPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppTheme.cardBorder),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.danger.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_outline,
+                color: AppTheme.danger,
+                size: 23,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Excluir publicação?',
+                style: GoogleFonts.cormorantGaramond(
+                  color: AppTheme.background,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Essa ação não pode ser desfeita.',
+          style: GoogleFonts.poppins(
+            color: AppTheme.surface,
+            fontSize: 14,
+          ),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.surface,
+              textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+            ),
             child: const Text('Cancelar'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Excluir'),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            ),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            label: const Text('Excluir'),
           ),
         ],
       ),
@@ -130,7 +183,40 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Editar publicação'),
+          backgroundColor: AppTheme.textPrimary,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: AppTheme.cardBorder),
+          ),
+          title: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.lightBrown.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.edit_outlined,
+                  color: AppTheme.lightBrown,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Editar publicação',
+                  style: GoogleFonts.cormorantGaramond(
+                    color: AppTheme.background,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -138,45 +224,47 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
               TextField(
                 controller: captionController,
                 maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Legenda',
-                  border: OutlineInputBorder(),
+                style: GoogleFonts.poppins(
+                  color: AppTheme.textPrimary,
+                  fontSize: 14,
+                ),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFF999999),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppTheme.surface),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  try {
-                    final image = await ImagePicker().pickImage(
-                      source: ImageSource.gallery,
-                    );
-                    if (image != null) {
-                      setDialogState(() => selectedImage = image);
-                    }
-                  } catch (error) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Não foi possível abrir a galeria: $error',
-                        ),
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.photo_library_outlined),
-                label: Text(selectedImage?.name ?? 'Trocar foto'),
-              ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.surface,
+                textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+              ),
               child: const Text('Cancelar'),
             ),
-            FilledButton(
+            ElevatedButton.icon(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Salvar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.mediumBrown,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              ),
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('Salvar'),
             ),
           ],
         ),
@@ -221,44 +309,181 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
 
   Future<void> _reportPost() async {
     final reasonController = TextEditingController();
-    final confirmed = await showDialog<bool>(
+    final selectedReasons = <String>{};
+    const reasonOptions = [
+      'Inapropriado',
+      'Ofensivo',
+      'Indesejado',
+      'Violência',
+      'Spam',
+      'Outro',
+    ];
+    final reason = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Denunciar publicação'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Informe o motivo da denúncia para análise da administração:',
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          Widget reasonOption(String value) {
+            return SizedBox(
+              height: 32,
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 30,
+                    child: Checkbox(
+                      value: selectedReasons.contains(value),
+                      activeColor: AppTheme.background,
+                      checkColor: AppTheme.textPrimary,
+                      side: const BorderSide(color: AppTheme.background),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      onChanged: (selected) {
+                        setDialogState(() {
+                          if (selected == true) {
+                            selectedReasons.add(value);
+                          } else {
+                            selectedReasons.remove(value);
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      value,
+                      style: GoogleFonts.poppins(
+                        color: AppTheme.background,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final canSubmit = selectedReasons.isNotEmpty ||
+              reasonController.text.trim().isNotEmpty;
+
+          return AlertDialog(
+            backgroundColor: AppTheme.textPrimary,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: AppTheme.cardBorder),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: reasonController,
-              autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'Ex.: conteúdo impróprio ou ofensivo',
-                border: OutlineInputBorder(),
+            title: Text(
+              'Por que deseja reportar esse post?',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cormorantGaramond(
+                color: AppTheme.background,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
               ),
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Enviar denúncia'),
-          ),
-        ],
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 340),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children:
+                              reasonOptions.take(3).map(reasonOption).toList(),
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          children:
+                              reasonOptions.skip(3).map(reasonOption).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: reasonController,
+                          autofocus: true,
+                          minLines: 3,
+                          maxLines: 3,
+                          onChanged: (_) => setDialogState(() {}),
+                          style: GoogleFonts.poppins(
+                            color: AppTheme.textPrimary,
+                            fontSize: 13,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Escreva aqui o motivo...',
+                            hintStyle: GoogleFonts.poppins(
+                              color:
+                                  AppTheme.textPrimary,
+                              fontSize: 12,
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFF999999),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(
+                                color: AppTheme.background,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        tooltip: 'Enviar denúncia',
+                        onPressed: canSubmit
+                            ? () {
+                                final details = reasonController.text.trim();
+                                final selected = reasonOptions
+                                    .where(selectedReasons.contains)
+                                    .join(', ');
+                                final combinedReason = [
+                                  selected,
+                                  if (details.isNotEmpty) details,
+                                ].join(': ');
+                                Navigator.pop(dialogContext, combinedReason);
+                              }
+                            : null,
+                        color: AppTheme.background,
+                        icon: const Icon(Icons.send, size: 28),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.surface,
+                  textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                ),
+                child: const Text('Cancelar'),
+              ),
+            ],
+          );
+        },
       ),
     );
 
-    final reason = reasonController.text.trim();
     reasonController.dispose();
-    if (confirmed != true || reason.isEmpty || !mounted) return;
+    if (reason == null || reason.isEmpty || !mounted) return;
 
     try {
       await ApiService.reportPost(widget.post.id, reason);
@@ -301,6 +526,14 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
     final post = widget.post;
     final username = post.authorUsername;
     const menuTextStyle = TextStyle(color: Color(0xFFF3E9DC));
+    var formattedDate = post.createdAt;
+    try {
+      formattedDate = DateFormat(
+        'dd/MM/yyyy',
+      ).format(DateTime.parse(post.createdAt));
+    } on FormatException {
+      // Keep the original value when the server returns an unexpected date.
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3E9DC),
@@ -464,17 +697,38 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                     ),
                   ),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          _caption.isEmpty ? 'Legenda/Título' : _caption,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: _caption.isEmpty
-                                ? Colors.black45
-                                : const Color(0xFF5E3023),
-                            fontSize: 15,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8, top: 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _caption.isEmpty ? 'Legenda/Título' : _caption,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: _caption.isEmpty
+                                      ? Colors.black45
+                                      : const Color(0xFF5E3023),
+                                  fontSize: 15,
+                                ),
+                              ),
+                              if (formattedDate.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  formattedDate,
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary.withValues(
+                                      alpha: 0.7,
+                                    ),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),

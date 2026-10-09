@@ -2,11 +2,13 @@ import 'dart:math' as math;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/controller/controller.login.dart';
 import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'notificacoes_page.dart';
 import 'postar_page.dart';
 import 'dump_page.dart';
@@ -88,17 +90,17 @@ class FeedHeader extends StatelessWidget {
             actions: trailingAction != null
                 ? [trailingAction!]
                 : mostrarAcoes
-                ? [
-                    IconButton(
-                      onPressed: () => abrirPesquisa(context),
-                      icon: const Icon(
-                        Icons.person_search,
-                        size: 35.0,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ]
-                : const [],
+                    ? [
+                        IconButton(
+                          onPressed: () => abrirPesquisa(context),
+                          icon: const Icon(
+                            Icons.person_search,
+                            size: 35.0,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ]
+                    : const [],
             backgroundColor: const Color(0xFFD7CBBD),
           ),
         ),
@@ -606,7 +608,83 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                 ListTile(
                   leading: const Icon(Icons.logout),
                   title: const Text('Sair'),
-                  onTap: () {
+                  onTap: () async {
+                    final confirmarSaida = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        backgroundColor: AppTheme.textPrimary,
+                        surfaceTintColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          side: const BorderSide(color: AppTheme.cardBorder),
+                        ),
+                        title: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: AppTheme.danger.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.logout,
+                                color: AppTheme.danger,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Sair da conta?',
+                                style: GoogleFonts.cormorantGaramond(
+                                  color: AppTheme.background,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        content: Text(
+                          'Tem certeza que deseja sair?',
+                          style: GoogleFonts.poppins(
+                            color: AppTheme.surface,
+                            fontSize: 14,
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.pop(dialogContext, false),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppTheme.surface,
+                              textStyle: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            child: const Text('Cancelar'),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () => Navigator.pop(dialogContext, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.danger,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              textStyle: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            icon: const Icon(Icons.logout, size: 18),
+                            label: const Text('Sair'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmarSaida != true || !mounted) return;
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
@@ -667,7 +745,7 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
             ),
           ),
         ),
-        if (!_drawerAberto)
+        if (!_drawerAberto && indice != 2)
           Positioned(
             left: 0,
             right: 0,
@@ -680,13 +758,13 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                   behavior: HitTestBehavior.opaque,
                   onTap: _abrirPostagemComZoom,
                   child: SizedBox(
-                    width: 64,
-                    height: 64,
+                    width: 72,
+                    height: 72,
                     child: AnimatedBuilder(
                       animation: _animacaoZoomPostagem,
                       child: const Icon(
                         Icons.add_circle,
-                        size: 40,
+                        size: 44,
                         color: Colors.black,
                       ),
                       builder: (context, child) {
@@ -694,9 +772,15 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                         final fade =
                             ((progresso - 0.72) / 0.28).clamp(0.0, 1.0);
                         final opacidade = 1 - Curves.easeIn.transform(fade);
-                        final escala = 1 +
+                        final escalaZoom = 1 +
                             (escalaFinalZoom - 1) *
                                 Curves.easeInCubic.transform(progresso);
+                        final escalaToque = 1 +
+                            0.55 *
+                                Curves.easeOut.transform(
+                                  (progresso / 0.16).clamp(0.0, 1.0),
+                                );
+                        final escala = escalaZoom * escalaToque;
 
                         return IgnorePointer(
                           child: Opacity(
