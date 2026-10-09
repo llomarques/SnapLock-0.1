@@ -185,6 +185,35 @@ class ApiService {
       throw Exception(data['message'] ?? 'Erro ao atualizar perfil.');
     }
   }
+    static Future<UserModel> updateProfile({
+    required String name,
+    required String bio,
+    required String gender,
+    String? avatarUrl,
+  }) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/profile'),
+      headers: _headers,
+      body: jsonEncode({
+        'name': name,
+        'bio': bio,
+        'gender': gender,
+        if (avatarUrl != null) 'avatarUrl': avatarUrl,
+      }),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] == true) {
+      final userMap = data['user'] as Map<String, dynamic>;
+      _currentUser = UserModel.fromJson(userMap);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userKey, jsonEncode(userMap));
+      return _currentUser!;
+    } else {
+      throw Exception(data['message'] ?? 'Erro ao atualizar perfil.');
+    }
+  }
+
 
   static Future<void> changePassword(
     String currentPassword,
