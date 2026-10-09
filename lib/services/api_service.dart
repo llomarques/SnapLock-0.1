@@ -540,7 +540,6 @@ class ApiService {
     }
   }
 
-<<<<<<< HEAD
   static String get _notificationUserId =>
       _currentUser?.id ??
       LoginController.usuarioAtual?['id']?.toString() ??
@@ -557,16 +556,6 @@ class ApiService {
   static String get _dismissedAcceptedFriendNotificationsKey =>
       'snaplock_dismissed_accepted_friend_notifications_$_notificationUserId';
 
-=======
-  static String get _acceptedFriendNotificationsReadKey {
-    final userId = _currentUser?.id ??
-        LoginController.usuarioAtual?['id']?.toString() ??
-        LoginController.usuarioAtual?['id_usuario']?.toString() ??
-        'current';
-    return 'snaplock_read_friend_notifications_$userId';
-  }
-
->>>>>>> bfd290d442c743f474c023afe2e210c1d963201f
   static Future<List<Map<String, dynamic>>>
       getAcceptedFriendNotifications() async {
     final response = await http.get(
@@ -583,27 +572,20 @@ class ApiService {
     final lidas =
         prefs.getStringList(_acceptedFriendNotificationsReadKey)?.toSet() ??
             <String>{};
-<<<<<<< HEAD
     final descartadas = prefs
         .getStringList(_dismissedAcceptedFriendNotificationsKey)
         ?.toSet() ??
       <String>{};
-=======
->>>>>>> bfd290d442c743f474c023afe2e210c1d963201f
     final items = data['notifications'] as List;
     return items.map((item) {
       final notification = Map<String, dynamic>.from(item as Map);
       final id = notification['notificationId']?.toString() ?? '';
       notification['read'] = lidas.contains(id);
-<<<<<<< HEAD
       notification['dismissed'] = descartadas.contains(id);
-=======
->>>>>>> bfd290d442c743f474c023afe2e210c1d963201f
       return notification;
     }).toList();
   }
 
-<<<<<<< HEAD
   static Future<void> dismissFriendRequestNotification(String requestId) async {
     final prefs = await SharedPreferences.getInstance();
     final ids =
@@ -627,8 +609,6 @@ class ApiService {
     );
   }
 
-=======
->>>>>>> bfd290d442c743f474c023afe2e210c1d963201f
   static Future<void> markAcceptedFriendNotificationsRead(
     Iterable<Map<String, dynamic>> notifications,
   ) async {
