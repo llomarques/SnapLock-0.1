@@ -348,6 +348,7 @@ class ApiService {
         imageUrl: foto['midia_url']?.toString() ?? '',
         caption: foto['legenda']?.toString() ?? '',
         createdAt: foto['data_postagem']?.toString() ?? '',
+        aspectRatio: double.tryParse(foto['proporcao']?.toString() ?? ''),
         authorName: foto['nome']?.toString(),
         authorAvatar: foto['foto_perfil']?.toString(),
       );
@@ -426,6 +427,55 @@ class ApiService {
     if (data['success'] != true) {
       throw Exception(data['message'] ?? 'Erro ao excluir post.');
     }
+  }
+
+  static Future<Map<String, dynamic>> updatePost({
+    required String postId,
+    required String caption,
+    Uint8List? imageBytes,
+    String fileName = 'publicacao.jpg',
+  }) async {
+    final request = http.MultipartRequest(
+      'PUT',
+      Uri.parse('${ApiConfig.baseUrl}/posts/$postId'),
+    )..fields['legenda'] = caption;
+
+    if (imageBytes != null) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'midia',
+          imageBytes,
+          filename: fileName,
+        ),
+      );
+    }
+
+    final loginToken = LoginController.tokenAtual;
+    final token = loginToken != null && loginToken.isNotEmpty
+        ? loginToken
+        : _currentToken;
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    Map<String, dynamic> data = {};
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) data = decoded;
+    } on FormatException {
+      throw Exception(
+        'Erro HTTP ${response.statusCode}: ${response.body.trim()}',
+      );
+    }
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao editar publicação.');
+    }
+    return data;
   }
 
   static Future<void> reactToPost(String postId, String reactionType) async {

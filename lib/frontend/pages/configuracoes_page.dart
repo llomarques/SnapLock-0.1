@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'package:snaplock/frontend/widgets/criarOpcao_widget.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'alterarSenha_page.dart';
 import 'sobreNos_page.dart';
 
@@ -55,11 +57,6 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
             aoClicar: () {},
           ),
           CriarOpcaoWidget(
-            icone: Icons.visibility,
-            titulo: 'Controle de visualizações',
-            aoClicar: () {},
-          ),
-          CriarOpcaoWidget(
             icone: Icons.lock,
             titulo: 'Alterar senha',
             aoClicar: () {
@@ -84,7 +81,82 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
           CriarOpcaoWidget(
             icone: Icons.logout,
             titulo: 'Sair da conta',
-            aoClicar: () {
+            aoClicar: () async {
+              final confirmarSaida = await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  backgroundColor: AppTheme.textPrimary,
+                  surfaceTintColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side: const BorderSide(color: AppTheme.cardBorder),
+                  ),
+                  title: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppTheme.danger.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.logout,
+                          color: AppTheme.danger,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Sair da conta?',
+                          style: GoogleFonts.cormorantGaramond(
+                            color: AppTheme.background,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Text(
+                    'Tem certeza que deseja sair?',
+                    style: GoogleFonts.poppins(
+                      color: AppTheme.surface,
+                      fontSize: 14,
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext, false),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.surface,
+                        textStyle: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.pop(dialogContext, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.danger,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      icon: const Icon(Icons.logout, size: 18),
+                      label: const Text('Sair'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirmarSaida != true || !mounted) return;
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(

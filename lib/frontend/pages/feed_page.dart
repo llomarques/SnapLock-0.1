@@ -2,17 +2,20 @@ import 'dart:math' as math;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/controller/controller.login.dart';
 import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'notificacoes_page.dart';
 import 'postar_page.dart';
 import 'dump_page.dart';
 import 'perfil_page.dart';
 import 'configuracoes_page.dart';
 import 'pesquisa_page.dart';
+import 'post_page.dart';
 
 class FeedPage extends StatefulWidget {
   final int initialIndex;
@@ -28,10 +31,14 @@ class FeedHeader extends StatelessWidget {
     super.key,
     required this.onMenuPressed,
     this.mostrarAcoes = true,
+    this.mostrarVoltar = false,
+    this.trailingAction,
   });
 
   final VoidCallback onMenuPressed;
   final bool mostrarAcoes;
+  final bool mostrarVoltar;
+  final Widget? trailingAction;
 
   void abrirPesquisa(BuildContext context) {
     Navigator.push(
@@ -55,38 +62,162 @@ class FeedHeader extends StatelessWidget {
           child: AppBar(
             automaticallyImplyLeading: false,
             toolbarHeight: 110,
-            leading: mostrarAcoes
+            leading: mostrarVoltar
                 ? IconButton(
-                    onPressed: onMenuPressed,
+                    onPressed: () => Navigator.maybePop(context),
                     icon: const Icon(
-                      Icons.menu,
-                      size: 35.0,
+                      Icons.arrow_back,
+                      size: 30,
                       color: Colors.black,
                     ),
                   )
-                : null,
+                : (mostrarAcoes
+                    ? IconButton(
+                        onPressed: onMenuPressed,
+                        icon: const Icon(
+                          Icons.menu,
+                          size: 35.0,
+                          color: Colors.black,
+                        ),
+                      )
+                    : null),
             centerTitle: true,
             title: Image.asset(
               'assets/images/logo.png',
               height: 80,
               width: 80,
             ),
-            actions: mostrarAcoes
-                ? [
-                    IconButton(
-                      onPressed: () => abrirPesquisa(context),
-                      icon: const Icon(
-                        Icons.person_search,
-                        size: 35.0,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ]
-                : const [],
+            actions: trailingAction != null
+                ? [trailingAction!]
+                : mostrarAcoes
+                    ? [
+                        IconButton(
+                          onPressed: () => abrirPesquisa(context),
+                          icon: const Icon(
+                            Icons.person_search,
+                            size: 35.0,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ]
+                    : const [],
             backgroundColor: const Color(0xFFD7CBBD),
           ),
         ),
       ),
+    );
+  }
+}
+
+class FeedNavigationBar extends StatelessWidget {
+  const FeedNavigationBar({
+    super.key,
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    this.temNotificacaoNova = false,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final bool temNotificacaoNova;
+
+  Widget _iconePerfil(double tamanho) {
+    return ValueListenableBuilder<Map<String, dynamic>?>(
+      valueListenable: LoginController.usuarioNotifier,
+      builder: (context, usuario, child) => AvatarSquareWidget(
+        imageUrl: usuario?['avatarUrl']?.toString() ?? '',
+        size: tamanho,
+        backgroundColor: Colors.transparent,
+        iconColor: Colors.black,
+        fallbackAsset: 'assets/images/monalisaPerfil.png',
+      ),
+    );
+  }
+
+  Widget _iconeNotificacoes(IconData icone, double tamanho) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icone, size: tamanho, color: Colors.black),
+        if (temNotificacaoNova)
+          Positioned(
+            top: 0,
+            right: -1,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: const Color(0xFFC08552),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFD7CBBD),
+                  width: 1.5,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NavigationBar(
+      backgroundColor: const Color(0xFFD7CBBD),
+      indicatorColor: Colors.transparent,
+      onDestinationSelected: onDestinationSelected,
+      selectedIndex: selectedIndex,
+      destinations: [
+        NavigationDestination(
+          icon: _TapScale(
+            child: const Icon(
+              Icons.home_outlined,
+              size: 33,
+              color: Colors.black,
+            ),
+          ),
+          selectedIcon: _TapScale(
+            child: const Icon(Icons.home, size: 40, color: Colors.black),
+          ),
+          label: '',
+        ),
+        NavigationDestination(
+          icon: _TapScale(
+            child: _iconeNotificacoes(Icons.notifications_outlined, 33),
+          ),
+          selectedIcon: _TapScale(
+            child: _iconeNotificacoes(Icons.notifications, 40),
+          ),
+          label: '',
+        ),
+        const NavigationDestination(
+          icon: SizedBox.shrink(),
+          selectedIcon: SizedBox.shrink(),
+          label: '',
+        ),
+        NavigationDestination(
+          icon: _TapScale(
+            child: const ImageIcon(
+              AssetImage('assets/images/dump.png'),
+              size: 33,
+              color: Colors.black,
+            ),
+          ),
+          selectedIcon: _TapScale(
+            child: const ImageIcon(
+              AssetImage('assets/images/dump.png'),
+              size: 50,
+              color: Colors.black,
+            ),
+          ),
+          label: '',
+        ),
+        NavigationDestination(
+          icon: _TapScale(child: _iconePerfil(30)),
+          selectedIcon: _TapScale(child: _iconePerfil(37)),
+          label: '',
+        ),
+      ],
     );
   }
 }
@@ -141,6 +272,16 @@ class _FeedConteudoPageState extends State<FeedConteudoPage> {
         return _fallbackAspectRatios[index % _fallbackAspectRatios.length];
       });
 
+  Future<void> _openPost(PostModel post) async {
+    final excluido = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostMaximizadoPage(post: post),
+      ),
+    );
+    if (excluido == true) await _loadFeed();
+  }
+
   Widget _buildGrid() {
     const spacing = 10.0;
     final ratios = _aspectRatios;
@@ -167,66 +308,69 @@ class _FeedConteudoPageState extends State<FeedConteudoPage> {
                 child: Column(
                   children: [
                     for (final index in columns[column]) ...[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(9),
-                        child: AspectRatio(
-                          aspectRatio: ratios[index],
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.network(
-                                _posts[index].imageUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const ColoredBox(
-                                  color: Color(0xFFD7CBBD),
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.broken_image_outlined,
-                                      color: Color(0xFF6F5C4A),
+                      GestureDetector(
+                        onTap: () => _openPost(_posts[index]),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(9),
+                          child: AspectRatio(
+                            aspectRatio: ratios[index],
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.network(
+                                  _posts[index].imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const ColoredBox(
+                                    color: Color(0xFFD7CBBD),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.broken_image_outlined,
+                                        color: Color(0xFF6F5C4A),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.fromLTRB(
-                                    8,
-                                    22,
-                                    8,
-                                    8,
-                                  ),
-                                  decoration: const BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.transparent,
-                                        Color(0xB3000000),
-                                      ],
+                                Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.fromLTRB(
+                                      8,
+                                      22,
+                                      8,
+                                      8,
                                     ),
-                                  ),
-                                  child: Text(
-                                    '@${_posts[index].authorUsername ?? 'usuario'}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black54,
-                                          blurRadius: 3,
-                                        ),
-                                      ],
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Color(0xB3000000),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '@${_posts[index].authorUsername ?? 'usuario'}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black54,
+                                            blurRadius: 3,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -295,45 +439,6 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
   bool _temNotificacaoNova = false;
   bool _inicializouNotificacoes = false;
   int _versaoLeituraNotificacoes = 0;
-
-  Widget _iconePerfil(double tamanho) {
-    return ValueListenableBuilder<Map<String, dynamic>?>(
-      valueListenable: LoginController.usuarioNotifier,
-      builder: (context, usuario, child) => AvatarSquareWidget(
-        imageUrl: usuario?['avatarUrl']?.toString() ?? '',
-        size: tamanho,
-        backgroundColor: Colors.transparent,
-        iconColor: Colors.black,
-        fallbackAsset: 'assets/images/monalisaPerfil.png',
-      ),
-    );
-  }
-
-  Widget _iconeNotificacoes(IconData icone, double tamanho) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Icon(icone, size: tamanho, color: Colors.black),
-        if (_temNotificacaoNova)
-          Positioned(
-            top: 0,
-            right: -1,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: const Color(0xFFC08552),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFFD7CBBD),
-                  width: 1.5,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
 
   final telas = const [
     FeedConteudoPage(),
@@ -530,7 +635,83 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                 ListTile(
                   leading: const Icon(Icons.logout),
                   title: const Text('Sair'),
-                  onTap: () {
+                  onTap: () async {
+                    final confirmarSaida = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        backgroundColor: AppTheme.textPrimary,
+                        surfaceTintColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          side: const BorderSide(color: AppTheme.cardBorder),
+                        ),
+                        title: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: AppTheme.danger.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.logout,
+                                color: AppTheme.danger,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Sair da conta?',
+                                style: GoogleFonts.cormorantGaramond(
+                                  color: AppTheme.background,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        content: Text(
+                          'Tem certeza que deseja sair?',
+                          style: GoogleFonts.poppins(
+                            color: AppTheme.surface,
+                            fontSize: 14,
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.pop(dialogContext, false),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppTheme.surface,
+                              textStyle: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            child: const Text('Cancelar'),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () => Navigator.pop(dialogContext, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.danger,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              textStyle: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            icon: const Icon(Icons.logout, size: 18),
+                            label: const Text('Sair'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmarSaida != true || !mounted) return;
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
@@ -553,55 +734,10 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
               Expanded(child: telas[indice]),
             ],
           ),
-          bottomNavigationBar: NavigationBar(
-            backgroundColor: const Color(0xFFD7CBBD),
-            indicatorColor: Colors.transparent,
-            onDestinationSelected: _selecionarAba,
+          bottomNavigationBar: FeedNavigationBar(
             selectedIndex: indice,
-            destinations: [
-              NavigationDestination(
-                  icon: _TapScale(
-                      child: Icon(Icons.home_outlined,
-                          size: 33.0, color: Colors.black)),
-                  selectedIcon: _TapScale(
-                      child: Icon(
-                    Icons.home,
-                    size: 40.0,
-                    color: Colors.black,
-                  )),
-                  label: ''),
-              NavigationDestination(
-                  icon: _TapScale(
-                    child: _iconeNotificacoes(Icons.notifications_outlined, 33),
-                  ),
-                  selectedIcon: _TapScale(
-                    child: _iconeNotificacoes(Icons.notifications, 40),
-                  ),
-                  label: ''),
-              const NavigationDestination(
-                icon: SizedBox.shrink(),
-                selectedIcon: SizedBox.shrink(),
-                label: '',
-              ),
-              NavigationDestination(
-                  icon: _TapScale(
-                      child: const ImageIcon(
-                    AssetImage('assets/images/dump.png'),
-                    size: 33.0,
-                    color: Colors.black,
-                  )),
-                  selectedIcon: _TapScale(
-                      child: const ImageIcon(
-                    AssetImage('assets/images/dump.png'),
-                    size: 50.0,
-                    color: Colors.black,
-                  )),
-                  label: ''),
-              NavigationDestination(
-                  icon: _TapScale(child: _iconePerfil(30)),
-                  selectedIcon: _TapScale(child: _iconePerfil(37)),
-                  label: ''),
-            ],
+            onDestinationSelected: _selecionarAba,
+            temNotificacaoNova: _temNotificacaoNova,
           ),
         ),
         Positioned(
@@ -636,7 +772,7 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
             ),
           ),
         ),
-        if (!_drawerAberto)
+        if (!_drawerAberto && indice != 2)
           Positioned(
             left: 0,
             right: 0,
@@ -649,13 +785,13 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                   behavior: HitTestBehavior.opaque,
                   onTap: _abrirPostagemComZoom,
                   child: SizedBox(
-                    width: 64,
-                    height: 64,
+                    width: 72,
+                    height: 72,
                     child: AnimatedBuilder(
                       animation: _animacaoZoomPostagem,
                       child: const Icon(
                         Icons.add_circle,
-                        size: 40,
+                        size: 44,
                         color: Colors.black,
                       ),
                       builder: (context, child) {
@@ -663,9 +799,15 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                         final fade =
                             ((progresso - 0.72) / 0.28).clamp(0.0, 1.0);
                         final opacidade = 1 - Curves.easeIn.transform(fade);
-                        final escala = 1 +
+                        final escalaZoom = 1 +
                             (escalaFinalZoom - 1) *
                                 Curves.easeInCubic.transform(progresso);
+                        final escalaToque = 1 +
+                            0.55 *
+                                Curves.easeOut.transform(
+                                  (progresso / 0.16).clamp(0.0, 1.0),
+                                );
+                        final escala = escalaZoom * escalaToque;
 
                         return IgnorePointer(
                           child: Opacity(
