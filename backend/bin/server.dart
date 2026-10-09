@@ -281,6 +281,58 @@ Future<void> main() async {
       }).toList();
       return _json(200, {'success': true, 'friends': amigos});
     })
+
+    ..get('/api/friends/accepted-notifications', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final resultados = await connection.execute(
+        '''SELECT a.id_amizade, a.id_usuario_1, a.id_usuario_2,
+                  COALESCE(a.data_resposta, a.data_solicitacao) AS data_evento,
+                  u1.nome AS nome_usuario_1,
+                  u1.username AS username_usuario_1,
+                  u1.foto_perfil AS avatar_usuario_1,
+                  u2.nome AS nome_usuario_2,
+                  u2.username AS username_usuario_2,
+                  u2.foto_perfil AS avatar_usuario_2
+           FROM amizade a
+           JOIN usuario u1 ON u1.id_usuario = a.id_usuario_1
+           JOIN usuario u2 ON u2.id_usuario = a.id_usuario_2
+           WHERE a.status = 'aceito'
+             AND (a.id_usuario_1 = :id_usuario
+               OR a.id_usuario_2 = :id_usuario)
+           ORDER BY data_evento DESC, a.id_amizade DESC''',
+        {'id_usuario': idUsuario},
+      );
+
+      final notificacoes = resultados.rows.map((row) {
+        final amizade = row.assoc();
+        final enviouSolicitacao =
+            amizade['id_usuario_1'] == idUsuario.toString();
+        final tipo =
+            enviouSolicitacao ? 'solicitacao_aceita' : 'amizade_criada';
+        final nomeAtor = enviouSolicitacao
+            ? amizade['nome_usuario_2'] ?? 'Seu amigo'
+            : amizade['nome_usuario_1'] ?? 'Seu amigo';
+
+        return <String, Object?>{
+          'notificationId': '${amizade['id_amizade']}_$tipo',
+          'type': tipo,
+          'message': enviouSolicitacao
+              ? '$nomeAtor aceitou sua solicitação de amizade.'
+              : 'Agora vocês são amigos.',
+          'createdAt': amizade['data_evento'] ?? '',
+          'username': enviouSolicitacao
+              ? amizade['username_usuario_2'] ?? ''
+              : amizade['username_usuario_1'] ?? '',
+          'avatarUrl': enviouSolicitacao
+              ? amizade['avatar_usuario_2'] ?? ''
+              : amizade['avatar_usuario_1'] ?? '',
+        };
+      }).toList();
+
+      return _json(200, {'success': true, 'notifications': notificacoes});
+    })
     ..get('/api/friends/accepted-notifications', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
