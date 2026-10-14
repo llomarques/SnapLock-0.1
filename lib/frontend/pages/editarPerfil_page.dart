@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:typed_data';
 import '../../controller/controller.login.dart';
+import '../../theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/input_widget.dart';
 import 'package:snaplock/frontend/utils/foto_utils.dart';
 
@@ -40,45 +42,125 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
     fotoPerfil = widget.fotoPerfilInicial;
   }
 
-  Future<void> salvarAlteracoes() async {
-  if (salvando) return;
-
-  setState(() => salvando = true);
-  try {
-    String? novaFotoUrl;
-
-    // Se o usuário escolheu uma nova foto, envia primeiro
-    if (fotoPerfil != null) {
-      novaFotoUrl = await LoginController.atualizarFotoPerfil(fotoPerfil!);
-    }
-
-    final resposta = await LoginController.atualizarPerfil(
-      nome: nomeController.text.trim(),
-      username: usuarioController.text.trim(),
-      biografia: biografiaController.text.trim(),
+  Future<void> confirmarAlteracao() async {
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.background,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppTheme.cardBorder),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.mediumBrown.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.edit_note_rounded,
+                color: AppTheme.mediumBrown,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Alterar perfil?',
+                style: GoogleFonts.cormorantGaramond(
+                  color: AppTheme.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Tem certeza que deseja alterar as informações do seu perfil?',
+          style: GoogleFonts.poppins(
+            color: AppTheme.textSecondary,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.textSecondary,
+              textStyle: GoogleFonts.poppins(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.mediumBrown,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            icon: const Icon(Icons.check_rounded, size: 18),
+            label: const Text('Sim'),
+          ),
+        ],
+      ),
     );
 
-    if (mounted) {
-      final usuarioAtualizado = Map<String, dynamic>.from(
-        resposta['user'] as Map<String, dynamic>,
-      );
-
-      // O endpoint de nome/bio não sabe da nova foto, então mesclamos aqui
-      if (novaFotoUrl != null) {
-        usuarioAtualizado['avatarUrl'] = novaFotoUrl;
-      }
-
-      Navigator.pop(context, usuarioAtualizado);
-    }
-  } catch (error) {
-    if (mounted) {
-      setState(() => salvando = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+    if (confirmou == true) {
+      await salvarAlteracoes();
     }
   }
-}
+
+  Future<void> salvarAlteracoes() async {
+    if (salvando) return;
+
+    setState(() => salvando = true);
+    try {
+      String? novaFotoUrl;
+
+      // Se o usuário escolheu uma nova foto, envia primeiro
+      if (fotoPerfil != null) {
+        novaFotoUrl = await LoginController.atualizarFotoPerfil(fotoPerfil!);
+      }
+
+      final resposta = await LoginController.atualizarPerfil(
+        nome: nomeController.text.trim(),
+        username: usuarioController.text.trim(),
+        biografia: biografiaController.text.trim(),
+      );
+
+      if (mounted) {
+        final usuarioAtualizado = Map<String, dynamic>.from(
+          resposta['user'] as Map<String, dynamic>,
+        );
+
+        // O endpoint de nome/bio não sabe da nova foto, então mesclamos aqui
+        if (novaFotoUrl != null) {
+          usuarioAtualizado['avatarUrl'] = novaFotoUrl;
+        }
+
+        Navigator.pop(context, usuarioAtualizado);
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => salvando = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
+      }
+    }
+  }
 
   Future<void> escolherDaGaleria() async {
     final bytes = await FotoUtils.selecionarDaGaleria();
@@ -188,7 +270,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             ),
             const SizedBox(height: 25),
             ElevatedButton(
-              onPressed: salvando ? null : salvarAlteracoes,
+              onPressed: salvando ? null : confirmarAlteracao,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: const Color(0xFFF3E9DC),
