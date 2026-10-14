@@ -632,62 +632,6 @@ Future<void> main() async {
     })
     ..get('/api/fotos/minhas', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
-      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
-
-      try {
-        final resultado = await connection.execute(
-          '''SELECT f.id_foto AS id,
-                    f.id_usuario AS userId,
-                    f.midia_url AS imageUrl,
-                    f.legenda AS caption,
-                    f.data_postagem AS createdAt,
-                    f.proporcao AS aspectRatio,
-                    u.nome AS authorName,
-                    u.username AS authorUsername,
-                    u.foto_perfil AS authorAvatar
-             FROM foto f
-             JOIN usuario u ON u.id_usuario = f.id_usuario
-             WHERE f.id_usuario = :id_usuario
-                OR f.id_usuario IN (
-                    SELECT CASE
-                        WHEN a.id_usuario_1 = :id_usuario THEN a.id_usuario_2
-                        ELSE a.id_usuario_1
-                    END
-                    FROM amizade a
-                    WHERE (a.id_usuario_1 = :id_usuario OR a.id_usuario_2 = :id_usuario)
-                      AND a.status = 'aceito'
-                )
-             ORDER BY f.data_postagem DESC, f.id_foto DESC
-             LIMIT 50''',
-          {'id_usuario': idUsuario},
-        );
-
-        final posts = resultado.rows.map((row) {
-          final item = row.assoc();
-          return <String, Object?>{
-            'id': item['id'] ?? '',
-            'userId': item['userId'] ?? '',
-            'imageUrl': item['imageUrl'] ?? '',
-            'caption': item['caption'] ?? '',
-            'createdAt': item['createdAt'] ?? '',
-            'aspectRatio': item['aspectRatio'] ?? 1.0,
-            'authorName': item['authorName'] ?? '',
-            'authorUsername': item['authorUsername'] ?? '',
-            'authorAvatar': item['authorAvatar'] ?? '',
-            'reactionCount': 0,
-            'userReaction': null,
-          };
-        }).toList();
-
-        return _json(200, {'success': true, 'posts': posts});
-      } catch (error, stackTrace) {
-        print('Erro ao buscar feed: $error');
-        print(stackTrace);
-        return _json(500, {'message': 'Erro ao carregar o feed.'});
-      }
-    })
-    ..get('/api/fotos/minhas', (Request request) async {
-      final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Não há publicações para serem vistas.'});
 
       try {

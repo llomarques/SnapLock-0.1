@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/frontend/pages/configuracoes_page.dart';
 import 'package:snaplock/frontend/pages/perfilAmigo_page.dart';
 import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
 import 'package:snaplock/models/user_model.dart';
 import 'package:snaplock/services/api_service.dart';
+import 'package:snaplock/theme/app_theme.dart';
 
 class AmigosPage extends StatefulWidget {
   const AmigosPage({super.key});
@@ -62,18 +64,69 @@ class _AmigosPage extends State<AmigosPage> {
 
     final confirmado = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cortar laços?'),
-        content: Text('Deseja remover @${amigo.username} dos seus amigos?'),
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.textPrimary,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppTheme.cardBorder),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.danger.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.heart_broken_outlined,
+                color: AppTheme.danger,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Desfazer amizade?',
+                style: GoogleFonts.cormorantGaramond(
+                  color: AppTheme.background,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Tem certeza que deseja desfazer a amizade com @${amigo.username}?',
+          style: GoogleFonts.poppins(
+            color: AppTheme.surface,
+            fontSize: 14,
+          ),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.surface,
+              textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+            ),
             child: const Text('Cancelar'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
-            child: const Text('Cortar laços'),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            ),
+            icon: const Icon(Icons.content_cut, size: 18),
+            label: const Text('Desfazer amizade'),
           ),
         ],
       ),
@@ -83,10 +136,18 @@ class _AmigosPage extends State<AmigosPage> {
 
     setState(() => removendoAmigos.add(amigo.id));
     try {
-      await ApiService.removeFriend(amigo.id);
+      final remocao = ApiService.removeFriend(amigo.id);
+      await _mostrarAnimacaoCorte(
+        remocao: remocao,
+        aoConcluir: () {
+          if (mounted) {
+            setState(() => amigos.removeWhere((item) => item.id == amigo.id));
+          }
+        },
+      );
+      await remocao;
       if (!mounted) return;
 
-      setState(() => amigos.removeWhere((item) => item.id == amigo.id));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('@${amigo.username} removido dos seus amigos.')),
       );
@@ -101,6 +162,23 @@ class _AmigosPage extends State<AmigosPage> {
     } finally {
       if (mounted) setState(() => removendoAmigos.remove(amigo.id));
     }
+  }
+
+  Future<void> _mostrarAnimacaoCorte({
+    required Future<void> remocao,
+    required VoidCallback aoConcluir,
+  }) {
+    return showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+      transitionDuration: Duration.zero,
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          _AnimacaoCorteLacos(
+        remocao: remocao,
+        aoConcluir: aoConcluir,
+      ),
+    );
   }
 
   Widget listaAmigos() {
@@ -148,7 +226,6 @@ class _AmigosPage extends State<AmigosPage> {
               builder: (context) => PerfilAmigoPage(amigo: amigo),
             ),
           ),
-
           leading: AvatarSquareWidget(
             imageUrl: amigo.avatarUrl,
             size: 33,
@@ -258,4 +335,155 @@ class _AmigosPage extends State<AmigosPage> {
       ),
     );
   }
+}
+
+class _AnimacaoCorteLacos extends StatefulWidget {
+  const _AnimacaoCorteLacos({
+    required this.remocao,
+    required this.aoConcluir,
+  });
+
+  final Future<void> remocao;
+  final VoidCallback aoConcluir;
+
+  @override
+  State<_AnimacaoCorteLacos> createState() => _AnimacaoCorteLacosState();
+}
+
+class _AnimacaoCorteLacosState extends State<_AnimacaoCorteLacos>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _executarCorte();
+  }
+
+  Future<void> _executarCorte() async {
+    final animacao = _controller.forward();
+    try {
+      await Future.wait<void>([animacao, widget.remocao]);
+      if (!mounted) return;
+      widget.aoConcluir();
+    } catch (_) {
+      await animacao;
+    } finally {
+      if (mounted) Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SizedBox(
+        width: 190,
+        height: 112,
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            final progress = Curves.easeInOut.transform(
+              (_controller.value / 0.75).clamp(0.0, 1.0),
+            );
+            final bowOpacity = 1 -
+                Curves.easeOut.transform(
+                  (_controller.value - 0.55).clamp(0.0, 0.45) / 0.45,
+                );
+
+            return Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                Opacity(
+                  opacity: bowOpacity,
+                  child: const CustomPaint(
+                    size: Size(100, 82),
+                    painter: _LacoVermelhoPainter(),
+                  ),
+                ),
+                Positioned(
+                  left: 15 + progress * 105,
+                  top: 31,
+                  child: Transform.rotate(
+                    angle: -0.45 + progress * 0.9,
+                    child: const Icon(
+                      Icons.content_cut,
+                      color: AppTheme.darkBrown,
+                      size: 48,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _LacoVermelhoPainter extends CustomPainter {
+  const _LacoVermelhoPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFC62828)
+      ..style = PaintingStyle.fill;
+    final outline = Paint()
+      ..color = const Color(0xFF8E1717)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    final center = Offset(size.width / 2, size.height * 0.42);
+
+    final leftLoop = Path()
+      ..moveTo(center.dx, center.dy)
+      ..cubicTo(center.dx - 7, center.dy - 24, center.dx - 43, center.dy - 24,
+          center.dx - 42, center.dy - 3)
+      ..cubicTo(center.dx - 42, center.dy + 13, center.dx - 16, center.dy + 15,
+          center.dx, center.dy);
+    final rightLoop = Path()
+      ..moveTo(center.dx, center.dy)
+      ..cubicTo(center.dx + 7, center.dy - 24, center.dx + 43, center.dy - 24,
+          center.dx + 42, center.dy - 3)
+      ..cubicTo(center.dx + 42, center.dy + 13, center.dx + 16, center.dy + 15,
+          center.dx, center.dy);
+
+    canvas.drawPath(leftLoop, paint);
+    canvas.drawPath(leftLoop, outline);
+    canvas.drawPath(rightLoop, paint);
+    canvas.drawPath(rightLoop, outline);
+
+    final tails = Path()
+      ..moveTo(center.dx - 5, center.dy + 5)
+      ..lineTo(center.dx - 24, center.dy + 36)
+      ..lineTo(center.dx - 8, center.dy + 30)
+      ..lineTo(center.dx, center.dy + 7)
+      ..lineTo(center.dx + 8, center.dy + 30)
+      ..lineTo(center.dx + 24, center.dy + 36)
+      ..lineTo(center.dx + 5, center.dy + 5)
+      ..close();
+    canvas.drawPath(tails, paint);
+    canvas.drawPath(tails, outline);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: center, width: 14, height: 17),
+        const Radius.circular(4),
+      ),
+      Paint()..color = const Color(0xFFE53935),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _LacoVermelhoPainter oldDelegate) => false;
 }
