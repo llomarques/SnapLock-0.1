@@ -9,6 +9,7 @@ class UserModel {
   final String avatarUrl;
   final String friendshipStatus;
   final bool isActive;
+  final int friendsCount;
 
   UserModel({
     required this.id,
@@ -21,6 +22,7 @@ class UserModel {
     this.avatarUrl = '',
     this.friendshipStatus = '',
     this.isActive = true,
+    this.friendsCount = 0,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class UserModel {
       avatarUrl: (json['avatarUrl'] as String?) ?? (json['avatar_url'] as String?) ?? '',
       friendshipStatus: (json['friendshipStatus'] as String?) ?? '',
       isActive: (json['isActive'] as bool?) ?? true,
+      friendsCount: int.tryParse(json['friendsCount']?.toString() ?? '') ?? 0,
     );
   }
 
@@ -50,6 +53,7 @@ class UserModel {
       'avatarUrl': avatarUrl,
       'friendshipStatus': friendshipStatus,
       'isActive': isActive,
+      'friendsCount': friendsCount,
     };
   }
 }
