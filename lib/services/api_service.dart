@@ -18,6 +18,19 @@ class ApiService {
   static UserModel? get currentUser => _currentUser;
   static String? get token => _currentToken;
 
+  
+static Map<String, String> get _actionHeaders {
+  final headers = _headers;
+  final loginToken = LoginController.tokenAtual;
+
+  if (loginToken != null && loginToken.isNotEmpty) {
+    headers['Authorization'] = 'Bearer $loginToken';
+  }
+
+  return headers;
+}
+
+
   /// Inicializa sessão salva no SharedPreferences
   static Future<bool> initSession() async {
     final prefs = await SharedPreferences.getInstance();
@@ -390,13 +403,22 @@ class ApiService {
 
   static Future<void> deletePost(String postId) async {
     final response = await http.delete(
-      Uri.parse('${ApiConfig.baseUrl}/posts/$postId'),
-      headers: _headers,
+      Uri.parse('${ApiConfig.baseUrl}/fotos/$postId'), // Se no backend for /fotos/$postId, troque aqui para /fotos/$postId
+      headers: _actionHeaders,
     );
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (data['success'] != true) {
-      throw Exception(data['message'] ?? 'Erro ao excluir post.');
+    Map<String, dynamic> body = {};
+    try {
+      body = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      if (response.statusCode == 404) {
+        throw Exception('Rota de exclusão não encontrada no servidor (404).');
+      }
+      throw Exception('Erro de comunicação com o servidor (${response.statusCode}).');
+    }
+
+    if (response.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? body['erro'] ?? 'Erro ao excluir a publicação.');
     }
   }
 
@@ -449,28 +471,28 @@ class ApiService {
     return data;
   }
 
-  static Future<void> reactToPost(String postId, String reactionType) async {
+  static Future<void> reactToPost(String postId, String type) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/posts/$postId/reactions'),
-      headers: _headers,
-      body: jsonEncode({'reactionType': reactionType}),
+      headers: _actionHeaders,
+      body: jsonEncode({'type': type}),
     );
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (data['success'] != true) {
-      throw Exception(data['message'] ?? 'Erro ao reagir à publicação.');
+    if (response.statusCode != 200) {
+      final body = jsonDecode(response.body);
+      throw Exception(body['message'] ?? 'Erro ao curtir a publicação.');
     }
   }
 
   static Future<void> removeReaction(String postId) async {
     final response = await http.delete(
       Uri.parse('${ApiConfig.baseUrl}/posts/$postId/reactions'),
-      headers: _headers,
+      headers: _actionHeaders,
     );
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (data['success'] != true) {
-      throw Exception(data['message'] ?? 'Erro ao remover reação.');
+    if (response.statusCode != 200) {
+      final body = jsonDecode(response.body);
+      throw Exception(body['message'] ?? 'Erro ao remover a curtida.');
     }
   }
 
@@ -679,16 +701,23 @@ class ApiService {
 
   static Future<void> reportPost(String postId, String reason) async {
     final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/reports'),
-      headers: _headers,
-      body: jsonEncode({'postId': postId, 'reason': reason}),
+      Uri.parse('${ApiConfig.baseUrl}/posts/$postId/report'),
+      headers: _actionHeaders,
+      body: jsonEncode({'reason': reason}),
     );
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (data['success'] != true) {
-      throw Exception(data['message'] ?? 'Erro ao enviar denúncia.');
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      Map<String, dynamic> body = {};
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          body = decoded;
+        }
+      } catch (_) {}
+      throw Exception(body['message'] ?? body['erro'] ?? 'Erro ao enviar a denúncia.');
     }
   }
+
 
   static Future<List<Map<String, dynamic>>> getMonthlyDumps() async {
     final response = await http.get(
