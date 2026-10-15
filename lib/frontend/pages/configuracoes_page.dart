@@ -8,6 +8,7 @@ import 'sobreNos_page.dart';
 import 'alterarEmail_page.dart';
 import 'curtidas_page.dart';
 import 'ajudaESuporte_page.dart';
+import 'deletar_page.dart';
 
 class ConfiguracoesPage extends StatefulWidget {
   const ConfiguracoesPage({super.key});
@@ -205,7 +206,14 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
               'Deletar conta',
               style: const TextStyle(color: Colors.red),
             ),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DeletarPage(),
+                ),
+              );
+            },
           ),
         ],
       ),
