@@ -7,6 +7,7 @@ import 'alterarSenha_page.dart';
 import 'sobreNos_page.dart';
 import 'alterarEmail_page.dart';
 import 'curtidas_page.dart';
+import 'ajudaESuporte_page.dart';
 
 class ConfiguracoesPage extends StatefulWidget {
   const ConfiguracoesPage({super.key});
@@ -97,7 +98,14 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
           CriarOpcaoWidget(
             icone: Icons.call,
             titulo: 'Ajuda e suporte',
-            aoClicar: () {},
+            aoClicar: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AjudaESuportePage(),
+                ),
+              );
+            },
           ),
           CriarOpcaoWidget(
             icone: Icons.info,
