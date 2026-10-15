@@ -5,6 +5,8 @@ import 'package:snaplock/frontend/widgets/criarOpcao_widget.dart';
 import 'package:snaplock/theme/app_theme.dart';
 import 'alterarSenha_page.dart';
 import 'sobreNos_page.dart';
+import 'alterarEmail_page.dart';
+import 'curtidas_page.dart';
 
 class ConfiguracoesPage extends StatefulWidget {
   const ConfiguracoesPage({super.key});
@@ -55,6 +57,30 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
             icone: Icons.palette,
             titulo: 'Tema',
             aoClicar: () {},
+          ),
+          CriarOpcaoWidget(
+            icone: Icons.favorite,
+            titulo: 'Controle de curtidas',
+            aoClicar: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CurtidasPage(),
+                ),
+              );
+            },
+          ),
+          CriarOpcaoWidget(
+            icone: Icons.email,
+            titulo: 'Alterar email',
+            aoClicar: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AlterarEmailPage(),
+                ),
+              );
+            },
           ),
           CriarOpcaoWidget(
             icone: Icons.lock,
