@@ -65,7 +65,7 @@ SnapLock
 
 For You Only!
 
-Versão do aplicativo: 1.0.0
+Versão do aplicativo: 1.3.0
 Desenvolvido com carinho pela equipe CyberSisters.
 
 contato: 

@@ -5,6 +5,10 @@ import 'package:snaplock/frontend/widgets/criarOpcao_widget.dart';
 import 'package:snaplock/theme/app_theme.dart';
 import 'alterarSenha_page.dart';
 import 'sobreNos_page.dart';
+import 'alterarEmail_page.dart';
+import 'curtidas_page.dart';
+import 'ajudaESuporte_page.dart';
+import 'deletar_page.dart';
 
 class ConfiguracoesPage extends StatefulWidget {
   const ConfiguracoesPage({super.key});
@@ -57,6 +61,30 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
             aoClicar: () {},
           ),
           CriarOpcaoWidget(
+            icone: Icons.favorite,
+            titulo: 'Minhas curtidas',
+            aoClicar: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CurtidasPage(),
+                ),
+              );
+            },
+          ),
+          CriarOpcaoWidget(
+            icone: Icons.email,
+            titulo: 'Alterar email',
+            aoClicar: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AlterarEmailPage(),
+                ),
+              );
+            },
+          ),
+          CriarOpcaoWidget(
             icone: Icons.lock,
             titulo: 'Alterar senha',
             aoClicar: () {
@@ -71,7 +99,14 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
           CriarOpcaoWidget(
             icone: Icons.call,
             titulo: 'Ajuda e suporte',
-            aoClicar: () {},
+            aoClicar: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AjudaESuportePage(),
+                ),
+              );
+            },
           ),
           CriarOpcaoWidget(
             icone: Icons.info,
@@ -85,7 +120,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
               final confirmarSaida = await showDialog<bool>(
                 context: context,
                 builder: (dialogContext) => AlertDialog(
-                  backgroundColor: AppTheme.textPrimary,
+                  backgroundColor: AppTheme.background,
                   surfaceTintColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
@@ -97,12 +132,12 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: AppTheme.danger.withValues(alpha: 0.15),
+                          color: AppTheme.mediumBrown.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.logout,
-                          color: AppTheme.danger,
+                          color: AppTheme.mediumBrown,
                           size: 22,
                         ),
                       ),
@@ -111,7 +146,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
                         child: Text(
                           'Sair da conta?',
                           style: GoogleFonts.cormorantGaramond(
-                            color: AppTheme.background,
+                            color: AppTheme.textPrimary,
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
@@ -122,7 +157,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
                   content: Text(
                     'Tem certeza que deseja sair?',
                     style: GoogleFonts.poppins(
-                      color: AppTheme.surface,
+                      color: AppTheme.textSecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -130,7 +165,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
                     TextButton(
                       onPressed: () => Navigator.pop(dialogContext, false),
                       style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.surface,
+                        foregroundColor: AppTheme.textSecondary,
                         textStyle: GoogleFonts.poppins(
                           fontWeight: FontWeight.w500,
                         ),
@@ -140,7 +175,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
                     ElevatedButton.icon(
                       onPressed: () => Navigator.pop(dialogContext, true),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.danger,
+                        backgroundColor: AppTheme.mediumBrown,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -171,7 +206,14 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
               'Deletar conta',
               style: const TextStyle(color: Colors.red),
             ),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DeletarPage(),
+                ),
+              );
+            },
           ),
         ],
       ),
