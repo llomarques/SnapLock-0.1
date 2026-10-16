@@ -62,7 +62,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
           ),
           CriarOpcaoWidget(
             icone: Icons.favorite,
-            titulo: 'Controle de curtidas',
+            titulo: 'Minhas curtidas',
             aoClicar: () {
               Navigator.push(
                 context,
