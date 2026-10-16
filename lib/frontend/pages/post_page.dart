@@ -78,6 +78,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
+            backgroundColor: AppTheme.mediumBrown,
             content: Text(error.toString().replaceFirst('Exception: ', '')),
           ),
         );
@@ -91,7 +92,8 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.textPrimary,
+        backgroundColor: AppTheme.background,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
           side: const BorderSide(color: AppTheme.cardBorder),
@@ -102,12 +104,12 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppTheme.danger.withValues(alpha: 0.1),
+                color: AppTheme.mediumBrown.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.delete_outline,
-                color: AppTheme.danger,
+                color: AppTheme.mediumBrown,
                 size: 23,
               ),
             ),
@@ -116,7 +118,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
               child: Text(
                 'Excluir publicação?',
                 style: GoogleFonts.cormorantGaramond(
-                  color: AppTheme.background,
+                  color: AppTheme.textPrimary,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
@@ -127,7 +129,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
         content: Text(
           'Essa ação não pode ser desfeita.',
           style: GoogleFonts.poppins(
-            color: AppTheme.surface,
+            color: AppTheme.textSecondary,
             fontSize: 14,
           ),
         ),
@@ -135,7 +137,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
             style: TextButton.styleFrom(
-              foregroundColor: AppTheme.surface,
+              foregroundColor: AppTheme.textSecondary,
               textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
             ),
             child: const Text('Cancelar'),
@@ -143,7 +145,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.danger,
+              backgroundColor: AppTheme.mediumBrown,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -168,6 +170,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
       setState(() => _deleting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: AppTheme.mediumBrown,
           content: Text(error.toString().replaceFirst('Exception: ', '')),
         ),
       );
@@ -183,7 +186,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          backgroundColor: AppTheme.textPrimary,
+          backgroundColor: AppTheme.background,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
@@ -195,12 +198,12 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppTheme.lightBrown.withValues(alpha: 0.18),
+                  color: AppTheme.mediumBrown.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.edit_outlined,
-                  color: AppTheme.lightBrown,
+                  color: AppTheme.mediumBrown,
                   size: 22,
                 ),
               ),
@@ -209,7 +212,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                 child: Text(
                   'Editar publicação',
                   style: GoogleFonts.cormorantGaramond(
-                    color: AppTheme.background,
+                    color: AppTheme.textPrimary,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
@@ -230,14 +233,14 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                 ),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: const Color(0xFF999999),
+                  fillColor: AppTheme.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
+                    borderSide: const BorderSide(color: AppTheme.cardBorder),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppTheme.surface),
+                    borderSide: const BorderSide(color: AppTheme.mediumBrown),
                   ),
                 ),
               ),
@@ -248,7 +251,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
               style: TextButton.styleFrom(
-                foregroundColor: AppTheme.surface,
+                foregroundColor: AppTheme.textSecondary,
                 textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
               ),
               child: const Text('Cancelar'),
@@ -292,12 +295,16 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
         _postUpdated = true;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Publicação atualizada.')),
+        const SnackBar(
+          backgroundColor: AppTheme.mediumBrown,
+          content: Text('Publicação atualizada.'),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: AppTheme.mediumBrown,
           content: Text(error.toString().replaceFirst('Exception: ', '')),
         ),
       );
@@ -331,9 +338,9 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                     width: 30,
                     child: Checkbox(
                       value: selectedReasons.contains(value),
-                      activeColor: AppTheme.background,
-                      checkColor: AppTheme.textPrimary,
-                      side: const BorderSide(color: AppTheme.background),
+                      activeColor: AppTheme.mediumBrown,
+                      checkColor: Colors.white,
+                      side: const BorderSide(color: AppTheme.mediumBrown),
                       visualDensity: VisualDensity.compact,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       onChanged: (selected) {
@@ -352,7 +359,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                     child: Text(
                       value,
                       style: GoogleFonts.poppins(
-                        color: AppTheme.background,
+                        color: AppTheme.textPrimary,
                         fontSize: 12,
                       ),
                     ),
@@ -366,18 +373,18 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
               reasonController.text.trim().isNotEmpty;
 
           return AlertDialog(
-            backgroundColor: AppTheme.textPrimary,
+            backgroundColor: AppTheme.background,
             surfaceTintColor: Colors.transparent,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(24),
               side: const BorderSide(color: AppTheme.cardBorder),
             ),
             title: Text(
               'Por que deseja reportar esse post?',
               textAlign: TextAlign.center,
               style: GoogleFonts.cormorantGaramond(
-                color: AppTheme.background,
-                fontSize: 16,
+                color: AppTheme.textPrimary,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -420,24 +427,25 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                           decoration: InputDecoration(
                             hintText: 'Escreva aqui o motivo...',
                             hintStyle: GoogleFonts.poppins(
-                              color:
-                                  AppTheme.textPrimary,
+                              color: AppTheme.textSecondary,
                               fontSize: 12,
                             ),
                             filled: true,
-                            fillColor: const Color(0xFF999999),
+                            fillColor: AppTheme.surface,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 14,
                               vertical: 10,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
+                              borderSide: const BorderSide(
+                                color: AppTheme.cardBorder,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                               borderSide: const BorderSide(
-                                color: AppTheme.background,
+                                color: AppTheme.mediumBrown,
                               ),
                             ),
                           ),
@@ -459,7 +467,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                                 Navigator.pop(dialogContext, combinedReason);
                               }
                             : null,
-                        color: AppTheme.background,
+                        color: AppTheme.mediumBrown,
                         icon: const Icon(Icons.send, size: 28),
                       ),
                     ],
@@ -471,7 +479,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.surface,
+                  foregroundColor: AppTheme.textSecondary,
                   textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
                 ),
                 child: const Text('Cancelar'),
@@ -490,6 +498,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
+          backgroundColor: AppTheme.mediumBrown,
           content: Text('Denúncia enviada para análise da administração.'),
         ),
       );
@@ -497,6 +506,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: AppTheme.mediumBrown,
           content: Text(error.toString().replaceFirst('Exception: ', '')),
         ),
       );
