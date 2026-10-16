@@ -405,7 +405,11 @@ Future<void> main() async {
 
       final resultados = await connection.execute(
         '''SELECT u.id_usuario, u.nome, u.username,
-            u.biografia, u.foto_perfil, u.ativo, a.status AS amizade_status
+            u.biografia, u.foto_perfil, u.ativo, a.status AS amizade_status,
+            (SELECT COUNT(*) FROM amizade a2
+             WHERE a2.status = 'aceito'
+               AND (a2.id_usuario_1 = u.id_usuario
+                    OR a2.id_usuario_2 = u.id_usuario)) AS friends_count
            FROM amizade a
            JOIN usuario u
              ON u.id_usuario = CASE
