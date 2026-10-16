@@ -99,10 +99,40 @@ class _PostCardState extends _PostCardStateBase {
                   ),
                 ),
                 if (isAuthor)
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        color: AppTheme.danger, size: 20),
-                    onPressed: _showDeleteConfirmDialog,
+                  PopupMenuButton<String>(
+                    tooltip: 'Ações da publicação',
+                    color: const Color(0xFF3E3A36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        await _showEditDialog();
+                      } else if (value == 'delete') {
+                        await _showDeleteConfirmDialog();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text(
+                          'Editar legenda',
+                          style: TextStyle(color: Color(0xFFF3E9DC)),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          'Excluir',
+                          style: TextStyle(color: AppTheme.danger),
+                        ),
+                      ),
+                    ],
+                    icon: const Icon(
+                      Icons.more_vert,
+                      color: AppTheme.textPrimary,
+                      size: 20,
+                    ),
                   )
                 else
                   IconButton(
@@ -230,6 +260,62 @@ abstract class _PostCardStateBase extends State<PostCard> {
     }
   }
 
+  Future<void> _showEditDialog() async {
+    final controller = TextEditingController(text: widget.post.caption);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Editar legenda',
+            style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: 'Escreva a nova legenda',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancelar',
+                style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Salvar', style: GoogleFonts.poppins()),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) {
+      controller.dispose();
+      return;
+    }
+
+    try {
+      await ApiService.updatePost(
+        postId: widget.post.id,
+        caption: controller.text.trim(),
+      );
+      widget.onPostUpdated();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Legenda atualizada com sucesso.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    } finally {
+      controller.dispose();
+    }
+  }
+
   Future<void> _showDeleteConfirmDialog() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -270,9 +356,12 @@ abstract class _PostCardStateBase extends State<PostCard> {
   }
 
   Future<void> _showReportDialog() async {
+    if (!mounted) return;
+
     final reasonController = TextEditingController();
     final confirm = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         title: Text('Denunciar Publicação (RN11)',
             style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold)),
@@ -310,19 +399,19 @@ abstract class _PostCardStateBase extends State<PostCard> {
       try {
         await ApiService.reportPost(
             widget.post.id, reasonController.text.trim());
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content:
-                    Text('Denúncia enviada com sucesso para a administração!')),
-          );
-        }
+        if (!mounted) return;
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('Denúncia enviada com sucesso para a administração!')),
+        );
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-          );
-        }
+        if (!mounted) return;
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
       }
     }
   }

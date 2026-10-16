@@ -315,6 +315,8 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
   }
 
   Future<void> _reportPost() async {
+    if (!mounted) return;
+
     final reasonController = TextEditingController();
     final selectedReasons = <String>{};
     const reasonOptions = [
@@ -327,6 +329,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
     ];
     final reason = await showDialog<String>(
       context: context,
+      useRootNavigator: true,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) {
           Widget reasonOption(String value) {
@@ -496,6 +499,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
     try {
       await ApiService.reportPost(widget.post.id, reason);
       if (!mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: AppTheme.mediumBrown,

@@ -37,7 +37,157 @@ Future<void> main() async {
     );
   }
 
+  final denunciaTable = await connection.execute(
+    "SHOW TABLES LIKE 'denuncia'",
+  );
+  if (denunciaTable.rows.isEmpty) {
+    await connection.execute(
+      '''CREATE TABLE denuncia (
+         id_denuncia INT NOT NULL AUTO_INCREMENT,
+         id_foto INT NOT NULL,
+         id_usuario INT NOT NULL,
+         motivo TEXT NOT NULL,
+         data_denuncia DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+         PRIMARY KEY (id_denuncia),
+         KEY idx_denuncia_foto (id_foto),
+         KEY idx_denuncia_usuario (id_usuario),
+         CONSTRAINT fk_denuncia_foto FOREIGN KEY (id_foto) REFERENCES foto (id_foto),
+         CONSTRAINT fk_denuncia_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
+       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
+    );
+  }
+
+  final curtidaDataColumn =
+      await connection.execute("SHOW COLUMNS FROM curtida LIKE 'data_curtida'");
+  if (curtidaDataColumn.rows.isEmpty) {
+    final curtidaDataHora =
+        await connection.execute("SHOW COLUMNS FROM curtida LIKE 'data_hora'");
+    if (curtidaDataHora.rows.isNotEmpty) {
+      await connection.execute(
+        'ALTER TABLE curtida ADD COLUMN data_curtida DATETIME NULL AFTER id_foto',
+      );
+      await connection.execute(
+        'UPDATE curtida SET data_curtida = data_hora WHERE data_curtida IS NULL',
+      );
+    } else {
+      await connection.execute(
+        'ALTER TABLE curtida ADD COLUMN data_curtida DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER id_foto',
+      );
+    }
+  }
+
   final router = Router()
+    ..post('/api/posts/<postId>/reactions', (Request request, String postId) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idFoto = int.tryParse(postId);
+      if (idFoto == null) return _json(422, {'message': 'Post inválido.'});
+
+      final dados = await _lerJson(request);
+      final tipo = (dados?['type'] ?? 'HEART').toString();
+
+      try {
+        // Registra ou atualiza a reação (curtida)
+        await connection.execute(
+          '''INSERT INTO curtida (id_foto, id_usuario, data_curtida)
+             VALUES (:id_foto, :id_usuario, NOW())
+             ON DUPLICATE KEY UPDATE data_curtida = NOW()''',
+          {'id_foto': idFoto, 'id_usuario': idUsuario},
+        );
+
+        return _json(200, {'success': true, 'type': tipo});
+      } catch (error, stackTrace) {
+        print('Erro ao reagir ao post: $error\n$stackTrace');
+        return _json(500, {'message': 'Erro ao registrar reação.'});
+      }
+    })
+
+    ..delete('/api/posts/<postId>/reactions', (Request request, String postId) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idFoto = int.tryParse(postId);
+      if (idFoto == null) return _json(422, {'message': 'Post inválido.'});
+
+      try {
+        await connection.execute(
+          'DELETE FROM curtida WHERE id_foto = :id_foto AND id_usuario = :id_usuario',
+          {'id_foto': idFoto, 'id_usuario': idUsuario},
+        );
+
+        return _json(200, {'success': true});
+      } catch (error, stackTrace) {
+        print('Erro ao remover reação: $error\n$stackTrace');
+        return _json(500, {'message': 'Erro ao remover reação.'});
+      }
+    })
+
+    ..delete('/api/fotos/<postId>', (Request request, String postId) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idFoto = int.tryParse(postId);
+      if (idFoto == null) return _json(422, {'message': 'Foto inválida.'});
+
+      try {
+        // Verifica se a foto pertence ao usuário logado
+        final foto = await connection.execute(
+          'SELECT id_foto FROM foto WHERE id_foto = :id_foto AND id_usuario = :id_usuario LIMIT 1',
+          {'id_foto': idFoto, 'id_usuario': idUsuario},
+        );
+
+        if (foto.rows.isEmpty) {
+          return _json(403, {'message': 'Sem permissão para excluir esta foto.'});
+        }
+
+        // Deleta as dependências de curtida e denúncia antes da foto
+        await connection.execute('DELETE FROM curtida WHERE id_foto = :id_foto', {'id_foto': idFoto});
+        await connection.execute('DELETE FROM denuncia WHERE id_foto = :id_foto', {'id_foto': idFoto});
+        
+        // Exclui o registro da tabela foto
+        await connection.execute('DELETE FROM foto WHERE id_foto = :id_foto', {'id_foto': idFoto});
+
+        return _json(200, {'success': true, 'message': 'Foto excluída com sucesso.'});
+      } catch (error) {
+        return _json(500, {'message': 'Erro ao excluir no banco de dados.'});
+      }
+    })
+    
+    ..post('/api/posts/<postId>/report', (Request request, String postId) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idFoto = int.tryParse(postId);
+      if (idFoto == null) return _json(422, {'message': 'Post inválido.'});
+
+      final dados = await _lerJson(request);
+      final motivo = (dados?['reason'] ?? '').toString().trim();
+
+      if (motivo.isEmpty) {
+        return _json(422, {'message': 'Informe o motivo da denúncia.'});
+      }
+
+      try {
+        // Insere a denúncia na tabela denúncia/report do seu banco de dados
+        await connection.execute(
+          '''INSERT INTO denuncia (id_foto, id_usuario, motivo, data_denuncia)
+             VALUES (:id_foto, :id_usuario, :motivo, NOW())''',
+          {'id_foto': idFoto, 'id_usuario': idUsuario, 'motivo': motivo},
+        );
+
+        return _json(201, {'success': true, 'message': 'Denúncia registrada com sucesso.'});
+      } catch (error, stackTrace) {
+        print('Erro ao reportar post: $error\n$stackTrace');
+        // Caso a tabela ainda não exista no MySQL, crie com:
+        // CREATE TABLE denuncia (id_denuncia INT AUTO_INCREMENT PRIMARY KEY, id_foto INT, id_usuario INT, motivo TEXT, data_denuncia DATETIME);
+        return _json(500, {'message': 'Erro ao salvar denúncia no servidor.'});
+      }
+    })
+
+
+
+    
     ..post('/api/login', (Request request) async {
       final dados = await _lerJson(request);
       if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
