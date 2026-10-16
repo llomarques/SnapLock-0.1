@@ -639,7 +639,7 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                     final confirmarSaida = await showDialog<bool>(
                       context: context,
                       builder: (dialogContext) => AlertDialog(
-                        backgroundColor: AppTheme.textPrimary,
+                        backgroundColor: AppTheme.background,
                         surfaceTintColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
@@ -651,12 +651,14 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: AppTheme.danger.withValues(alpha: 0.15),
+                                color: AppTheme.mediumBrown.withValues(
+                                  alpha: 0.12,
+                                ),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
                                 Icons.logout,
-                                color: AppTheme.danger,
+                                color: AppTheme.mediumBrown,
                                 size: 22,
                               ),
                             ),
@@ -665,7 +667,7 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                               child: Text(
                                 'Sair da conta?',
                                 style: GoogleFonts.cormorantGaramond(
-                                  color: AppTheme.background,
+                                  color: AppTheme.textPrimary,
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -676,7 +678,7 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                         content: Text(
                           'Tem certeza que deseja sair?',
                           style: GoogleFonts.poppins(
-                            color: AppTheme.surface,
+                            color: AppTheme.textSecondary,
                             fontSize: 14,
                           ),
                         ),
@@ -685,7 +687,7 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                             onPressed: () =>
                                 Navigator.pop(dialogContext, false),
                             style: TextButton.styleFrom(
-                              foregroundColor: AppTheme.surface,
+                              foregroundColor: AppTheme.textSecondary,
                               textStyle: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w500,
                               ),
@@ -695,7 +697,7 @@ class _FeedPage extends State<FeedPage> with SingleTickerProviderStateMixin {
                           ElevatedButton.icon(
                             onPressed: () => Navigator.pop(dialogContext, true),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.danger,
+                              backgroundColor: AppTheme.mediumBrown,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),

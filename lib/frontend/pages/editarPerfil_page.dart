@@ -239,7 +239,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             ElevatedButton.icon(
               onPressed: escolherDaGaleria,
               icon: const Icon(Icons.camera_alt),
-              label: const Text('Adicionar foto'),
+              label: const Text('Alterar foto'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: const Color(0xFFF3E9DC),
