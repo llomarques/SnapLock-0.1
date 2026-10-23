@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/pages/post_page.dart';
 import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
+import 'package:snaplock/models/post_model.dart';
 
 class NotificacoesPage extends StatefulWidget {
   const NotificacoesPage({super.key});
@@ -13,24 +17,39 @@ class NotificacoesPage extends StatefulWidget {
 class _NotificacoesPage extends State<NotificacoesPage> {
   List<Map<String, dynamic>> solicitacoes = [];
   List<Map<String, dynamic>> avisosAceite = [];
+  List<Map<String, dynamic>> avisosCurtidas = [];
   bool carregando = true;
   String? erro;
+  Timer? _timerAtualizacao;
 
   @override
   void initState() {
     super.initState();
     carregarSolicitacoes();
+    _timerAtualizacao = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => carregarSolicitacoes(silencioso: true),
+    );
   }
 
-  Future<void> carregarSolicitacoes() async {
-    setState(() {
-      carregando = true;
-      erro = null;
-    });
+  @override
+  void dispose() {
+    _timerAtualizacao?.cancel();
+    super.dispose();
+  }
+
+  Future<void> carregarSolicitacoes({bool silencioso = false}) async {
+    if (!silencioso) {
+      setState(() {
+        carregando = true;
+        erro = null;
+      });
+    }
     try {
       final resultados = await Future.wait<List<Map<String, dynamic>>>([
         ApiService.getPendingRequests(),
         ApiService.getAcceptedFriendNotifications(),
+        ApiService.getLikeNotifications(),
       ]);
       if (!mounted) return;
       setState(() {
@@ -40,6 +59,10 @@ class _NotificacoesPage extends State<NotificacoesPage> {
         avisosAceite = resultados[1]
             .where((item) => item['dismissed'] != true)
             .toList();
+        avisosCurtidas = resultados[2]
+          .where((item) => item['dismissed'] != true)
+          .toList();
+        erro = null;
         carregando = false;
       });
 
@@ -54,12 +77,26 @@ class _NotificacoesPage extends State<NotificacoesPage> {
           });
         } catch (_) {}
       }
+
+      final curtidasNaoLidas = avisosCurtidas.where((item) => item['read'] != true);
+      if (curtidasNaoLidas.isNotEmpty) {
+        try {
+          await ApiService.markLikeNotificationsRead(curtidasNaoLidas);
+          if (!mounted) return;
+          setState(() {
+            avisosCurtidas =
+                avisosCurtidas.map((item) => {...item, 'read': true}).toList();
+          });
+        } catch (_) {}
+      }
     } catch (error) {
       if (!mounted) return;
-      setState(() {
-        erro = error.toString().replaceFirst('Exception: ', '');
-        carregando = false;
-      });
+      if (!silencioso) {
+        setState(() {
+          erro = error.toString().replaceFirst('Exception: ', '');
+          carregando = false;
+        });
+      }
     }
   }
 
@@ -99,13 +136,17 @@ class _NotificacoesPage extends State<NotificacoesPage> {
     required bool lida,
     Widget? acoes,
     Widget? trailing,
+    VoidCallback? aoTocar,
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 5),
       color: lida ? const Color(0xFFD7CBBD) : const Color(0xFFE9D1B4),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Row(
+      child: InkWell(
+        onTap: aoTocar,
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AvatarSquareWidget(imageUrl: avatarUrl, size: 36),
@@ -144,9 +185,26 @@ class _NotificacoesPage extends State<NotificacoesPage> {
               trailing,
             ],
           ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _abrirPublicacaoCurtida(Map<String, dynamic> aviso) async {
+    final dadosPublicacao = aviso['post'];
+    if (dadosPublicacao is! Map) return;
+
+    final post = PostModel.fromJson(
+      Map<String, dynamic>.from(dadosPublicacao),
+    );
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostMaximizadoPage(post: post),
+      ),
+    );
+    if (mounted) await carregarSolicitacoes(silencioso: true);
   }
 
   Widget _construirAvisoAceite(Map<String, dynamic> aviso) {
@@ -189,6 +247,49 @@ class _NotificacoesPage extends State<NotificacoesPage> {
             ? const Icon(Icons.check, color: Colors.black38, size: 18)
             : const Icon(Icons.fiber_manual_record,
                 color: Color(0xFFC08552), size: 12),
+      ),
+    );
+  }
+
+  Widget _construirAvisoCurtida(Map<String, dynamic> aviso) {
+    final lido = aviso['read'] == true;
+    final notificationId = aviso['notificationId']?.toString() ?? '';
+
+    return Dismissible(
+      key: ValueKey('like-$notificationId'),
+      direction: DismissDirection.endToStart,
+      background: _fundoDescarte(),
+      confirmDismiss: (_) async {
+        try {
+          await ApiService.dismissLikeNotification(notificationId);
+          return true;
+        } catch (error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(error.toString().replaceFirst('Exception: ', '')),
+              ),
+            );
+          }
+          return false;
+        }
+      },
+      onDismissed: (_) {
+        setState(() {
+          avisosCurtidas.removeWhere(
+            (item) => item['notificationId']?.toString() == notificationId,
+          );
+        });
+      },
+      child: _construirCartaoNotificacao(
+        username: aviso['username']?.toString() ?? '',
+        avatarUrl: aviso['avatarUrl']?.toString() ?? '',
+        mensagem: aviso['message']?.toString() ?? 'curtiu sua publicação.',
+        lida: lido,
+        trailing: lido
+            ? const Icon(Icons.check, color: Colors.black38, size: 18)
+            : const Icon(Icons.favorite, color: Color(0xFFC08552), size: 16),
+        aoTocar: () => _abrirPublicacaoCurtida(aviso),
       ),
     );
   }
@@ -256,9 +357,14 @@ class _NotificacoesPage extends State<NotificacoesPage> {
   @override
   Widget build(BuildContext context) {
     final quantidadeNotificacoes = solicitacoes.length +
-        avisosAceite.where((item) => item['read'] != true).length;
+      avisosAceite.where((item) => item['read'] != true).length +
+      avisosCurtidas.where((item) => item['read'] != true).length;
     final notificacoesAgrupadas = agruparNotificacoes();
-    final temConteudo = solicitacoes.isNotEmpty || avisosAceite.isNotEmpty;
+    final temConteudo = solicitacoes.isNotEmpty ||
+      avisosAceite.isNotEmpty ||
+      avisosCurtidas.isNotEmpty;
+    final secoesFixas =
+      (avisosAceite.isEmpty ? 0 : 1) + (avisosCurtidas.isEmpty ? 0 : 1);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,7 +429,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                       : ListView.builder(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                           itemCount: notificacoesAgrupadas.keys.length +
-                              (avisosAceite.isEmpty ? 0 : 1),
+                              secoesFixas,
                           itemBuilder: (context, indexGrupo) {
                             if (avisosAceite.isNotEmpty && indexGrupo == 0) {
                               return Column(
@@ -345,8 +451,32 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                               );
                             }
 
-                            final indiceSolicitacao =
-                                indexGrupo - (avisosAceite.isEmpty ? 0 : 1);
+                            final indiceCurtidas = avisosAceite.isEmpty ? 0 : 1;
+                            if (avisosCurtidas.isNotEmpty &&
+                                indexGrupo == indiceCurtidas) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      top: avisosAceite.isEmpty ? 0 : 16,
+                                      bottom: 8,
+                                    ),
+                                    child: Text(
+                                      'Curtidas nas suas publicações',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  ...avisosCurtidas.map(_construirAvisoCurtida),
+                                ],
+                              );
+                            }
+
+                            final indiceSolicitacao = indexGrupo - secoesFixas;
                             final categoria = notificacoesAgrupadas.keys
                                 .elementAt(indiceSolicitacao);
                             final itensDoGrupo =

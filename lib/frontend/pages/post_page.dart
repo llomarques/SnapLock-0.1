@@ -65,6 +65,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
         setState(() {
           _reaction = null;
           if (_reactionCount > 0) _reactionCount--;
+          _postUpdated = true;
         });
       } else {
         await ApiService.reactToPost(widget.post.id, type);
@@ -72,6 +73,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
         setState(() {
           _reaction = type;
           if (reactionBefore == null) _reactionCount++;
+          _postUpdated = true;
         });
       }
     } catch (error) {
@@ -539,6 +541,12 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
   Widget build(BuildContext context) {
     final post = widget.post;
     final username = post.authorUsername;
+    final savedAspectRatio = post.aspectRatio;
+    final imageAspectRatio = savedAspectRatio != null &&
+            savedAspectRatio.isFinite &&
+            savedAspectRatio > 0
+        ? savedAspectRatio
+        : 4 / 5;
     const menuTextStyle = TextStyle(color: Color(0xFFF3E9DC));
     var formattedDate = post.createdAt;
     try {
@@ -643,9 +651,8 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
               padding: const EdgeInsets.fromLTRB(24, 0, 16, 16),
               child: Column(
                 children: [
-                  SizedBox(
-                    height: MediaQuery.sizeOf(context).height * 0.48,
-                    width: double.infinity,
+                  AspectRatio(
+                    aspectRatio: imageAspectRatio,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(27),
                       child: Stack(
@@ -766,20 +773,6 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                         ),
                     ],
                   ),
-                  if (_reactionCount > 0)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Text(
-                          '$_reactionCount ${_reactionCount == 1 ? 'reação' : 'reações'}',
-                          style: const TextStyle(
-                            color: Colors.black45,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
