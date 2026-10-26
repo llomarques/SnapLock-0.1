@@ -230,7 +230,6 @@ class FeedConteudoPage extends StatefulWidget {
 }
 
 class _FeedConteudoPageState extends State<FeedConteudoPage> {
-  static const _fallbackAspectRatios = [0.8, 1.0, 1.2, 1.4];
   List<PostModel> _posts = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -269,7 +268,7 @@ class _FeedConteudoPageState extends State<FeedConteudoPage> {
       List<double>.generate(_posts.length, (index) {
         final ratio = _posts[index].aspectRatio;
         if (ratio != null && ratio.isFinite && ratio > 0) return ratio;
-        return _fallbackAspectRatios[index % _fallbackAspectRatios.length];
+        return 4 / 5;
       });
 
   Future<void> _openPost(PostModel post) async {

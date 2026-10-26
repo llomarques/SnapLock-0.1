@@ -225,10 +225,10 @@ packages:
     dependency: transitive
     description:
       name: image
-      sha256: a1e7f4951e538a568e14b856702afc9ae1d2f4b202daced8d22c1b9cd211ce89
+      sha256: "599d08e369969bdf83138f5b4e0a7e823d3f992f23b8a64dd626877c37013533"
       url: "https://pub.dev"
     source: hosted
-    version: "4.10.1"
+    version: "4.4.0"
   image_picker:
     dependency: "direct main"
     description:
@@ -477,6 +477,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.0"
+  petitparser:
+    dependency: transitive
+    description:
+      name: petitparser
+      sha256: "2ebb289dc4764ec397f5cd3ca9881c6d17196130a7d646ed022a0dd9c2e25a71"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.0"
   platform:
     dependency: transitive
     description:
@@ -666,6 +674,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
+  xml:
+    dependency: transitive
+    description:
+      name: xml
+      sha256: "6d1e8d8641b1b4675a2f6ec0d0c6b519a472f0a4f0a2aa8a63d08b64383ee87a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.1"
   yaml:
     dependency: transitive
     description:

@@ -17,8 +17,6 @@ class PerfilAmigoPage extends StatefulWidget {
 }
 
 class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
-  static const _fallbackAspectRatios = [0.78, 1.2, 0.95, 1.35, 0.82, 1.05];
-
   List<PostModel> _publicacoes = [];
   bool _carregando = true;
   String? _erro;
@@ -58,7 +56,7 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
         (index) {
           final ratio = _publicacoes[index].aspectRatio;
           if (ratio != null && ratio.isFinite && ratio > 0) return ratio;
-          return _fallbackAspectRatios[index % _fallbackAspectRatios.length];
+          return 4 / 5;
         },
       );
 
