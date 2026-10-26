@@ -566,39 +566,39 @@ class _FeedPage extends State<FeedPage> {
                   ),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.person),
-                  title: const Text('Perfil'),
+                  leading: const Icon(Icons.person, color: Color(0xFFF3E9DC)),
+                  title: const Text('Perfil', style: TextStyle(color: Color(0xFFF3E9DC))),
                   onTap: () {
                     Navigator.pop(context);
                     setState(() => indice = 4);
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.notifications),
-                  title: const Text('Notificações'),
+                  leading: const Icon(Icons.notifications, color: Color(0xFFF3E9DC)),
+                  title: const Text('Notificações', style: TextStyle(color: Color(0xFFF3E9DC))),
                   onTap: () {
                     Navigator.pop(context);
                     _selecionarAba(1);
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: const Text('Configurações'),
+                  leading: const Icon(Icons.settings, color: Color(0xFFF3E9DC)),
+                  title: const Text('Configurações', style: TextStyle(color: Color(0xFFF3E9DC))),
                   onTap: () {
                     abrirConfiguracoes();
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.call),
-                  title: const Text('Ajuda e suporte'),
+                  leading: const Icon(Icons.call, color: Color(0xFFF3E9DC)),
+                  title: const Text('Ajuda e suporte', style: TextStyle(color: Color(0xFFF3E9DC))),
                   onTap: () {
                     Navigator.pop(context);
                     setState(() => indice = 0);
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('Sair'),
+                  leading: const Icon(Icons.logout, color: Color(0xFFF3E9DC)),
+                  title: const Text('Sair', style: TextStyle(color: Color(0xFFF3E9DC))),
                   onTap: () async {
                     final confirmarSaida = await showDialog<bool>(
                       context: context,

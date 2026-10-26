@@ -295,6 +295,12 @@ static Map<String, String> get _actionHeaders {
           caption: foto['legenda']?.toString() ?? '',
           createdAt: foto['data_postagem']?.toString() ?? '',
           aspectRatio: double.tryParse(foto['proporcao']?.toString() ?? ''),
+            reactionCount:
+              int.tryParse(foto['reaction_count']?.toString() ?? '0') ?? 0,
+            userReaction: foto['user_liked'] == true ||
+                foto['user_liked']?.toString() == '1'
+              ? 'HEART'
+              : null,
         );
       }).toList();
     }
@@ -335,6 +341,12 @@ static Map<String, String> get _actionHeaders {
         aspectRatio: double.tryParse(foto['proporcao']?.toString() ?? ''),
         authorName: foto['nome']?.toString(),
         authorAvatar: foto['foto_perfil']?.toString(),
+        reactionCount:
+          int.tryParse(foto['reaction_count']?.toString() ?? '0') ?? 0,
+        userReaction: foto['user_liked'] == true ||
+            foto['user_liked']?.toString() == '1'
+          ? 'HEART'
+          : null,
       );
     }).toList();
   }
@@ -628,6 +640,12 @@ static Map<String, String> get _actionHeaders {
   static String get _dismissedAcceptedFriendNotificationsKey =>
       'snaplock_dismissed_accepted_friend_notifications_$_notificationUserId';
 
+    static String get _likeNotificationsReadKey =>
+      'snaplock_read_like_notifications_$_notificationUserId';
+
+    static String get _dismissedLikeNotificationsKey =>
+      'snaplock_dismissed_like_notifications_$_notificationUserId';
+
   static Future<List<Map<String, dynamic>>>
       getAcceptedFriendNotifications() async {
     final response = await http.get(
@@ -656,6 +674,55 @@ static Map<String, String> get _actionHeaders {
       notification['dismissed'] = descartadas.contains(id);
       return notification;
     }).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getLikeNotifications() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/notifications/likes'),
+      headers: _friendHeaders,
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao carregar curtidas.');
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final lidas = prefs.getStringList(_likeNotificationsReadKey)?.toSet() ??
+        <String>{};
+    final descartadas =
+        prefs.getStringList(_dismissedLikeNotificationsKey)?.toSet() ??
+            <String>{};
+    final items = data['notifications'] as List;
+    return items.map((item) {
+      final notification = Map<String, dynamic>.from(item as Map);
+      final id = notification['notificationId']?.toString() ?? '';
+      notification['read'] = lidas.contains(id);
+      notification['dismissed'] = descartadas.contains(id);
+      return notification;
+    }).toList();
+  }
+
+  static Future<void> dismissLikeNotification(String notificationId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_dismissedLikeNotificationsKey)?.toSet() ??
+        <String>{};
+    ids.add(notificationId);
+    await prefs.setStringList(_dismissedLikeNotificationsKey, ids.toList());
+  }
+
+  static Future<void> markLikeNotificationsRead(
+    Iterable<Map<String, dynamic>> notifications,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_likeNotificationsReadKey)?.toSet() ??
+        <String>{};
+    ids.addAll(
+      notifications
+          .map((item) => item['notificationId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty),
+    );
+    await prefs.setStringList(_likeNotificationsReadKey, ids.toList());
   }
 
   static Future<void> dismissFriendRequestNotification(String requestId) async {

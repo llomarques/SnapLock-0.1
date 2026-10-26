@@ -192,19 +192,15 @@ class _PostCardState extends _PostCardStateBase {
             ),
           ),
 
-          // Barra de Reações (Figma: ❤️ 🔥 ⭐️ 😊 👍 + contagem)
+          // Curtida e contagem
           Padding(
             padding: const EdgeInsets.fromLTRB(10, 4, 12, 12),
             child: Row(
               children: [
                 _buildReactionButton('HEART', '❤️'),
-                _buildReactionButton('FIRE', '🔥'),
-                _buildReactionButton('STAR', '⭐️'),
-                _buildReactionButton('SMILE', '😊'),
-                _buildReactionButton('LIKE', '👍'),
                 const Spacer(),
                 Text(
-                  '${widget.post.reactionCount} ${widget.post.reactionCount == 1 ? 'reação' : 'reações'}',
+                  '${widget.post.reactionCount} ${widget.post.reactionCount == 1 ? 'curtida' : 'curtidas'}',
                   style: GoogleFonts.poppins(
                     color: AppTheme.textSecondary,
                     fontSize: 12,

@@ -84,11 +84,8 @@ Future<void> main() async {
       final idFoto = int.tryParse(postId);
       if (idFoto == null) return _json(422, {'message': 'Post inválido.'});
 
-      final dados = await _lerJson(request);
-      final tipo = (dados?['type'] ?? 'HEART').toString();
-
       try {
-        // Registra ou atualiza a reação (curtida)
+        // A chave única usuário/publicação impede curtidas duplicadas.
         await connection.execute(
           '''INSERT INTO curtida (id_foto, id_usuario, data_curtida)
              VALUES (:id_foto, :id_usuario, NOW())
@@ -96,7 +93,7 @@ Future<void> main() async {
           {'id_foto': idFoto, 'id_usuario': idUsuario},
         );
 
-        return _json(200, {'success': true, 'type': tipo});
+        return _json(200, {'success': true});
       } catch (error, stackTrace) {
         print('Erro ao reagir ao post: $error\n$stackTrace');
         return _json(500, {'message': 'Erro ao registrar reação.'});
@@ -270,6 +267,7 @@ Future<void> main() async {
           'avatarUrl': usuario['foto_perfil'] ?? '',
           'isActive': usuario['ativo'] == '1',
           'friendshipStatus': usuario['amizade_status'] ?? '',
+          'friendsCount': usuario['friends_count'] ?? '0',
         };
       }).toList();
 
@@ -543,6 +541,72 @@ Future<void> main() async {
 
       return _json(200, {'success': true, 'notifications': notificacoes});
     })
+    ..get('/api/notifications/likes', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      try {
+        final resultados = await connection.execute(
+            '''SELECT c.id_foto, c.id_usuario, c.data_curtida,
+                f.id_usuario AS id_autor, f.midia_url, f.legenda,
+                f.data_postagem, f.proporcao,
+                u.username, u.foto_perfil,
+                autor.nome AS nome_autor, autor.username AS username_autor,
+                autor.foto_perfil AS avatar_autor,
+                (SELECT COUNT(*) FROM curtida todas
+                     WHERE todas.id_foto = f.id_foto) AS total_curtidas,
+                    EXISTS (SELECT 1 FROM curtida minha
+                            WHERE minha.id_foto = f.id_foto
+                              AND minha.id_usuario = :id_usuario) AS curtiu_publicacao
+             FROM curtida c
+             JOIN foto f ON f.id_foto = c.id_foto
+             JOIN usuario u ON u.id_usuario = c.id_usuario
+               JOIN usuario autor ON autor.id_usuario = f.id_usuario
+             WHERE f.id_usuario = :id_usuario
+               AND c.id_usuario <> :id_usuario
+             ORDER BY c.data_curtida DESC, c.id_foto DESC
+             LIMIT 100''',
+          {'id_usuario': idUsuario},
+        );
+
+        final notificacoes = resultados.rows.map((row) {
+          final curtida = row.assoc();
+          final idFoto = curtida['id_foto'] ?? '';
+          final idAutor = curtida['id_usuario'] ?? '';
+          final dataCurtida = curtida['data_curtida'] ?? '';
+          return <String, Object?>{
+            'notificationId': 'like_${idFoto}_${idAutor}_$dataCurtida',
+            'type': 'like',
+            'postId': idFoto,
+            'message': 'curtiu sua publicação.',
+            'createdAt': dataCurtida,
+            'username': curtida['username'] ?? '',
+            'avatarUrl': curtida['foto_perfil'] ?? '',
+            'post': {
+              'id': idFoto,
+              'userId': curtida['id_autor'] ?? '',
+              'imageUrl': curtida['midia_url'] ?? '',
+              'caption': curtida['legenda'] ?? '',
+              'createdAt': curtida['data_postagem'] ?? '',
+              'aspectRatio': curtida['proporcao'],
+              'authorName': curtida['nome_autor'] ?? '',
+              'authorUsername': curtida['username_autor'] ?? '',
+              'authorAvatar': curtida['avatar_autor'] ?? '',
+              'reactionCount': curtida['total_curtidas'] ?? '0',
+                'userReaction': curtida['curtiu_publicacao'] == true ||
+                    curtida['curtiu_publicacao']?.toString() == '1'
+                  ? 'HEART'
+                  : null,
+            },
+          };
+        }).toList();
+
+        return _json(200, {'success': true, 'notifications': notificacoes});
+      } catch (error, stackTrace) {
+        print('Erro ao carregar notificações de curtida: $error\n$stackTrace');
+        return _json(500, {'message': 'Erro ao carregar notificações de curtida.'});
+      }
+    })
     ..delete('/api/friends/<friendId>',
         (Request request, String friendId) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
@@ -744,7 +808,10 @@ Future<void> main() async {
                     f.data_postagem, f.proporcao, u.nome, u.username,
                     u.foto_perfil,
                     (SELECT COUNT(*) FROM curtida c
-                     WHERE c.id_foto = f.id_foto) AS reaction_count
+                     WHERE c.id_foto = f.id_foto) AS reaction_count,
+                    EXISTS (SELECT 1 FROM curtida c
+                            WHERE c.id_foto = f.id_foto
+                              AND c.id_usuario = :id_usuario) AS user_liked
              FROM foto f
              JOIN usuario u ON u.id_usuario = f.id_usuario
              WHERE f.id_usuario = :id_usuario
@@ -773,7 +840,10 @@ Future<void> main() async {
             'authorUsername': foto['username'] ?? '',
             'authorAvatar': foto['foto_perfil'] ?? '',
             'reactionCount': foto['reaction_count'] ?? '0',
-            'userReaction': null,
+            'userReaction': foto['user_liked'] == true ||
+                foto['user_liked']?.toString() == '1'
+              ? 'HEART'
+              : null,
           };
         }).toList();
 
@@ -790,11 +860,16 @@ Future<void> main() async {
 
       try {
         final resultado = await connection.execute(
-          '''SELECT id_foto, id_usuario, midia_url, legenda,
-                filtro_aplicado, data_postagem
-         FROM foto
-         WHERE id_usuario = :id_usuario
-         ORDER BY data_postagem DESC, id_foto DESC''',
+              '''SELECT f.id_foto, f.id_usuario, f.midia_url, f.legenda,
+                f.filtro_aplicado, f.data_postagem, f.proporcao,
+                (SELECT COUNT(*) FROM curtida c
+                 WHERE c.id_foto = f.id_foto) AS reaction_count,
+                EXISTS (SELECT 1 FROM curtida c
+                        WHERE c.id_foto = f.id_foto
+                          AND c.id_usuario = :id_usuario) AS user_liked
+             FROM foto f
+         WHERE f.id_usuario = :id_usuario
+             ORDER BY f.data_postagem DESC, f.id_foto DESC''',
           {'id_usuario': idUsuario},
         );
 
@@ -833,12 +908,17 @@ Future<void> main() async {
 
         final resultado = await connection.execute(
           '''SELECT f.id_foto, f.id_usuario, f.midia_url, f.legenda,
-                    f.data_postagem, f.proporcao, u.nome, u.foto_perfil
+                    f.data_postagem, f.proporcao, u.nome, u.foto_perfil,
+                    (SELECT COUNT(*) FROM curtida c
+                     WHERE c.id_foto = f.id_foto) AS reaction_count,
+                    EXISTS (SELECT 1 FROM curtida c
+                            WHERE c.id_foto = f.id_foto
+                              AND c.id_usuario = :id_usuario) AS user_liked
              FROM foto f
              JOIN usuario u ON u.id_usuario = f.id_usuario
              WHERE f.id_usuario = :id_amigo
              ORDER BY f.data_postagem DESC, f.id_foto DESC''',
-          {'id_amigo': idAmigo},
+          {'id_amigo': idAmigo, 'id_usuario': idUsuario},
         );
 
         return _json(200, {
