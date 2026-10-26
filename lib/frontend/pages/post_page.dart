@@ -18,6 +18,7 @@ class PostMaximizadoPage extends StatefulWidget {
 }
 
 class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
+  final TextEditingController _reportReasonController = TextEditingController();
   late String? _reaction;
   late int _reactionCount;
   late String _caption;
@@ -25,7 +26,14 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
   bool _reacting = false;
   bool _deleting = false;
   bool _editing = false;
+  bool _reporting = false;
   bool _postUpdated = false;
+
+  @override
+  void dispose() {
+    _reportReasonController.dispose();
+    super.dispose();
+  }
 
   bool get _isAuthor {
     final currentUserId =
@@ -317,205 +325,214 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
   }
 
   Future<void> _reportPost() async {
-    if (!mounted) return;
-
-    final reasonController = TextEditingController();
-    final selectedReasons = <String>{};
-    const reasonOptions = [
-      'Inapropriado',
-      'Ofensivo',
-      'Indesejado',
-      'Violência',
-      'Spam',
-      'Outro',
-    ];
-    final reason = await showDialog<String>(
-      context: context,
-      useRootNavigator: true,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) {
-          Widget reasonOption(String value) {
-            return SizedBox(
-              height: 32,
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 30,
-                    child: Checkbox(
-                      value: selectedReasons.contains(value),
-                      activeColor: AppTheme.mediumBrown,
-                      checkColor: Colors.white,
-                      side: const BorderSide(color: AppTheme.mediumBrown),
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      onChanged: (selected) {
-                        setDialogState(() {
-                          if (selected == true) {
-                            selectedReasons.add(value);
-                          } else {
-                            selectedReasons.remove(value);
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      value,
-                      style: GoogleFonts.poppins(
-                        color: AppTheme.textPrimary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final canSubmit = selectedReasons.isNotEmpty ||
-              reasonController.text.trim().isNotEmpty;
-
-          return AlertDialog(
-            backgroundColor: AppTheme.background,
-            surfaceTintColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: const BorderSide(color: AppTheme.cardBorder),
-            ),
-            title: Text(
-              'Por que deseja reportar esse post?',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.cormorantGaramond(
-                color: AppTheme.textPrimary,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            content: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 340),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          children:
-                              reasonOptions.take(3).map(reasonOption).toList(),
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children:
-                              reasonOptions.skip(3).map(reasonOption).toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: reasonController,
-                          autofocus: true,
-                          minLines: 3,
-                          maxLines: 3,
-                          onChanged: (_) => setDialogState(() {}),
-                          style: GoogleFonts.poppins(
-                            color: AppTheme.textPrimary,
-                            fontSize: 13,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Escreva aqui o motivo...',
-                            hintStyle: GoogleFonts.poppins(
-                              color: AppTheme.textSecondary,
-                              fontSize: 12,
-                            ),
-                            filled: true,
-                            fillColor: AppTheme.surface,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(
-                                color: AppTheme.cardBorder,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(
-                                color: AppTheme.mediumBrown,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        tooltip: 'Enviar denúncia',
-                        onPressed: canSubmit
-                            ? () {
-                                final details = reasonController.text.trim();
-                                final selected = reasonOptions
-                                    .where(selectedReasons.contains)
-                                    .join(', ');
-                                final combinedReason = [
-                                  selected,
-                                  if (details.isNotEmpty) details,
-                                ].join(': ');
-                                Navigator.pop(dialogContext, combinedReason);
-                              }
-                            : null,
-                        color: AppTheme.mediumBrown,
-                        icon: const Icon(Icons.send, size: 28),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.textSecondary,
-                  textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-                ),
-                child: const Text('Cancelar'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-
-    reasonController.dispose();
-    if (reason == null || reason.isEmpty || !mounted) return;
+    if (!mounted || _reporting) return;
+    setState(() => _reporting = true);
 
     try {
-      await ApiService.reportPost(widget.post.id, reason);
-      if (!mounted) return;
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: AppTheme.mediumBrown,
-          content: Text('Denúncia enviada para análise da administração.'),
+      _reportReasonController.clear();
+      final selectedReasons = <String>{};
+      const reasonOptions = [
+        'Inapropriado',
+        'Ofensivo',
+        'Indesejado',
+        'Violência',
+        'Spam',
+        'Outro',
+      ];
+      final reason = await showDialog<String>(
+        context: context,
+        useRootNavigator: true,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            Widget reasonOption(String value) {
+              return SizedBox(
+                height: 32,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 30,
+                      child: Checkbox(
+                        value: selectedReasons.contains(value),
+                        activeColor: AppTheme.mediumBrown,
+                        checkColor: Colors.white,
+                        side: const BorderSide(color: AppTheme.mediumBrown),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onChanged: (selected) {
+                          setDialogState(() {
+                            if (selected == true) {
+                              selectedReasons.add(value);
+                            } else {
+                              selectedReasons.remove(value);
+                            }
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        value,
+                        style: GoogleFonts.poppins(
+                          color: AppTheme.textPrimary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final canSubmit = selectedReasons.isNotEmpty ||
+                _reportReasonController.text.trim().isNotEmpty;
+
+            return AlertDialog(
+              backgroundColor: AppTheme.background,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: const BorderSide(color: AppTheme.cardBorder),
+              ),
+              title: Text(
+                'Por que deseja reportar esse post?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cormorantGaramond(
+                  color: AppTheme.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 340),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: reasonOptions
+                                .take(3)
+                                .map(reasonOption)
+                                .toList(),
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: reasonOptions
+                                .skip(3)
+                                .map(reasonOption)
+                                .toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _reportReasonController,
+                            autofocus: true,
+                            minLines: 3,
+                            maxLines: 3,
+                            onChanged: (_) => setDialogState(() {}),
+                            style: GoogleFonts.poppins(
+                              color: AppTheme.textPrimary,
+                              fontSize: 13,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Escreva aqui o motivo...',
+                              hintStyle: GoogleFonts.poppins(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12,
+                              ),
+                              filled: true,
+                              fillColor: AppTheme.surface,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                  color: AppTheme.cardBorder,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                  color: AppTheme.mediumBrown,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: 'Enviar denúncia',
+                          onPressed: canSubmit
+                              ? () {
+                                  final details =
+                                      _reportReasonController.text.trim();
+                                  final selected = reasonOptions
+                                      .where(selectedReasons.contains)
+                                      .join(', ');
+                                  final combinedReason = [
+                                    selected,
+                                    if (details.isNotEmpty) details,
+                                  ].join(': ');
+                                  Navigator.pop(dialogContext, combinedReason);
+                                }
+                              : null,
+                          color: AppTheme.mediumBrown,
+                          icon: const Icon(Icons.send, size: 28),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.textSecondary,
+                    textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                  ),
+                  child: const Text('Cancelar'),
+                ),
+              ],
+            );
+          },
         ),
       );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: AppTheme.mediumBrown,
-          content: Text(error.toString().replaceFirst('Exception: ', '')),
-        ),
-      );
+
+      if (reason == null || reason.isEmpty || !mounted) return;
+
+      try {
+        await ApiService.reportPost(widget.post.id, reason);
+        if (!mounted) return;
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: AppTheme.mediumBrown,
+            content: Text('Denúncia enviada para análise da administração.'),
+          ),
+        );
+      } catch (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppTheme.mediumBrown,
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _reporting = false);
     }
   }
 
@@ -762,7 +779,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                       ),
                       if (!_isAuthor)
                         IconButton(
-                          onPressed: _reportPost,
+                          onPressed: _reporting ? null : _reportPost,
                           tooltip: 'Denunciar publicação',
                           visualDensity: VisualDensity.compact,
                           icon: const Icon(
