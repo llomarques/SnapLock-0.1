@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 Future<void> main() async {
@@ -20,6 +21,20 @@ class HelloWorldApp extends StatelessWidget {
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: ThemeData(
         textTheme: GoogleFonts.poppinsTextTheme(),
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: AppTheme.mediumBrown,
+          contentTextStyle: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 14,
+          ),
+          actionTextColor: AppTheme.background,
+          behavior: SnackBarBehavior.floating,
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: AppTheme.cardBorder),
+          ),
+        ),
       ),
       home: const InicioPage(),
     );
