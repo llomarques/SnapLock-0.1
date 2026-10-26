@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/controller/controller.login.dart';
 import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
+import 'package:snaplock/services/screen_security_service.dart';
 import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'package:snaplock/theme/app_theme.dart';
@@ -447,6 +448,7 @@ class _FeedPage extends State<FeedPage> {
   void initState() {
     super.initState();
     indice = widget.initialIndex.clamp(0, telas.length - 1);
+    unawaited(ScreenSecurityService.setEnabled(_isSecureTab(indice)));
     _atualizarNotificacoes();
     _timerNotificacoes = Timer.periodic(
       const Duration(seconds: 30),
@@ -457,6 +459,7 @@ class _FeedPage extends State<FeedPage> {
   @override
   void dispose() {
     _timerNotificacoes?.cancel();
+    unawaited(ScreenSecurityService.setEnabled(false));
     super.dispose();
   }
 
@@ -526,11 +529,14 @@ class _FeedPage extends State<FeedPage> {
         _versaoLeituraNotificacoes++;
       }
     });
+    unawaited(ScreenSecurityService.setEnabled(_isSecureTab(valor)));
 
     if (valor == 1) {
       _atualizarNotificacoes(marcarComoLidas: true);
     }
   }
+
+  bool _isSecureTab(int index) => index == 0 || index == 4;
 
   void abrirConfiguracoes() {
     Navigator.push(
@@ -564,126 +570,161 @@ class _FeedPage extends State<FeedPage> {
                     fit: BoxFit.contain,
                   ),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.person, color: Color(0xFFF3E9DC)),
-                  title: const Text('Perfil', style: TextStyle(color: Color(0xFFF3E9DC))),
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() => indice = 4);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.notifications, color: Color(0xFFF3E9DC)),
-                  title: const Text('Notificações', style: TextStyle(color: Color(0xFFF3E9DC))),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _selecionarAba(1);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.settings, color: Color(0xFFF3E9DC)),
-                  title: const Text('Configurações', style: TextStyle(color: Color(0xFFF3E9DC))),
-                  onTap: () {
-                    abrirConfiguracoes();
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.call, color: Color(0xFFF3E9DC)),
-                  title: const Text('Ajuda e suporte', style: TextStyle(color: Color(0xFFF3E9DC))),
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() => indice = 0);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: Color(0xFFF3E9DC)),
-                  title: const Text('Sair', style: TextStyle(color: Color(0xFFF3E9DC))),
-                  onTap: () async {
-                    final confirmarSaida = await showDialog<bool>(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        backgroundColor: AppTheme.background,
-                        surfaceTintColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          side: const BorderSide(color: AppTheme.cardBorder),
-                        ),
-                        title: Row(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: AppTheme.mediumBrown.withValues(
-                                  alpha: 0.12,
+                Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.person),
+                      title: const Text('Perfil'),
+                      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _selecionarAba(4);
+                      },
+                    ),
+                    Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: AppTheme.darkBrown.withValues(alpha: 0.3),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.notifications),
+                      title: const Text('Notificações'),
+                      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _selecionarAba(1);
+                      },
+                    ),
+                    Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: AppTheme.darkBrown.withValues(alpha: 0.3),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.settings),
+                      title: const Text('Configurações'),
+                      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+                      onTap: () {
+                        abrirConfiguracoes();
+                      },
+                    ),
+                    Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: AppTheme.darkBrown.withValues(alpha: 0.3),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.call),
+                      title: const Text('Ajuda e suporte'),
+                      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _selecionarAba(0);
+                      },
+                    ),
+                    Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: AppTheme.darkBrown.withValues(alpha: 0.3),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.logout),
+                      title: const Text('Sair'),
+                      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+                      onTap: () async {
+                        final confirmarSaida = await showDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            backgroundColor: AppTheme.background,
+                            surfaceTintColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              side:
+                                  const BorderSide(color: AppTheme.cardBorder),
+                            ),
+                            title: Row(
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.mediumBrown.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.logout,
+                                    color: AppTheme.mediumBrown,
+                                    size: 22,
+                                  ),
                                 ),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.logout,
-                                color: AppTheme.mediumBrown,
-                                size: 22,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Sair da conta?',
-                                style: GoogleFonts.cormorantGaramond(
-                                  color: AppTheme.textPrimary,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Sair da conta?',
+                                    style: GoogleFonts.cormorantGaramond(
+                                      color: AppTheme.textPrimary,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
+                              ],
+                            ),
+                            content: Text(
+                              'Tem certeza que deseja sair?',
+                              style: GoogleFonts.poppins(
+                                color: AppTheme.textSecondary,
+                                fontSize: 14,
                               ),
                             ),
-                          ],
-                        ),
-                        content: Text(
-                          'Tem certeza que deseja sair?',
-                          style: GoogleFonts.poppins(
-                            color: AppTheme.textSecondary,
-                            fontSize: 14,
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.pop(dialogContext, false),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppTheme.textSecondary,
-                              textStyle: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w500,
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.pop(dialogContext, false),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppTheme.textSecondary,
+                                  textStyle: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                child: const Text('Cancelar'),
                               ),
-                            ),
-                            child: const Text('Cancelar'),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () => Navigator.pop(dialogContext, true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.mediumBrown,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                              ElevatedButton.icon(
+                                onPressed: () =>
+                                    Navigator.pop(dialogContext, true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.mediumBrown,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  textStyle: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                icon: const Icon(Icons.logout, size: 18),
+                                label: const Text('Sair'),
                               ),
-                              textStyle: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            icon: const Icon(Icons.logout, size: 18),
-                            label: const Text('Sair'),
+                            ],
                           ),
-                        ],
-                      ),
-                    );
+                        );
 
-                    if (confirmarSaida != true || !mounted) return;
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const InicioPage(),
-                      ),
-                    );
-                  },
+                        if (confirmarSaida != true || !mounted) return;
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const InicioPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
