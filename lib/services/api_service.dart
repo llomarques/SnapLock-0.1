@@ -11,6 +11,7 @@ import '../models/user_model.dart';
 class ApiService {
   static const String _tokenKey = 'snaplock_jwt_token';
   static const String _userKey = 'snaplock_user_json';
+  static const String _reportedPostsKeyPrefix = 'snaplock_reported_posts_';
 
   static String? _currentToken;
   static UserModel? _currentUser;
@@ -18,18 +19,40 @@ class ApiService {
   static UserModel? get currentUser => _currentUser;
   static String? get token => _currentToken;
 
-  
-static Map<String, String> get _actionHeaders {
-  final headers = _headers;
-  final loginToken = LoginController.tokenAtual;
-
-  if (loginToken != null && loginToken.isNotEmpty) {
-    headers['Authorization'] = 'Bearer $loginToken';
+  static String get _reportedPostsKey {
+    final userId = (_currentUser?.id ?? LoginController.usuarioAtual?['id'])
+        ?.toString()
+        .trim();
+    return '$_reportedPostsKeyPrefix${userId?.isNotEmpty == true ? userId : 'anonymous'}';
   }
 
-  return headers;
-}
+  static Future<List<PostModel>> _filterReportedPosts(
+    Iterable<PostModel> posts,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final reportedIds =
+        prefs.getStringList(_reportedPostsKey)?.toSet() ?? <String>{};
+    return posts.where((post) => !reportedIds.contains(post.id)).toList();
+  }
 
+  static Future<void> hideReportedPostLocally(String postId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final reportedIds =
+        prefs.getStringList(_reportedPostsKey)?.toSet() ?? <String>{};
+    reportedIds.add(postId);
+    await prefs.setStringList(_reportedPostsKey, reportedIds.toList());
+  }
+
+  static Map<String, String> get _actionHeaders {
+    final headers = _headers;
+    final loginToken = LoginController.tokenAtual;
+
+    if (loginToken != null && loginToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $loginToken';
+    }
+
+    return headers;
+  }
 
   /// Inicializa sessão salva no SharedPreferences
   static Future<bool> initSession() async {
@@ -258,9 +281,9 @@ static Map<String, String> get _actionHeaders {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (data['success'] == true) {
       final list = data['posts'] as List;
-      return list
-          .map((item) => PostModel.fromJson(item as Map<String, dynamic>))
-          .toList();
+      return _filterReportedPosts(
+        list.map((item) => PostModel.fromJson(item as Map<String, dynamic>)),
+      );
     } else {
       throw Exception(data['message'] ?? 'Erro ao carregar o feed.');
     }
@@ -285,7 +308,7 @@ static Map<String, String> get _actionHeaders {
     if (data['success'] == true) {
       final list = data['fotos'] as List;
 
-      return list.map((item) {
+      final posts = list.map((item) {
         final foto = item as Map<String, dynamic>;
 
         return PostModel(
@@ -295,14 +318,15 @@ static Map<String, String> get _actionHeaders {
           caption: foto['legenda']?.toString() ?? '',
           createdAt: foto['data_postagem']?.toString() ?? '',
           aspectRatio: double.tryParse(foto['proporcao']?.toString() ?? ''),
-            reactionCount:
+          reactionCount:
               int.tryParse(foto['reaction_count']?.toString() ?? '0') ?? 0,
-            userReaction: foto['user_liked'] == true ||
-                foto['user_liked']?.toString() == '1'
+          userReaction: foto['user_liked'] == true ||
+                  foto['user_liked']?.toString() == '1'
               ? 'HEART'
               : null,
         );
       }).toList();
+      return _filterReportedPosts(posts);
     }
 
     throw Exception(
@@ -330,7 +354,7 @@ static Map<String, String> get _actionHeaders {
     }
 
     final fotos = data['fotos'] as List;
-    return fotos.map((item) {
+    final posts = fotos.map((item) {
       final foto = item as Map<String, dynamic>;
       return PostModel(
         id: foto['id_foto']?.toString() ?? '',
@@ -342,13 +366,14 @@ static Map<String, String> get _actionHeaders {
         authorName: foto['nome']?.toString(),
         authorAvatar: foto['foto_perfil']?.toString(),
         reactionCount:
-          int.tryParse(foto['reaction_count']?.toString() ?? '0') ?? 0,
-        userReaction: foto['user_liked'] == true ||
-            foto['user_liked']?.toString() == '1'
-          ? 'HEART'
-          : null,
+            int.tryParse(foto['reaction_count']?.toString() ?? '0') ?? 0,
+        userReaction:
+            foto['user_liked'] == true || foto['user_liked']?.toString() == '1'
+                ? 'HEART'
+                : null,
       );
     }).toList();
+    return _filterReportedPosts(posts);
   }
 
   static Future<Map<String, dynamic>> createPost(
@@ -415,7 +440,8 @@ static Map<String, String> get _actionHeaders {
 
   static Future<void> deletePost(String postId) async {
     final response = await http.delete(
-      Uri.parse('${ApiConfig.baseUrl}/fotos/$postId'), // Se no backend for /fotos/$postId, troque aqui para /fotos/$postId
+      Uri.parse(
+          '${ApiConfig.baseUrl}/fotos/$postId'), // Se no backend for /fotos/$postId, troque aqui para /fotos/$postId
       headers: _actionHeaders,
     );
 
@@ -426,11 +452,13 @@ static Map<String, String> get _actionHeaders {
       if (response.statusCode == 404) {
         throw Exception('Rota de exclusão não encontrada no servidor (404).');
       }
-      throw Exception('Erro de comunicação com o servidor (${response.statusCode}).');
+      throw Exception(
+          'Erro de comunicação com o servidor (${response.statusCode}).');
     }
 
     if (response.statusCode != 200 || body['success'] != true) {
-      throw Exception(body['message'] ?? body['erro'] ?? 'Erro ao excluir a publicação.');
+      throw Exception(
+          body['message'] ?? body['erro'] ?? 'Erro ao excluir a publicação.');
     }
   }
 
@@ -640,10 +668,10 @@ static Map<String, String> get _actionHeaders {
   static String get _dismissedAcceptedFriendNotificationsKey =>
       'snaplock_dismissed_accepted_friend_notifications_$_notificationUserId';
 
-    static String get _likeNotificationsReadKey =>
+  static String get _likeNotificationsReadKey =>
       'snaplock_read_like_notifications_$_notificationUserId';
 
-    static String get _dismissedLikeNotificationsKey =>
+  static String get _dismissedLikeNotificationsKey =>
       'snaplock_dismissed_like_notifications_$_notificationUserId';
 
   static Future<List<Map<String, dynamic>>>
@@ -663,9 +691,9 @@ static Map<String, String> get _actionHeaders {
         prefs.getStringList(_acceptedFriendNotificationsReadKey)?.toSet() ??
             <String>{};
     final descartadas = prefs
-        .getStringList(_dismissedAcceptedFriendNotificationsKey)
-        ?.toSet() ??
-      <String>{};
+            .getStringList(_dismissedAcceptedFriendNotificationsKey)
+            ?.toSet() ??
+        <String>{};
     final items = data['notifications'] as List;
     return items.map((item) {
       final notification = Map<String, dynamic>.from(item as Map);
@@ -688,8 +716,8 @@ static Map<String, String> get _actionHeaders {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    final lidas = prefs.getStringList(_likeNotificationsReadKey)?.toSet() ??
-        <String>{};
+    final lidas =
+        prefs.getStringList(_likeNotificationsReadKey)?.toSet() ?? <String>{};
     final descartadas =
         prefs.getStringList(_dismissedLikeNotificationsKey)?.toSet() ??
             <String>{};
@@ -715,8 +743,8 @@ static Map<String, String> get _actionHeaders {
     Iterable<Map<String, dynamic>> notifications,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    final ids = prefs.getStringList(_likeNotificationsReadKey)?.toSet() ??
-        <String>{};
+    final ids =
+        prefs.getStringList(_likeNotificationsReadKey)?.toSet() ?? <String>{};
     ids.addAll(
       notifications
           .map((item) => item['notificationId']?.toString() ?? '')
@@ -781,10 +809,10 @@ static Map<String, String> get _actionHeaders {
           body = decoded;
         }
       } catch (_) {}
-      throw Exception(body['message'] ?? body['erro'] ?? 'Erro ao enviar a denúncia.');
+      throw Exception(
+          body['message'] ?? body['erro'] ?? 'Erro ao enviar a denúncia.');
     }
   }
-
 
   static Future<List<Map<String, dynamic>>> getMonthlyDumps() async {
     final response = await http.get(

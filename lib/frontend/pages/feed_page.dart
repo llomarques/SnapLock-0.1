@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/controller/controller.login.dart';
 import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
+import 'package:snaplock/services/screen_security_service.dart';
 import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'package:snaplock/theme/app_theme.dart';
@@ -448,6 +449,7 @@ class _FeedPage extends State<FeedPage> {
   void initState() {
     super.initState();
     indice = widget.initialIndex.clamp(0, telas.length - 1);
+    unawaited(ScreenSecurityService.setEnabled(_isSecureTab(indice)));
     _atualizarNotificacoes();
     _timerNotificacoes = Timer.periodic(
       const Duration(seconds: 30),
@@ -458,6 +460,7 @@ class _FeedPage extends State<FeedPage> {
   @override
   void dispose() {
     _timerNotificacoes?.cancel();
+    unawaited(ScreenSecurityService.setEnabled(false));
     super.dispose();
   }
 
@@ -527,11 +530,14 @@ class _FeedPage extends State<FeedPage> {
         _versaoLeituraNotificacoes++;
       }
     });
+    unawaited(ScreenSecurityService.setEnabled(_isSecureTab(valor)));
 
     if (valor == 1) {
       _atualizarNotificacoes(marcarComoLidas: true);
     }
   }
+
+  bool _isSecureTab(int index) => index == 0 || index == 4;
 
   void abrirConfiguracoes() {
     Navigator.push(
@@ -573,7 +579,7 @@ class _FeedPage extends State<FeedPage> {
                       hoverColor: AppTheme.surface.withValues(alpha: 0.35),
                       onTap: () {
                         Navigator.pop(context);
-                        setState(() => indice = 4);
+                        _selecionarAba(4);
                       },
                     ),
                     Divider(
@@ -617,7 +623,7 @@ class _FeedPage extends State<FeedPage> {
                       hoverColor: AppTheme.surface.withValues(alpha: 0.35),
                       onTap: () {
                         Navigator.pop(context);
-                        setState(() => indice = 0);
+                        _selecionarAba(0);
                       },
                     ),
                     Divider(

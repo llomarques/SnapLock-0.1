@@ -514,9 +514,11 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
 
       try {
         await ApiService.reportPost(widget.post.id, reason);
+        await ApiService.hideReportedPostLocally(widget.post.id);
         if (!mounted) return;
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.pop(context, true);
+        messenger.showSnackBar(
           const SnackBar(
             backgroundColor: AppTheme.mediumBrown,
             content: Text('Denúncia enviada para análise da administração.'),
