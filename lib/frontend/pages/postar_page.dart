@@ -31,7 +31,6 @@ class _PostarPageState extends State<PostarPage> {
   Uint8List? fotoPerfil;
   bool legendaConfirmada = false;
   double fotoAspectRatio = 4 / 5;
-  double _originalAspectRatio = 4 / 5;
   int _selectedAspectRatioIndex = 0;
   bool selecionandoImagem = false;
   bool salvando = false;
@@ -64,25 +63,14 @@ class _PostarPageState extends State<PostarPage> {
         return;
       }
 
-      final originalAspectRatio = await _aspectRatioDaImagem(bytes);
-      final targetAspectRatio = _aspectRatioDaOpcao(
-        _selectedAspectRatioIndex,
-        originalAspectRatio: originalAspectRatio,
-      );
-      final croppedImage = await _abrirEditorDeCorte(bytes, targetAspectRatio);
-
-      if (croppedImage == null || !mounted) {
-        return;
-      }
-
-      final croppedAspectRatio = await _aspectRatioDaImagem(croppedImage);
+      final aspectRatio = await _aspectRatioDaImagem(bytes);
       if (!mounted) return;
 
       setState(() {
         _imagemOriginal = bytes;
-        fotoPerfil = croppedImage;
-        _originalAspectRatio = originalAspectRatio;
-        fotoAspectRatio = croppedAspectRatio;
+        fotoPerfil = bytes;
+        fotoAspectRatio = aspectRatio;
+        _selectedAspectRatioIndex = 0;
       });
     } on PlatformException catch (error) {
       if (mounted && error.code != 'already_active') {
@@ -96,14 +84,6 @@ class _PostarPageState extends State<PostarPage> {
         setState(() => selecionandoImagem = false);
       }
     }
-  }
-
-  double? _aspectRatioDaOpcao(
-    int index, {
-    double? originalAspectRatio,
-  }) {
-    if (index == 0) return originalAspectRatio ?? _originalAspectRatio;
-    return _aspectRatioOptions[index].ratio;
   }
 
   Future<double> _aspectRatioDaImagem(Uint8List bytes) async {
@@ -245,7 +225,29 @@ class _PostarPageState extends State<PostarPage> {
     );
   }
 
+  Future<void> _editarFoto({int? aspectRatioIndex}) async {
+    final original = _imagemOriginal;
+    if (original == null || salvando) return;
+
+    final selectedIndex = aspectRatioIndex ?? _selectedAspectRatioIndex;
+    final cropAspectRatio = selectedIndex == 0
+        ? await _aspectRatioDaImagem(original)
+        : _aspectRatioOptions[selectedIndex].ratio;
+    final croppedImage = await _abrirEditorDeCorte(original, cropAspectRatio);
+    if (croppedImage == null || !mounted) return;
+
+    final aspectRatio = await _aspectRatioDaImagem(croppedImage);
+    if (!mounted) return;
+
+    setState(() {
+      fotoPerfil = croppedImage;
+      fotoAspectRatio = aspectRatio;
+      _selectedAspectRatioIndex = selectedIndex;
+    });
+  }
+
   Future<void> _selecionarProporcao() async {
+    if (_imagemOriginal == null) return;
     final selectedIndex = await showModalBottomSheet<int>(
       context: context,
       isScrollControlled: true,
@@ -291,32 +293,9 @@ class _PostarPageState extends State<PostarPage> {
       },
     );
 
-    if (selectedIndex == null || !mounted) return;
-
-    final sourceImage = _imagemOriginal;
-    if (sourceImage != null) {
-      final targetAspectRatio = _aspectRatioDaOpcao(selectedIndex);
-      final croppedImage = await _abrirEditorDeCorte(
-        sourceImage,
-        targetAspectRatio,
-      );
-      if (croppedImage == null || !mounted) return;
-
-      final croppedAspectRatio = await _aspectRatioDaImagem(croppedImage);
-      if (!mounted) return;
-
-      setState(() {
-        _selectedAspectRatioIndex = selectedIndex;
-        fotoPerfil = croppedImage;
-        fotoAspectRatio = croppedAspectRatio;
-      });
-      return;
+    if (selectedIndex != null && mounted) {
+      await _editarFoto(aspectRatioIndex: selectedIndex);
     }
-
-    setState(() {
-      _selectedAspectRatioIndex = selectedIndex;
-      fotoAspectRatio = _aspectRatioDaOpcao(selectedIndex) ?? fotoAspectRatio;
-    });
   }
 
   Future<void> publicar() async {
@@ -352,7 +331,6 @@ class _PostarPageState extends State<PostarPage> {
         _imagemOriginal = null;
         fotoPerfil = null;
         fotoAspectRatio = 4 / 5;
-        _originalAspectRatio = 4 / 5;
         _selectedAspectRatioIndex = 0;
         legendaConfirmada = false;
         filtroAplicado = null;
@@ -755,9 +733,10 @@ class _PostarPageState extends State<PostarPage> {
                             ),
                             const SizedBox(width: 4),
                             IconButton(
-                              onPressed: _selecionarProporcao,
-                              tooltip:
-                                  'Proporção: ${_aspectRatioOptions[_selectedAspectRatioIndex].label}',
+                              onPressed: _imagemOriginal == null
+                                  ? null
+                                  : _selecionarProporcao,
+                              tooltip: 'Editar tamanho da foto',
                               constraints: const BoxConstraints.tightFor(
                                 width: 40,
                                 height: 40,
@@ -769,6 +748,7 @@ class _PostarPageState extends State<PostarPage> {
                                 height: 32,
                               ),
                             ),
+                            const SizedBox(width: 4),
                           ],
                         ),
                       ),

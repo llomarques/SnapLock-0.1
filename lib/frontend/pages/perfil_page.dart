@@ -329,7 +329,6 @@ class _PerfilPage extends State<PerfilPage> {
   Widget _buildGalleryGrid() {
     const columnCount = 3;
     const spacing = 4.0;
-    const fallbackAspectRatios = [0.78, 1.2, 0.95, 1.35, 0.82, 1.05];
     final aspectRatios = List<double>.generate(fotos.length, (index) {
       final savedAspectRatio = fotos[index].aspectRatio;
       if (savedAspectRatio != null &&
@@ -337,7 +336,7 @@ class _PerfilPage extends State<PerfilPage> {
           savedAspectRatio > 0) {
         return savedAspectRatio;
       }
-      return fallbackAspectRatios[index % fallbackAspectRatios.length];
+      return 4 / 5;
     });
     final columns = List.generate(columnCount, (_) => <int>[]);
     final columnHeights = List<double>.filled(columnCount, 0);
