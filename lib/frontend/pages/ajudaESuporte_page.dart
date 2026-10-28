@@ -1,4 +1,4 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/theme/app_theme.dart';
 
@@ -9,12 +9,12 @@ class AjudaESuportePage extends StatelessWidget {
     _FaqItem(
       question: 'Posso enviar uma mensagem direta?',
       answer:
-          'O SnapLock não oferece mensagens diretas no momento. Você pode interagir com as publicações disponíveis no app.',
+          'O SnapLock não oferece mensagens diretas. Você pode interagir com as publicações disponíveis no app.',
     ),
     _FaqItem(
       question: 'É possível tornar o meu perfil público?',
       answer:
-          'No momento, não há uma opção para tornar o perfil público. As publicações seguem as regras de privacidade do SnapLock.',
+          'Não há uma opção para tornar o perfil público. As publicações seguem as regras de privacidade do SnapLock.',
     ),
     _FaqItem(
       question: 'Por que não posso comentar em uma foto?',
@@ -32,6 +32,14 @@ class AjudaESuportePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
+      appBar: AppBar(
+        backgroundColor: AppTheme.background,
+        leading: IconButton(
+          tooltip: 'Voltar',
+          onPressed: () => Navigator.maybePop(context),
+          icon: const Icon(Icons.arrow_back),
+        ),
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -144,12 +152,21 @@ class AjudaESuportePage extends StatelessWidget {
               children: [
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    item.answer,
-                    style: GoogleFonts.poppins(
-                      color: AppTheme.textSecondary,
-                      fontSize: 13,
-                      height: 1.45,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppTheme.cardBorder),
+                    ),
+                    child: Text(
+                      item.answer,
+                      style: GoogleFonts.poppins(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                        height: 1.45,
+                      ),
                     ),
                   ),
                 ),
@@ -173,8 +190,12 @@ class AjudaESuportePage extends StatelessWidget {
           children: const [
             TextSpan(
               text: 'Demais dúvidas entre em contato\ncom o nosso suporte:\n',
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
-            TextSpan(text: 'snaplock.support@gmail.com'),
+            TextSpan(
+              text: 'snaplock.support@gmail.com',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ),
