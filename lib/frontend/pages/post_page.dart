@@ -4,14 +4,22 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:snaplock/controller/controller.login.dart';
 import 'package:snaplock/frontend/pages/feed_page.dart';
+import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/theme/app_theme.dart';
+import 'ajudaESuporte_page.dart';
+import 'configuracoes_page.dart';
 
 class PostMaximizadoPage extends StatefulWidget {
-  const PostMaximizadoPage({super.key, required this.post});
+  const PostMaximizadoPage({
+    super.key,
+    required this.post,
+    this.abertaPelasCurtidas = false,
+  });
 
   final PostModel post;
+  final bool abertaPelasCurtidas;
 
   @override
   State<PostMaximizadoPage> createState() => _PostMaximizadoPageState();
@@ -58,6 +66,162 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => FeedPage(initialIndex: index)),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return Drawer(
+      backgroundColor: const Color(0xFFC08552),
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 60, bottom: 12),
+            child: Image.asset(
+              'assets/images/logo.png',
+              height: 80,
+              fit: BoxFit.contain,
+            ),
+          ),
+          _drawerItem(
+            icon: Icons.person,
+            title: 'Perfil',
+            onTap: () => _navigateToTab(4),
+          ),
+          _drawerDivider(),
+          _drawerItem(
+            icon: Icons.notifications,
+            title: 'Notificações',
+            onTap: () => _navigateToTab(1),
+          ),
+          _drawerDivider(),
+          _drawerItem(
+            icon: Icons.settings,
+            title: 'Configurações',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ConfiguracoesPage(),
+              ),
+            ),
+          ),
+          _drawerDivider(),
+          _drawerItem(
+            icon: Icons.call,
+            title: 'Ajuda e suporte',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AjudaESuportePage(),
+              ),
+            ),
+          ),
+          _drawerDivider(),
+          _drawerItem(
+            icon: Icons.logout,
+            title: 'Sair',
+            onTap: _confirmarSaida,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _drawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+      onTap: onTap,
+    );
+  }
+
+  Widget _drawerDivider() => Divider(
+        height: 1,
+        indent: 16,
+        endIndent: 16,
+        color: AppTheme.darkBrown.withValues(alpha: 0.3),
+      );
+
+  Future<void> _confirmarSaida() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.background,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppTheme.cardBorder),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.mediumBrown.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.logout,
+                color: AppTheme.mediumBrown,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Sair da conta?',
+                style: GoogleFonts.cormorantGaramond(
+                  color: AppTheme.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Tem certeza que deseja sair?',
+          style: GoogleFonts.poppins(
+            color: AppTheme.textSecondary,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.textSecondary,
+              textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+            ),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.mediumBrown,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            ),
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text('Sair'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true || !mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const InicioPage()),
     );
   }
 
@@ -578,38 +742,15 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3E9DC),
-      drawer: Drawer(
-        backgroundColor: const Color(0xFFC08552),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 60, bottom: 12),
-              child: Image.asset('assets/images/logo.png', height: 80),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Início'),
-              onTap: () => _navigateToTab(0),
-            ),
-            ListTile(
-              leading: const Icon(Icons.notifications),
-              title: const Text('Notificações'),
-              onTap: () => _navigateToTab(1),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Perfil'),
-              onTap: () => _navigateToTab(4),
-            ),
-          ],
-        ),
-      ),
+      drawer: _buildDrawer(),
       body: Column(
         children: [
           Builder(
             builder: (context) => FeedHeader(
               onMenuPressed: () => Scaffold.of(context).openDrawer(),
+              mostrarAcoes: true,
+              mostrarVoltar: false,
+              mostrarPesquisa: !widget.abertaPelasCurtidas,
             ),
           ),
           SizedBox(

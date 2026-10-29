@@ -33,12 +33,14 @@ class FeedHeader extends StatelessWidget {
     required this.onMenuPressed,
     this.mostrarAcoes = true,
     this.mostrarVoltar = false,
+    this.mostrarPesquisa = true,
     this.trailingAction,
   });
 
   final VoidCallback onMenuPressed;
   final bool mostrarAcoes;
   final bool mostrarVoltar;
+  final bool mostrarPesquisa;
   final Widget? trailingAction;
 
   void abrirPesquisa(BuildContext context) {
@@ -90,7 +92,7 @@ class FeedHeader extends StatelessWidget {
             ),
             actions: trailingAction != null
                 ? [trailingAction!]
-                : mostrarAcoes
+                : mostrarAcoes && mostrarPesquisa
                     ? [
                         IconButton(
                           onPressed: () => abrirPesquisa(context),
