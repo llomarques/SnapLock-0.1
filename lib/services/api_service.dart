@@ -90,6 +90,24 @@ class ApiService {
     await prefs.remove(_userKey);
   }
 
+  static Future<void> updateCurrentEmail(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    final user = _currentUser;
+    final userMap = user?.toJson() ??
+        (prefs.getString(_userKey) == null
+            ? null
+            : Map<String, dynamic>.from(
+                jsonDecode(prefs.getString(_userKey)!) as Map,
+              ));
+    if (userMap == null) return;
+
+    userMap['email'] = email;
+    await prefs.setString(_userKey, jsonEncode(userMap));
+    if (user != null) {
+      _currentUser = UserModel.fromJson(userMap);
+    }
+  }
+
   static Map<String, String> get _headers {
     final headers = {'Content-Type': 'application/json; charset=utf-8'};
     if (_currentToken != null) {
@@ -259,15 +277,31 @@ class ApiService {
   static Future<void> deleteAccount() async {
     final response = await http.delete(
       Uri.parse('${ApiConfig.baseUrl}/profile'),
-      headers: _headers,
+      headers: _actionHeaders,
     );
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (data['success'] == true) {
-      await logout();
-    } else {
+    Map<String, dynamic> data;
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        data = decoded;
+      } else if (decoded is Map) {
+        data = Map<String, dynamic>.from(decoded);
+      } else {
+        throw const FormatException();
+      }
+    } on FormatException {
+      throw Exception('A API retornou uma resposta inválida ao excluir a conta.');
+    }
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
       throw Exception(data['message'] ?? 'Erro ao excluir conta.');
     }
+
+    await logout();
+    LoginController.limparSessao();
   }
 
   // --- FEED & POSTAGENS ---

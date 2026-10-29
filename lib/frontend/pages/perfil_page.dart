@@ -327,7 +327,7 @@ class _PerfilPage extends State<PerfilPage> {
   }
 
   Widget _buildGalleryGrid() {
-    const columnCount = 3;
+    const columnCount = 2;
     const spacing = 4.0;
     final aspectRatios = List<double>.generate(fotos.length, (index) {
       final savedAspectRatio = fotos[index].aspectRatio;

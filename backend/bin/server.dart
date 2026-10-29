@@ -29,6 +29,51 @@ Future<void> main() async {
   );
   await connection.connect();
 
+  final emailAtivoColumn = await connection.execute(
+    "SHOW COLUMNS FROM usuario LIKE 'email_ativo'",
+  );
+  if (emailAtivoColumn.rows.isEmpty) {
+    await connection.execute(
+      '''ALTER TABLE usuario
+         ADD COLUMN email_ativo VARCHAR(150)
+         GENERATED ALWAYS AS (
+           CASE WHEN ativo = 1 THEN email ELSE NULL END
+         ) PERSISTENT''',
+    );
+  }
+
+  final emailUniqueIndex =
+      await connection.execute("SHOW INDEX FROM usuario WHERE Key_name = 'email'");
+  if (emailUniqueIndex.rows.isNotEmpty) {
+    await connection.execute('ALTER TABLE usuario DROP INDEX email');
+  }
+
+  final activeEmailUniqueIndex = await connection.execute(
+    "SHOW INDEX FROM usuario WHERE Key_name = 'uq_usuario_email_ativo'",
+  );
+  if (activeEmailUniqueIndex.rows.isEmpty) {
+    await connection.execute(
+      'ALTER TABLE usuario ADD UNIQUE KEY uq_usuario_email_ativo (email_ativo)',
+    );
+  }
+
+  await connection.execute(
+    '''CREATE TABLE IF NOT EXISTS alteracao_email_token (
+       id_alteracao INT NOT NULL AUTO_INCREMENT,
+       id_usuario INT NOT NULL,
+       novo_email VARCHAR(150) NOT NULL,
+       token_hash CHAR(64) NOT NULL,
+       expira_em DATETIME NOT NULL,
+       enviado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       usado_em DATETIME DEFAULT NULL,
+       PRIMARY KEY (id_alteracao),
+       KEY idx_alteracao_email_usuario (id_usuario),
+       KEY idx_alteracao_email_token (token_hash),
+       CONSTRAINT fk_alteracao_email_usuario
+         FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
+     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
+  );
+
   final ratioColumn =
       await connection.execute("SHOW COLUMNS FROM foto LIKE 'proporcao'");
   if (ratioColumn.rows.isEmpty) {
@@ -77,7 +122,8 @@ Future<void> main() async {
   }
 
   final router = Router()
-    ..post('/api/posts/<postId>/reactions', (Request request, String postId) async {
+    ..post('/api/posts/<postId>/reactions',
+        (Request request, String postId) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
 
@@ -99,8 +145,8 @@ Future<void> main() async {
         return _json(500, {'message': 'Erro ao registrar reação.'});
       }
     })
-
-    ..delete('/api/posts/<postId>/reactions', (Request request, String postId) async {
+    ..delete('/api/posts/<postId>/reactions',
+        (Request request, String postId) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
 
@@ -119,7 +165,6 @@ Future<void> main() async {
         return _json(500, {'message': 'Erro ao remover reação.'});
       }
     })
-
     ..delete('/api/fotos/<postId>', (Request request, String postId) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
@@ -135,23 +180,29 @@ Future<void> main() async {
         );
 
         if (foto.rows.isEmpty) {
-          return _json(403, {'message': 'Sem permissão para excluir esta foto.'});
+          return _json(
+              403, {'message': 'Sem permissão para excluir esta foto.'});
         }
 
         // Deleta as dependências de curtida e denúncia antes da foto
-        await connection.execute('DELETE FROM curtida WHERE id_foto = :id_foto', {'id_foto': idFoto});
-        await connection.execute('DELETE FROM denuncia WHERE id_foto = :id_foto', {'id_foto': idFoto});
-        
-        // Exclui o registro da tabela foto
-        await connection.execute('DELETE FROM foto WHERE id_foto = :id_foto', {'id_foto': idFoto});
+        await connection.execute('DELETE FROM curtida WHERE id_foto = :id_foto',
+            {'id_foto': idFoto});
+        await connection.execute(
+            'DELETE FROM denuncia WHERE id_foto = :id_foto',
+            {'id_foto': idFoto});
 
-        return _json(200, {'success': true, 'message': 'Foto excluída com sucesso.'});
+        // Exclui o registro da tabela foto
+        await connection.execute(
+            'DELETE FROM foto WHERE id_foto = :id_foto', {'id_foto': idFoto});
+
+        return _json(
+            200, {'success': true, 'message': 'Foto excluída com sucesso.'});
       } catch (error) {
         return _json(500, {'message': 'Erro ao excluir no banco de dados.'});
       }
     })
-    
-    ..post('/api/posts/<postId>/report', (Request request, String postId) async {
+    ..post('/api/posts/<postId>/report',
+        (Request request, String postId) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
 
@@ -173,7 +224,8 @@ Future<void> main() async {
           {'id_foto': idFoto, 'id_usuario': idUsuario, 'motivo': motivo},
         );
 
-        return _json(201, {'success': true, 'message': 'Denúncia registrada com sucesso.'});
+        return _json(201,
+            {'success': true, 'message': 'Denúncia registrada com sucesso.'});
       } catch (error, stackTrace) {
         print('Erro ao reportar post: $error\n$stackTrace');
         // Caso a tabela ainda não exista no MySQL, crie com:
@@ -181,10 +233,6 @@ Future<void> main() async {
         return _json(500, {'message': 'Erro ao salvar denúncia no servidor.'});
       }
     })
-
-
-
-    
     ..post('/api/login', (Request request) async {
       final dados = await _lerJson(request);
       if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
@@ -240,6 +288,10 @@ Future<void> main() async {
         '''SELECT u.id_usuario, u.nome, u.username,
             u.biografia, u.foto_perfil, u.ativo, a.status AS amizade_status,
             (SELECT COUNT(*) FROM amizade a2
+             JOIN usuario amigo ON amigo.id_usuario = CASE
+               WHEN a2.id_usuario_1 = u.id_usuario THEN a2.id_usuario_2
+               ELSE a2.id_usuario_1
+             END AND amigo.ativo = 1
              WHERE a2.status = 'aceito'
                AND (a2.id_usuario_1 = u.id_usuario
                     OR a2.id_usuario_2 = u.id_usuario)) AS friends_count
@@ -338,7 +390,8 @@ Future<void> main() async {
             u.id_usuario, u.nome, u.username, u.foto_perfil
            FROM amizade a
            JOIN usuario u ON u.id_usuario = a.id_usuario_1
-           WHERE a.id_usuario_2 = :id_usuario AND a.status = 'pendente'
+           WHERE a.id_usuario_2 = :id_usuario
+             AND a.status = 'pendente' AND u.ativo = 1
            ORDER BY a.data_solicitacao DESC''',
         {'id_usuario': idUsuario},
       );
@@ -405,6 +458,10 @@ Future<void> main() async {
         '''SELECT u.id_usuario, u.nome, u.username,
             u.biografia, u.foto_perfil, u.ativo, a.status AS amizade_status,
             (SELECT COUNT(*) FROM amizade a2
+             JOIN usuario amigo ON amigo.id_usuario = CASE
+               WHEN a2.id_usuario_1 = u.id_usuario THEN a2.id_usuario_2
+               ELSE a2.id_usuario_1
+             END AND amigo.ativo = 1
              WHERE a2.status = 'aceito'
                AND (a2.id_usuario_1 = u.id_usuario
                     OR a2.id_usuario_2 = u.id_usuario)) AS friends_count
@@ -415,7 +472,7 @@ Future<void> main() async {
                ELSE a.id_usuario_1
              END
            WHERE (a.id_usuario_1 = :id_usuario OR a.id_usuario_2 = :id_usuario)
-             AND a.status = 'aceito'
+             AND a.status = 'aceito' AND u.ativo = 1
            ORDER BY u.username''',
         {'id_usuario': idUsuario},
       );
@@ -438,7 +495,6 @@ Future<void> main() async {
       }).toList();
       return _json(200, {'success': true, 'friends': amigos});
     })
-
     ..get('/api/friends/accepted-notifications', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
@@ -458,6 +514,7 @@ Future<void> main() async {
            WHERE a.status = 'aceito'
              AND (a.id_usuario_1 = :id_usuario
                OR a.id_usuario_2 = :id_usuario)
+             AND u1.ativo = 1 AND u2.ativo = 1
            ORDER BY data_evento DESC, a.id_amizade DESC''',
         {'id_usuario': idUsuario},
       );
@@ -509,6 +566,7 @@ Future<void> main() async {
            WHERE a.status = 'aceito'
              AND (a.id_usuario_1 = :id_usuario
                OR a.id_usuario_2 = :id_usuario)
+             AND u1.ativo = 1 AND u2.ativo = 1
            ORDER BY data_evento DESC, a.id_amizade DESC''',
         {'id_usuario': idUsuario},
       );
@@ -547,7 +605,7 @@ Future<void> main() async {
 
       try {
         final resultados = await connection.execute(
-            '''SELECT c.id_foto, c.id_usuario, c.data_curtida,
+          '''SELECT c.id_foto, c.id_usuario, c.data_curtida,
                 f.id_usuario AS id_autor, f.midia_url, f.legenda,
                 f.data_postagem, f.proporcao,
                 u.username, u.foto_perfil,
@@ -564,6 +622,7 @@ Future<void> main() async {
                JOIN usuario autor ON autor.id_usuario = f.id_usuario
              WHERE f.id_usuario = :id_usuario
                AND c.id_usuario <> :id_usuario
+               AND u.ativo = 1 AND autor.ativo = 1
              ORDER BY c.data_curtida DESC, c.id_foto DESC
              LIMIT 100''',
           {'id_usuario': idUsuario},
@@ -593,8 +652,8 @@ Future<void> main() async {
               'authorUsername': curtida['username_autor'] ?? '',
               'authorAvatar': curtida['avatar_autor'] ?? '',
               'reactionCount': curtida['total_curtidas'] ?? '0',
-                'userReaction': curtida['curtiu_publicacao'] == true ||
-                    curtida['curtiu_publicacao']?.toString() == '1'
+              'userReaction': curtida['curtiu_publicacao'] == true ||
+                      curtida['curtiu_publicacao']?.toString() == '1'
                   ? 'HEART'
                   : null,
             },
@@ -604,7 +663,8 @@ Future<void> main() async {
         return _json(200, {'success': true, 'notifications': notificacoes});
       } catch (error, stackTrace) {
         print('Erro ao carregar notificações de curtida: $error\n$stackTrace');
-        return _json(500, {'message': 'Erro ao carregar notificações de curtida.'});
+        return _json(
+            500, {'message': 'Erro ao carregar notificações de curtida.'});
       }
     })
     ..delete('/api/friends/<friendId>',
@@ -798,6 +858,189 @@ Future<void> main() async {
           {'id_recuperacao': idRecuperacao});
       return _json(200, {'mensagem': 'Senha redefinida com sucesso.'});
     })
+    ..post('/api/profile/email/request', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'message': 'JSON inválido.'});
+
+      final novoEmail = (dados['email'] ?? '').toString().trim().toLowerCase();
+      final senhaAtual = (dados['senha'] ?? '').toString();
+      if (!_emailValido(novoEmail) ||
+          novoEmail.length > 150 ||
+          senhaAtual.isEmpty) {
+        return _json(422, {'message': 'Informe um e-mail válido e sua senha.'});
+      }
+
+      try {
+        final usuarios = await connection.execute(
+          '''SELECT nome, email, senha_hash FROM usuario
+             WHERE id_usuario = :id_usuario AND ativo = 1 LIMIT 1''',
+          {'id_usuario': idUsuario},
+        );
+        if (usuarios.rows.isEmpty) {
+          return _json(404, {'message': 'Usuário não encontrado.'});
+        }
+
+        final usuario = usuarios.rows.first.assoc();
+        if (!BCrypt.checkpw(senhaAtual, usuario['senha_hash'] ?? '')) {
+          return _json(401, {'message': 'A senha atual está incorreta.'});
+        }
+        if (novoEmail == (usuario['email'] ?? '').trim().toLowerCase()) {
+          return _json(409, {'message': 'Este já é o seu e-mail atual.'});
+        }
+
+        final emailEmUso = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE email = :email LIMIT 1',
+          {'email': novoEmail},
+        );
+        if (emailEmUso.rows.isNotEmpty) {
+          return _json(409, {'message': 'Este e-mail já está cadastrado.'});
+        }
+
+        final solicitacaoRecente = await connection.execute(
+          '''SELECT id_alteracao FROM alteracao_email_token
+             WHERE id_usuario = :id_usuario
+               AND enviado_em > DATE_SUB(NOW(), INTERVAL 30 SECOND)
+             ORDER BY id_alteracao DESC LIMIT 1''',
+          {'id_usuario': idUsuario},
+        );
+        if (solicitacaoRecente.rows.isNotEmpty) {
+          return _json(429, {
+            'message': 'Aguarde 30 segundos antes de solicitar outro código.',
+          });
+        }
+
+        final nomeUsuario = usuario['nome'] ?? 'usuário';
+        final codigo = _gerarToken();
+        await connection.execute(
+          '''UPDATE alteracao_email_token SET usado_em = NOW()
+             WHERE id_usuario = :id_usuario AND usado_em IS NULL''',
+          {'id_usuario': idUsuario},
+        );
+        final insercao = await connection.execute(
+          '''INSERT INTO alteracao_email_token
+               (id_usuario, novo_email, token_hash, expira_em)
+             VALUES (:id_usuario, :novo_email, :token_hash,
+                     DATE_ADD(NOW(), INTERVAL 15 MINUTE))''',
+          {
+            'id_usuario': idUsuario,
+            'novo_email': novoEmail,
+            'token_hash': _hashToken(codigo),
+          },
+        );
+        final idAlteracao = insercao.lastInsertID;
+
+        try {
+          await sendEmailChangeToken(novoEmail, nomeUsuario, codigo);
+        } catch (error, stackTrace) {
+          await connection.execute(
+            '''DELETE FROM alteracao_email_token
+               WHERE id_alteracao = :id_alteracao''',
+            {'id_alteracao': idAlteracao},
+          );
+          print('Erro ao enviar token para alteração de e-mail: $error');
+          print(stackTrace);
+          return _json(502, {
+            'message':
+                'Não foi possível enviar o e-mail. Confira as configurações SMTP.',
+          });
+        }
+
+        return _json(200, {
+          'success': true,
+          'message': 'Código enviado para o novo e-mail.',
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao solicitar alteração de e-mail: $error');
+        print(stackTrace);
+        return _json(500, {
+          'message': 'Não foi possível solicitar a alteração de e-mail.',
+        });
+      }
+    })
+    ..post('/api/profile/email/confirm', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'message': 'JSON inválido.'});
+
+      final novoEmail = (dados['email'] ?? '').toString().trim().toLowerCase();
+      final codigo = (dados['token'] ?? '').toString().trim();
+      if (!_emailValido(novoEmail) ||
+          novoEmail.length > 150 ||
+          !RegExp(r'^\d{6}$').hasMatch(codigo)) {
+        return _json(422, {'message': 'Código inválido ou expirado.'});
+      }
+
+      try {
+        final tokens = await connection.execute(
+          '''SELECT id_alteracao FROM alteracao_email_token
+             WHERE id_usuario = :id_usuario
+               AND novo_email = :novo_email
+               AND token_hash = :token_hash
+               AND usado_em IS NULL AND expira_em > NOW()
+             ORDER BY id_alteracao DESC LIMIT 1''',
+          {
+            'id_usuario': idUsuario,
+            'novo_email': novoEmail,
+            'token_hash': _hashToken(codigo),
+          },
+        );
+        if (tokens.rows.isEmpty) {
+          return _json(422, {'message': 'Código inválido ou expirado.'});
+        }
+
+        final emailEmUso = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE email = :email LIMIT 1',
+          {'email': novoEmail},
+        );
+        if (emailEmUso.rows.isNotEmpty) {
+          return _json(409, {'message': 'Este e-mail já está cadastrado.'});
+        }
+
+        final idAlteracao =
+            int.parse(tokens.rows.first.assoc()['id_alteracao']!);
+        final resultado = await connection.execute(
+          '''UPDATE usuario u
+             JOIN alteracao_email_token t ON t.id_usuario = u.id_usuario
+             SET u.email = t.novo_email, t.usado_em = NOW()
+             WHERE u.id_usuario = :id_usuario
+               AND t.id_alteracao = :id_alteracao
+               AND t.novo_email = :novo_email
+               AND t.token_hash = :token_hash
+               AND t.usado_em IS NULL AND t.expira_em > NOW()''',
+          {
+            'id_usuario': idUsuario,
+            'id_alteracao': idAlteracao,
+            'novo_email': novoEmail,
+            'token_hash': _hashToken(codigo),
+          },
+        );
+        if (resultado.affectedRows == 0) {
+          return _json(422, {'message': 'Código inválido ou expirado.'});
+        }
+
+        return _json(200, {
+          'success': true,
+          'message': 'E-mail alterado com sucesso.',
+          'email': novoEmail,
+        });
+      } catch (error, stackTrace) {
+        final mensagem = error.toString().toLowerCase();
+        if (mensagem.contains('duplicate') || mensagem.contains('1062')) {
+          return _json(409, {'message': 'Este e-mail já está cadastrado.'});
+        }
+
+        print('Erro ao confirmar alteração de e-mail: $error');
+        print(stackTrace);
+        return _json(500, {
+          'message': 'Não foi possível confirmar a alteração de e-mail.',
+        });
+      }
+    })
     ..get('/api/feed', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
@@ -814,7 +1057,8 @@ Future<void> main() async {
                               AND c.id_usuario = :id_usuario) AS user_liked
              FROM foto f
              JOIN usuario u ON u.id_usuario = f.id_usuario
-             WHERE f.id_usuario = :id_usuario
+             WHERE u.ativo = 1 AND (
+               f.id_usuario = :id_usuario
                 OR EXISTS (
                   SELECT 1 FROM amizade a
                   WHERE a.status = 'aceito'
@@ -822,7 +1066,7 @@ Future<void> main() async {
                           AND a.id_usuario_2 = f.id_usuario)
                       OR (a.id_usuario_2 = :id_usuario
                           AND a.id_usuario_1 = f.id_usuario))
-                )
+                ))
              ORDER BY f.data_postagem DESC, f.id_foto DESC''',
           {'id_usuario': idUsuario},
         );
@@ -841,9 +1085,9 @@ Future<void> main() async {
             'authorAvatar': foto['foto_perfil'] ?? '',
             'reactionCount': foto['reaction_count'] ?? '0',
             'userReaction': foto['user_liked'] == true ||
-                foto['user_liked']?.toString() == '1'
-              ? 'HEART'
-              : null,
+                    foto['user_liked']?.toString() == '1'
+                ? 'HEART'
+                : null,
           };
         }).toList();
 
@@ -856,11 +1100,12 @@ Future<void> main() async {
     })
     ..get('/api/fotos/minhas', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
-      if (idUsuario == null) return _json(401, {'message': 'Não há publicações para serem vistas.'});
+      if (idUsuario == null)
+        return _json(401, {'message': 'Não há publicações para serem vistas.'});
 
       try {
         final resultado = await connection.execute(
-              '''SELECT f.id_foto, f.id_usuario, f.midia_url, f.legenda,
+          '''SELECT f.id_foto, f.id_usuario, f.midia_url, f.legenda,
                 f.filtro_aplicado, f.data_postagem, f.proporcao,
                 (SELECT COUNT(*) FROM curtida c
                  WHERE c.id_foto = f.id_foto) AS reaction_count,
@@ -885,7 +1130,8 @@ Future<void> main() async {
     })
     ..get('/api/friends/<friendId>/fotos', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
-      if (idUsuario == null) return _json(401, {'message': 'Não há publicações para serem vistas.'});
+      if (idUsuario == null)
+        return _json(401, {'message': 'Não há publicações para serem vistas.'});
 
       final idAmigo = int.tryParse(request.params['friendId'] ?? '');
       if (idAmigo == null || idAmigo == idUsuario) {
@@ -916,7 +1162,7 @@ Future<void> main() async {
                               AND c.id_usuario = :id_usuario) AS user_liked
              FROM foto f
              JOIN usuario u ON u.id_usuario = f.id_usuario
-             WHERE f.id_usuario = :id_amigo
+             WHERE f.id_usuario = :id_amigo AND u.ativo = 1
              ORDER BY f.data_postagem DESC, f.id_foto DESC''',
           {'id_amigo': idAmigo, 'id_usuario': idUsuario},
         );
@@ -1247,6 +1493,32 @@ Future<void> main() async {
         'success': true,
         'message': 'Senha alterada com sucesso.',
       });
+    })
+    ..delete('/api/profile', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      try {
+        final resultado = await connection.execute(
+          'UPDATE usuario SET ativo = 0 WHERE id_usuario = :id_usuario AND ativo = 1',
+          {'id_usuario': idUsuario},
+        );
+        if (resultado.affectedRows == 0) {
+          return _json(404, {'message': 'Usuário não encontrado.'});
+        }
+
+        sessoes.removeWhere((_, usuarioId) => usuarioId == idUsuario);
+        return _json(200, {
+          'success': true,
+          'message': 'Conta desativada com sucesso.',
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao desativar conta: $error');
+        print(stackTrace);
+        return _json(500, {
+          'message': 'Não foi possível desativar a conta.',
+        });
+      }
     })
     ..put('/api/profile', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);

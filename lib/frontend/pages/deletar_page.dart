@@ -53,7 +53,7 @@ class _DeletarPageState extends State<DeletarPage> {
           ],
         ),
         content: Text(
-          'Essa ação é permanente. Suas fotos e seus dados serão removidos, e não será possível recuperá-los.',
+          'Sua conta será desativada e deixará de aparecer na plataforma.',
           style: GoogleFonts.poppins(
             color: AppTheme.textSecondary,
             fontSize: 14,
@@ -172,7 +172,7 @@ class _DeletarPageState extends State<DeletarPage> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'A exclusão é permanente',
+                                'A conta será desativada',
                                 style: GoogleFonts.poppins(
                                   color: AppTheme.textPrimary,
                                   fontSize: 16,
@@ -184,7 +184,7 @@ class _DeletarPageState extends State<DeletarPage> {
                         ),
                         const SizedBox(height: 14),
                         Text(
-                          'Sua conta, suas fotos e seus dados serão removidos definitivamente. Não será possível recuperar essas informações.',
+                          'Seu perfil e suas publicações deixarão de aparecer para outras pessoas.',
                           style: GoogleFonts.poppins(
                             color: AppTheme.textSecondary,
                             fontSize: 14,
