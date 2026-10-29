@@ -263,6 +263,11 @@ class _CurtidasPageState extends State<CurtidasPage> {
           PopupMenuButton<bool>(
             tooltip: 'Filtrar curtidas',
             icon: const Icon(Icons.filter_alt, size: 30, color: Colors.black),
+            color: const Color(0xFF3E3A36),
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             onSelected: (maisAntigasPrimeiro) {
               setState(() {
                 _maisAntigasPrimeiro = maisAntigasPrimeiro;
@@ -279,11 +284,17 @@ class _CurtidasPageState extends State<CurtidasPage> {
             itemBuilder: (context) => const [
               PopupMenuItem(
                 value: false,
-                child: Text('Mais recentes'),
+                child: Text(
+                  'Mais recentes',
+                  style: TextStyle(color: Color(0xFFF3E9DC)),
+                ),
               ),
               PopupMenuItem(
                 value: true,
-                child: Text('Mais antigas'),
+                child: Text(
+                  'Mais antigas',
+                  style: TextStyle(color: Color(0xFFF3E9DC)),
+                ),
               ),
             ],
           ),
