@@ -742,13 +742,14 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3E9DC),
+      drawerEnableOpenDragGesture: !widget.abertaPelasCurtidas,
       drawer: _buildDrawer(),
       body: Column(
         children: [
           Builder(
             builder: (context) => FeedHeader(
               onMenuPressed: () => Scaffold.of(context).openDrawer(),
-              mostrarAcoes: true,
+              mostrarAcoes: !widget.abertaPelasCurtidas,
               mostrarVoltar: false,
               mostrarPesquisa: !widget.abertaPelasCurtidas,
             ),
