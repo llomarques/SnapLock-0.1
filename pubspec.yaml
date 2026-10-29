@@ -24,6 +24,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -34,3 +35,14 @@ flutter:
     - assets/images/dump.png
     - assets/images/efeitos.png
     - assets/images/proporcao.png
+
+flutter_launcher_icons:
+  android: true
+  image_path: assets/images/Icone_app.png
+  adaptive_icon_background: "#F3E9DC"
+  adaptive_icon_foreground: assets/images/Icone_app.png
+  adaptive_icon_foreground_inset: 16
+  windows:
+    generate: true
+    image_path: assets/images/Icone_app.png
+    icon_size: 100
