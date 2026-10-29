@@ -16,6 +16,7 @@ import 'perfil_page.dart';
 import 'configuracoes_page.dart';
 import 'pesquisa_page.dart';
 import 'post_page.dart';
+import 'ajudaESuporte_page.dart';
 
 class FeedPage extends StatefulWidget {
   final int initialIndex;
@@ -545,6 +546,13 @@ class _FeedPage extends State<FeedPage> {
     );
   }
 
+  void abrirAjudaESuporte() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AjudaESuportePage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final distanciaInferior = MediaQuery.viewPaddingOf(context).bottom + 38;
@@ -621,8 +629,7 @@ class _FeedPage extends State<FeedPage> {
                       title: const Text('Ajuda e suporte'),
                       hoverColor: AppTheme.surface.withValues(alpha: 0.35),
                       onTap: () {
-                        Navigator.pop(context);
-                        _selecionarAba(0);
+                        abrirAjudaESuporte();
                       },
                     ),
                     Divider(
