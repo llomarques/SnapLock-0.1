@@ -108,7 +108,6 @@ class _AlterarEmailPageState extends State<AlterarEmailPage> {
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back),
-          color: const Color(0xFF5E3023),
           tooltip: 'Voltar',
         ),
         title: const Text('Alterar e-mail'),

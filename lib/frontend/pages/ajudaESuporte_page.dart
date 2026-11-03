@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/theme/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AjudaESuportePage extends StatelessWidget {
   const AjudaESuportePage({super.key});
@@ -70,7 +71,7 @@ class AjudaESuportePage extends StatelessWidget {
                       const SizedBox(height: 20),
                       _buildFaqList(context),
                       const SizedBox(height: 12),
-                      _buildContact(),
+                      _buildContact(context),
                     ],
                   ),
                 ),
@@ -138,7 +139,7 @@ class AjudaESuportePage extends StatelessWidget {
               minTileHeight: 44,
               visualDensity: VisualDensity.compact,
               trailing: const Icon(
-                Icons.subdirectory_arrow_right,
+                Icons.arrow_drop_down,
                 color: Colors.black,
                 size: 20,
               ),
@@ -177,24 +178,79 @@ class AjudaESuportePage extends StatelessWidget {
     );
   }
 
-  Widget _buildContact() {
+  Widget _buildContact(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(6, 2, 4, 0),
-      child: Text.rich(
-        TextSpan(
-          style: GoogleFonts.poppins(
-            color: AppTheme.textSecondary,
-            fontSize: 14,
-            height: 1.32,
-          ),
-          children: const [
-            TextSpan(
-              text: 'Demais dúvidas entre em contato\ncom o nosso suporte:\n',
-              style: TextStyle(fontWeight: FontWeight.w600),
+      padding: const EdgeInsets.only(top: 24),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.cardBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.help_outline,
+                  color: AppTheme.darkBrown,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Demais dúvidas?',
+                    style: GoogleFonts.poppins(
+                      color: AppTheme.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            TextSpan(
-              text: 'snaplock.support@gmail.com',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            const SizedBox(height: 6),
+            Text(
+              'Entre em contato com o nosso suporte:',
+              style: GoogleFonts.poppins(
+                color: AppTheme.textSecondary,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 4),
+            TextButton(
+              onPressed: () async {
+                final launched = await launchUrl(
+                  Uri(
+                    scheme: 'mailto',
+                    path: 'snaplock.support@gmail.com',
+                  ),
+                );
+                if (!launched && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Não foi possível abrir o aplicativo de e-mail.'),
+                    ),
+                  );
+                }
+              },
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                foregroundColor: AppTheme.darkBrown,
+              ),
+              child: Text(
+                'snaplock.support@gmail.com',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
             ),
           ],
         ),

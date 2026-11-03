@@ -19,6 +19,7 @@ dependencies:
   carousel_slider: ^5.1.2
   lottie: ^3.1.2
   crop_your_image: ^2.0.1
+  url_launcher: ^6.3.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
