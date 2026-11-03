@@ -42,8 +42,8 @@ Future<void> main() async {
     );
   }
 
-  final emailUniqueIndex =
-      await connection.execute("SHOW INDEX FROM usuario WHERE Key_name = 'email'");
+  final emailUniqueIndex = await connection
+      .execute("SHOW INDEX FROM usuario WHERE Key_name = 'email'");
   if (emailUniqueIndex.rows.isNotEmpty) {
     await connection.execute('ALTER TABLE usuario DROP INDEX email');
   }
@@ -81,6 +81,18 @@ Future<void> main() async {
       'ALTER TABLE foto ADD COLUMN proporcao DOUBLE NULL',
     );
   }
+
+  await connection.execute(
+    '''CREATE TABLE IF NOT EXISTS dump_visibilidade (
+         id_usuario INT NOT NULL,
+         ano INT NOT NULL,
+         mes INT NOT NULL,
+         visivel BOOLEAN NOT NULL DEFAULT FALSE,
+         capa_url VARCHAR(500) NULL,
+         PRIMARY KEY (id_usuario, ano, mes),
+         CONSTRAINT fk_dump_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
+       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
+  );
 
   final denunciaTable = await connection.execute(
     "SHOW TABLES LIKE 'denuncia'",
@@ -1126,6 +1138,125 @@ Future<void> main() async {
         print('Erro ao buscar fotos: $error');
         print(stackTrace);
         return _json(500, {'message': 'Erro ao carregar galeria.'});
+      }
+    })
+    ..put('/api/dumps/<year>/<month>', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+      final year = int.tryParse(request.params['year'] ?? '');
+      final month = int.tryParse(request.params['month'] ?? '');
+      if (year == null || month == null || month < 1 || month > 12) {
+        return _json(422, {'message': 'Mês inválido.'});
+      }
+      try {
+        final body =
+            jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+        final visible = body['visible'] == true;
+        final coverUrl = body['coverUrl']?.toString();
+        await connection.execute(
+          '''INSERT INTO dump_visibilidade (id_usuario, ano, mes, visivel, capa_url)
+             VALUES (:id_usuario, :ano, :mes, :visivel, :capa_url)
+             ON DUPLICATE KEY UPDATE visivel = :visivel, capa_url = COALESCE(:capa_url, capa_url)''',
+          {
+            'id_usuario': idUsuario,
+            'ano': year,
+            'mes': month,
+            'visivel': visible ? 1 : 0,
+            'capa_url': coverUrl
+          },
+        );
+        return _json(200, {'success': true});
+      } catch (_) {
+        return _json(500, {'message': 'Não foi possível salvar o dump.'});
+      }
+    })
+    ..post('/api/dumps/<year>/<month>/cover', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+      if (!request.isMultipart)
+        return _json(
+            422, {'message': 'Envie a capa como multipart/form-data.'});
+      final year = int.tryParse(request.params['year'] ?? '');
+      final month = int.tryParse(request.params['month'] ?? '');
+      if (year == null || month == null || month < 1 || month > 12) {
+        return _json(422, {'message': 'Mês inválido.'});
+      }
+      File? tempFile;
+      await for (final formData in request.multipartFormData) {
+        if (formData.name == 'capa') {
+          final bytes = await _coletarBytes(formData.part);
+          final extension =
+              _extensaoPorContentType(formData.part.headers['content-type']);
+          tempFile = File(
+              '${Directory.systemTemp.path}/dump_${DateTime.now().microsecondsSinceEpoch}$extension');
+          await tempFile.writeAsBytes(bytes);
+        }
+      }
+      if (tempFile == null)
+        return _json(422, {'message': 'Envie o arquivo no campo "capa".'});
+      String? coverUrl;
+      try {
+        final upload = await cloudinary
+            .uploader()
+            .upload(tempFile, params: UploadParams(folder: 'dump_covers'));
+        coverUrl = upload?.data?.secureUrl;
+      } catch (error) {
+        return _json(502, {'message': 'Falha ao enviar a capa.'});
+      } finally {
+        if (await tempFile.exists()) await tempFile.delete();
+      }
+      if (coverUrl == null)
+        return _json(502, {'message': 'Falha ao processar a capa.'});
+      await connection.execute(
+        '''INSERT INTO dump_visibilidade (id_usuario, ano, mes, visivel, capa_url)
+           VALUES (:id_usuario, :ano, :mes, FALSE, :capa_url)
+           ON DUPLICATE KEY UPDATE capa_url = :capa_url''',
+        {
+          'id_usuario': idUsuario,
+          'ano': year,
+          'mes': month,
+          'capa_url': coverUrl
+        },
+      );
+      return _json(200, {'success': true, 'coverUrl': coverUrl});
+    })
+    ..get('/api/dumps/friends', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+      try {
+        final result = await connection.execute(
+          '''SELECT dv.id_usuario, dv.ano, dv.mes, dv.capa_url,
+                    u.nome, u.username, u.foto_perfil
+             FROM dump_visibilidade dv
+             JOIN usuario u ON u.id_usuario = dv.id_usuario
+             JOIN amizade a ON a.status = 'aceito'
+               AND ((a.id_usuario_1 = :id_usuario AND a.id_usuario_2 = dv.id_usuario)
+                 OR (a.id_usuario_2 = :id_usuario AND a.id_usuario_1 = dv.id_usuario))
+             WHERE dv.visivel = TRUE
+             ORDER BY dv.ano DESC, dv.mes DESC''',
+          {'id_usuario': idUsuario},
+        );
+        final dumps = <Map<String, dynamic>>[];
+        for (final row in result.rows) {
+          final dump = row.assoc();
+          final friendId = int.parse(dump['id_usuario'].toString());
+          final year = int.parse(dump['ano'].toString());
+          final month = int.parse(dump['mes'].toString());
+          final photos = await connection.execute(
+            '''SELECT id_foto, midia_url, legenda, data_postagem, proporcao
+               FROM foto WHERE id_usuario = :friend_id
+                 AND YEAR(data_postagem) = :year AND MONTH(data_postagem) = :month
+               ORDER BY data_postagem ASC''',
+            {'friend_id': friendId, 'year': year, 'month': month},
+          );
+          dumps.add({
+            ...dump,
+            'photos': photos.rows.map((photo) => photo.assoc()).toList()
+          });
+        }
+        return _json(200, {'success': true, 'dumps': dumps});
+      } catch (error) {
+        return _json(500, {'message': 'Erro ao carregar dumps dos amigos.'});
       }
     })
     ..get('/api/friends/<friendId>/fotos', (Request request) async {

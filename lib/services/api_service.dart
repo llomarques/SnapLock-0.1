@@ -291,7 +291,8 @@ class ApiService {
         throw const FormatException();
       }
     } on FormatException {
-      throw Exception('A API retornou uma resposta inválida ao excluir a conta.');
+      throw Exception(
+          'A API retornou uma resposta inválida ao excluir a conta.');
     }
 
     if (response.statusCode < 200 ||
@@ -861,6 +862,67 @@ class ApiService {
     } else {
       throw Exception(data['message'] ?? 'Erro ao carregar retrospectivas.');
     }
+  }
+
+  static Future<void> setDumpVisibility({
+    required int year,
+    required int month,
+    required bool visible,
+    String? coverUrl,
+  }) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/dumps/$year/$month'),
+      headers: _actionHeaders,
+      body: jsonEncode({'visible': visible, 'coverUrl': coverUrl}),
+    );
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
+      throw Exception(
+          data['message'] ?? 'Erro ao salvar configurações do dump.');
+    }
+  }
+
+  static Future<String> uploadDumpCover({
+    required int year,
+    required int month,
+    required Uint8List imageBytes,
+    String fileName = 'capa_dump.jpg',
+  }) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.baseUrl}/dumps/$year/$month/cover'),
+    )..files.add(
+        http.MultipartFile.fromBytes('capa', imageBytes, filename: fileName));
+    final loginToken = LoginController.tokenAtual;
+    final token = loginToken ?? _currentToken;
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = '******';
+    }
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao enviar capa do dump.');
+    }
+    return data['coverUrl']?.toString() ?? '';
+  }
+
+  static Future<List<Map<String, dynamic>>> getFriendDumps() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/dumps/friends'),
+      headers: _friendHeaders,
+    );
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300 &&
+        data['success'] == true) {
+      return (data['dumps'] as List).cast<Map<String, dynamic>>();
+    }
+    throw Exception(data['message'] ?? 'Erro ao carregar dumps dos amigos.');
   }
 
   static Future<Map<String, dynamic>> generateMonthlyDump() async {
