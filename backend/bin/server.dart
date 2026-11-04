@@ -1220,6 +1220,32 @@ Future<void> main() async {
       );
       return _json(200, {'success': true, 'coverUrl': coverUrl});
     })
+    ..get('/api/dumps/settings', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) {
+        return _json(401, {'message': 'Sessão inválida.'});
+      }
+      try {
+        final result = await connection.execute(
+          '''SELECT ano, mes, visivel, capa_url
+             FROM dump_visibilidade
+             WHERE id_usuario = :id_usuario''',
+          {'id_usuario': idUsuario},
+        );
+        final settings = result.rows.map((row) {
+          final dump = row.assoc();
+          return {
+            ...dump,
+            'visivel': dump['visivel'].toString() == '1' ||
+                dump['visivel'].toString().toLowerCase() == 'true',
+          };
+        }).toList();
+        return _json(200, {'success': true, 'settings': settings});
+      } catch (_) {
+        return _json(
+            500, {'message': 'Erro ao carregar configurações dos dumps.'});
+      }
+    })
     ..get('/api/dumps/friends', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});

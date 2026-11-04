@@ -19,6 +19,14 @@ class ApiService {
   static UserModel? get currentUser => _currentUser;
   static String? get token => _currentToken;
 
+  static String? get _authToken {
+    final loginToken = LoginController.tokenAtual?.trim();
+    final currentToken = _currentToken?.trim();
+    return currentToken?.isNotEmpty == true
+        ? currentToken
+        : (loginToken?.isNotEmpty == true ? loginToken : null);
+  }
+
   static String get _reportedPostsKey {
     final userId = (_currentUser?.id ?? LoginController.usuarioAtual?['id'])
         ?.toString()
@@ -675,10 +683,14 @@ class ApiService {
       final descartadas =
           prefs.getStringList(_dismissedFriendRequestsKey)?.toSet() ??
               <String>{};
+      final lidas =
+          prefs.getStringList(_pendingFriendRequestsReadKey)?.toSet() ??
+              <String>{};
       return list.map((item) {
         final request = Map<String, dynamic>.from(item as Map);
-        request['dismissed'] =
-            descartadas.contains(request['requestId']?.toString());
+        final requestId = request['requestId']?.toString() ?? '';
+        request['dismissed'] = descartadas.contains(requestId);
+        request['read'] = lidas.contains(requestId);
         return request;
       }).toList();
     } else {
@@ -699,6 +711,9 @@ class ApiService {
 
   static String get _dismissedFriendRequestsKey =>
       'snaplock_dismissed_friend_requests_$_notificationUserId';
+
+  static String get _pendingFriendRequestsReadKey =>
+      'snaplock_read_friend_requests_$_notificationUserId';
 
   static String get _dismissedAcceptedFriendNotificationsKey =>
       'snaplock_dismissed_accepted_friend_notifications_$_notificationUserId';
@@ -786,6 +801,20 @@ class ApiService {
           .where((id) => id.isNotEmpty),
     );
     await prefs.setStringList(_likeNotificationsReadKey, ids.toList());
+  }
+
+  static Future<void> markPendingFriendRequestsRead(
+    Iterable<Map<String, dynamic>> requests,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_pendingFriendRequestsReadKey)?.toSet() ??
+        <String>{};
+    ids.addAll(
+      requests
+          .map((item) => item['requestId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty),
+    );
+    await prefs.setStringList(_pendingFriendRequestsReadKey, ids.toList());
   }
 
   static Future<void> dismissFriendRequestNotification(String requestId) async {
@@ -895,11 +924,15 @@ class ApiService {
       Uri.parse('${ApiConfig.baseUrl}/dumps/$year/$month/cover'),
     )..files.add(
         http.MultipartFile.fromBytes('capa', imageBytes, filename: fileName));
-    final loginToken = LoginController.tokenAtual;
-    final token = loginToken ?? _currentToken;
-    if (token != null && token.isNotEmpty) {
-      request.headers['Authorization'] = '******';
+    var token = _authToken;
+    if (token == null) {
+      final prefs = await SharedPreferences.getInstance();
+      token = prefs.getString(_tokenKey)?.trim();
     }
+    if (token == null || token.isEmpty) {
+      throw Exception('Sessão inválida. Faça login novamente.');
+    }
+    request.headers['Authorization'] = 'Bearer $token';
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
     final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -909,6 +942,21 @@ class ApiService {
       throw Exception(data['message'] ?? 'Erro ao enviar capa do dump.');
     }
     return data['coverUrl']?.toString() ?? '';
+  }
+
+  static Future<List<Map<String, dynamic>>> getMyDumpSettings() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/dumps/settings'),
+      headers: _actionHeaders,
+    );
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300 &&
+        data['success'] == true) {
+      return (data['settings'] as List).cast<Map<String, dynamic>>();
+    }
+    throw Exception(
+        data['message'] ?? 'Erro ao carregar configurações dos dumps.');
   }
 
   static Future<List<Map<String, dynamic>>> getFriendDumps() async {

@@ -43,10 +43,10 @@ class _DumpPage extends State<DumpPage> {
     return '$prefix${userId}_$dumpKey';
   }
 
-  Future<void> _removeLegacyDeletionFlags(
-      SharedPreferences preferences) async {
-    final keys = preferences.getKeys().where((key) =>
-        key.startsWith(_legacyDeletedDumpPrefix));
+  Future<void> _removeLegacyDeletionFlags(SharedPreferences preferences) async {
+    final keys = preferences
+        .getKeys()
+        .where((key) => key.startsWith(_legacyDeletedDumpPrefix));
     for (final key in keys.toList()) {
       await preferences.remove(key);
     }
@@ -111,8 +111,9 @@ class _DumpPage extends State<DumpPage> {
         if (savedPhotoId != null) {
           _coverPhotoIds[key] = savedPhotoId;
         }
-        _visibleToFriends[key] =
-            preferences.getBool(_preferenceKey(_visiblePreferencePrefix, key)) ?? false;
+        _visibleToFriends[key] = preferences
+                .getBool(_preferenceKey(_visiblePreferencePrefix, key)) ??
+            false;
       }
 
       if (!mounted) return;
@@ -141,6 +142,7 @@ class _DumpPage extends State<DumpPage> {
   String _monthName(String key) {
     final month = int.parse(key.split('-')[1]);
     return _months[month - 1].toUpperCase();
+    
   }
 
   Future<void> _editCover(String key, List<PostModel> photos) async {
@@ -169,16 +171,6 @@ class _DumpPage extends State<DumpPage> {
                           color: Color(0xFF3E3A36),
                           fontSize: 18,
                           fontWeight: FontWeight.bold)),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.people_outline,
-                      color: Color(0xFFA77C5B)),
-                  title: const Text('Mostrar aos amigos'),
-                  trailing: Switch(
-                      value: visible,
-                      activeThumbColor: const Color(0xFFA77C5B),
-                      onChanged: (value) =>
-                          setSheetState(() => visible = value)),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -233,43 +225,62 @@ class _DumpPage extends State<DumpPage> {
     );
 
     final preferences = await SharedPreferences.getInstance();
-    await preferences.setBool(_preferenceKey(_visiblePreferencePrefix, key), visible);
+    await preferences.setBool(
+        _preferenceKey(_visiblePreferencePrefix, key), visible);
     if (!mounted) return;
     setState(() => _visibleToFriends[key] = visible);
 
     if (selected is PostModel) {
-      await preferences.setString(_preferenceKey(_coverPreferencePrefix, key), selected.id);
+      await preferences.setString(
+          _preferenceKey(_coverPreferencePrefix, key), selected.id);
       if (mounted) setState(() => _coverPhotoIds[key] = selected.id);
       try {
         await ApiService.setDumpVisibility(
-            year: year,
-            month: month,
-            visible: visible,
-            coverUrl: selected.imageUrl);
-      } catch (_) {}
-    } else if (selected is XFile) {
-      final bytes = await selected.readAsBytes();
-      try {
-        final coverUrl = await ApiService.uploadDumpCover(
-            year: year,
-            month: month,
-            imageBytes: bytes,
-            fileName: selected.name);
-        await ApiService.setDumpVisibility(
-            year: year, month: month, visible: visible, coverUrl: coverUrl);
-        await preferences.setString(_preferenceKey(_coverPreferencePrefix, key), coverUrl);
-        if (mounted) setState(() => _coverPhotoIds[key] = coverUrl);
+          year: year,
+          month: month,
+          visible: visible,
+          coverUrl: selected.imageUrl,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Capa do dump atualizada.')),
+          );
+        }
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text(error.toString().replaceAll('Exception: ', ''))));
         }
       }
-    } else {
+    } else if (selected is XFile) {
       try {
+        final bytes = await selected.readAsBytes();
+        final coverUrl = await ApiService.uploadDumpCover(
+          year: year,
+          month: month,
+          imageBytes: bytes,
+          fileName: selected.name,
+        );
         await ApiService.setDumpVisibility(
-            year: year, month: month, visible: visible);
-      } catch (_) {}
+          year: year,
+          month: month,
+          visible: visible,
+          coverUrl: coverUrl,
+        );
+        await preferences.setString(
+            _preferenceKey(_coverPreferencePrefix, key), coverUrl);
+        if (mounted) {
+          setState(() => _coverPhotoIds[key] = coverUrl);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Capa do dump atualizada.')),
+          );
+        }
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(error.toString().replaceAll('Exception: ', ''))));
+        }
+      }
     }
   }
 
@@ -293,7 +304,8 @@ class _DumpPage extends State<DumpPage> {
     }
 
     final preferences = await SharedPreferences.getInstance();
-    await preferences.setBool(_preferenceKey(_visiblePreferencePrefix, key), visible);
+    await preferences.setBool(
+        _preferenceKey(_visiblePreferencePrefix, key), visible);
     if (!mounted) return;
     setState(() => _visibleToFriends[key] = visible);
 
@@ -328,7 +340,7 @@ class _DumpPage extends State<DumpPage> {
   void _openAlbum(String title, List<PostModel> photos) {
     showDialog<void>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.92),
+      barrierColor: const Color(0xFFF3E9DC).withValues(alpha: 0.96),
       builder: (dialogContext) => _MonthlyPhotoCarousel(
         title: title,
         photos: photos,
@@ -347,7 +359,7 @@ class _DumpPage extends State<DumpPage> {
               textAlign: TextAlign.center));
     }
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 12,
@@ -358,7 +370,6 @@ class _DumpPage extends State<DumpPage> {
         final dump = _friendDumps[index];
         final cover = dump['capa_url']?.toString();
         final month = int.parse(dump['mes'].toString());
-        final year = dump['ano'].toString();
         final photos = (dump['photos'] as List)
             .map((item) => PostModel.fromJson({
                   'id': item['id_foto'],
@@ -373,7 +384,7 @@ class _DumpPage extends State<DumpPage> {
           borderRadius: BorderRadius.circular(18),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: () => _openAlbum('${_months[month - 1]} $year', photos),
+            onTap: () => _openAlbum(_months[month - 1], photos),
             child: Stack(fit: StackFit.expand, children: [
               if (cover == null || cover.isEmpty)
                 const Center(
@@ -393,13 +404,14 @@ class _DumpPage extends State<DumpPage> {
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${_months[month - 1].toUpperCase()} $year',
+                        Text(_months[month - 1].toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 25,
+                                fontFamily: 'serif',
+                                fontWeight: FontWeight.w700,
                                 shadows: [
                                   Shadow(color: Colors.black54, blurRadius: 4)
                                 ])),
@@ -423,7 +435,7 @@ class _DumpPage extends State<DumpPage> {
           labelColor: Color(0xFF3E3A36),
           unselectedLabelColor: Color(0xFF77716C),
           indicatorColor: Color(0xFFA77C5B),
-          tabs: [Tab(text: 'Meu dump'), Tab(text: 'Dump de amigo')],
+          tabs: [Tab(text: 'Meus dumps'), Tab(text: 'Dumps de amigos')],
         ),
         Expanded(
             child: TabBarView(children: [
@@ -431,7 +443,7 @@ class _DumpPage extends State<DumpPage> {
             onRefresh: _loadAlbums,
             color: const Color(0xFFA77C5B),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               children: [
                 if (_monthlyAlbums.isEmpty)
                   Container(
@@ -466,13 +478,6 @@ class _DumpPage extends State<DumpPage> {
                       ],
                     ),
                   ),
-                if (_monthlyAlbums.isEmpty) const SizedBox(height: 24),
-                const Text('Meus dumps',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3E3A36))),
-                const SizedBox(height: 12),
                 if (_loading)
                   const Padding(
                       padding: EdgeInsets.only(top: 40),
@@ -603,7 +608,9 @@ class _DumpPage extends State<DumpPage> {
                                                 color: const Color(0xFFA77C5B),
                                               ),
                                               const SizedBox(width: 10),
-                                              const Text('Mostrar para amigos'),
+                                              Text(isVisible
+                                                  ? 'Ocultar Dump'
+                                                  : 'Mostrar para amigos'),
                                             ],
                                           ),
                                         ),
@@ -687,12 +694,21 @@ class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
     super.dispose();
   }
 
+  void _moveTo(int page) {
+    if (page < 0 || page >= widget.photos.length) return;
+    _controller.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final photo = widget.photos[_currentPage];
 
     return Dialog.fullscreen(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFFF3E9DC),
       child: SafeArea(
         child: Stack(
           children: [
@@ -705,28 +721,99 @@ class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(16, 72, 16, 110),
                   child: InteractiveViewer(
-                    child: Image.network(url,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Center(
-                            child: Icon(Icons.broken_image_outlined,
-                                color: Colors.white, size: 64))),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEADBCB),
+                        ),
+                        child: Image.network(
+                          url,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Center(
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: Color(0xFF895737),
+                              size: 64,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 );
               },
             ),
-            Positioned(
+            if (widget.photos.length > 1) ...[
+              Positioned(
+                left: 4,
                 top: 0,
-                left: 8,
-                right: 8,
+                bottom: 72,
+                child: Center(
+                  child: Opacity(
+                    opacity: _currentPage > 0 ? 1 : 0.35,
+                    child: IconButton.filledTonal(
+                      onPressed: _currentPage > 0
+                          ? () => _moveTo(_currentPage - 1)
+                          : null,
+                      style: IconButton.styleFrom(
+                        backgroundColor:
+                            const Color(0xFFF3E9DC).withValues(alpha: 0.92),
+                        foregroundColor: const Color(0xFF895737),
+                      ),
+                      icon: const Icon(Icons.chevron_left_rounded, size: 32),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 4,
+                top: 0,
+                bottom: 72,
+                child: Center(
+                  child: Opacity(
+                    opacity: _currentPage < widget.photos.length - 1 ? 1 : 0.35,
+                    child: IconButton.filledTonal(
+                      onPressed: _currentPage < widget.photos.length - 1
+                          ? () => _moveTo(_currentPage + 1)
+                          : null,
+                      style: IconButton.styleFrom(
+                        backgroundColor:
+                            const Color(0xFFF3E9DC).withValues(alpha: 0.92),
+                        foregroundColor: const Color(0xFF895737),
+                      ),
+                      icon: const Icon(Icons.chevron_right_rounded, size: 32),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            Positioned(
+              top: 0,
+              left: 8,
+              right: 8,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3E9DC).withValues(alpha: 0.96),
+                  border: const Border(
+                    bottom: BorderSide(color: Color(0xFFD7CBBD)),
+                  ),
+                ),
                 child: Row(children: [
                   IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, color: Colors.white)),
+                      icon: const Icon(Icons.close, color: Color(0xFF895737))),
                   const Spacer(),
                   Text(widget.title,
                       style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold))
-                ])),
+                          color: Color(0xFF895737),
+                          fontFamily: 'serif',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 48),
+                ]),
+              ),
+            ),
             Positioned(
               bottom: 28,
               left: 16,
@@ -740,7 +827,10 @@ class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(
+                        color: Color(0xFF895737),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   const SizedBox(height: 10),
                   Row(
@@ -753,8 +843,8 @@ class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
                         margin: const EdgeInsets.symmetric(horizontal: 3),
                         decoration: BoxDecoration(
                           color: _currentPage == index
-                              ? const Color(0xFFD8C6B4)
-                              : Colors.white38,
+                              ? const Color(0xFF895737)
+                              : const Color(0xFFD7CBBD),
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),

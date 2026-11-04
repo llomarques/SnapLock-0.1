@@ -452,7 +452,7 @@ class _FeedPage extends State<FeedPage> {
     super.initState();
     indice = widget.initialIndex.clamp(0, telas.length - 1);
     unawaited(ScreenSecurityService.setEnabled(_isSecureTab(indice)));
-    _atualizarNotificacoes();
+    _atualizarNotificacoes(marcarComoLidas: indice == 1);
     _timerNotificacoes = Timer.periodic(
       const Duration(seconds: 30),
       (_) => _atualizarNotificacoes(),
@@ -472,12 +472,17 @@ class _FeedPage extends State<FeedPage> {
       final resultados = await Future.wait<List<Map<String, dynamic>>>([
         ApiService.getPendingRequests(),
         ApiService.getAcceptedFriendNotifications(),
+        ApiService.getLikeNotifications(),
       ]);
       if (!mounted) return;
 
-      final pendentes = resultados[0];
+      final pendentes =
+          resultados[0].where((item) => item['dismissed'] != true).toList();
+      final pendentesNaoLidos =
+          pendentes.where((item) => item['read'] != true).toList();
       final avisosAmizade = resultados[1];
-      final idsAtuais = pendentes
+      final avisosCurtidas = resultados[2];
+      final idsAtuais = pendentesNaoLidos
           .map((solicitacao) => solicitacao['requestId']?.toString() ?? '')
           .where((id) => id.isNotEmpty)
           .toSet();
@@ -494,20 +499,32 @@ class _FeedPage extends State<FeedPage> {
       final avisosNovos = idsAvisosNaoLidos.difference(
         _avisosAmizadeConhecidos,
       );
+      final idsCurtidasNaoLidas = avisosCurtidas
+          .where((aviso) => aviso['read'] != true && aviso['dismissed'] != true)
+          .map((aviso) => aviso['notificationId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      final temCurtidaNova = idsCurtidasNaoLidas.isNotEmpty;
 
       if (marcarComoLidas) {
+        await ApiService.markPendingFriendRequestsRead(pendentes);
         await ApiService.markAcceptedFriendNotificationsRead(avisosAmizade);
+        await ApiService.markLikeNotificationsRead(avisosCurtidas);
       }
       if (!mounted) return;
 
       setState(() {
         if (!_inicializouNotificacoes) {
           _temNotificacaoNova = indice != 1 &&
-              (idsAtuais.isNotEmpty || idsAvisosNaoLidos.isNotEmpty);
+              (idsAtuais.isNotEmpty ||
+                  idsAvisosNaoLidos.isNotEmpty ||
+                  temCurtidaNova);
           _inicializouNotificacoes = true;
         } else if (marcarComoLidas) {
           _temNotificacaoNova = false;
-        } else if ((idsNovos.isNotEmpty || avisosNovos.isNotEmpty) &&
+        } else if ((idsNovos.isNotEmpty ||
+                avisosNovos.isNotEmpty ||
+                temCurtidaNova) &&
             versaoNoInicio == _versaoLeituraNotificacoes) {
           _temNotificacaoNova = true;
         }
