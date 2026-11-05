@@ -84,6 +84,27 @@ class _DumpPage extends State<DumpPage> {
       final photos = await ApiService.getMyGallery();
       final preferences = await SharedPreferences.getInstance();
       await _removeLegacyDeletionFlags(preferences);
+      final serverVisibility = <String, bool>{};
+      var serverVisibilityLoaded = false;
+      try {
+        final settings = await ApiService.getMyDumpSettings();
+        serverVisibilityLoaded = true;
+        for (final dump in settings) {
+          final year = dump['ano']?.toString() ?? '';
+          final month = dump['mes']?.toString() ?? '';
+          if (year.isEmpty || month.isEmpty) continue;
+          final monthNumber = int.tryParse(month);
+          if (monthNumber == null) continue;
+          final value = dump['visivel'];
+          final isVisible = value == true ||
+              value?.toString() == '1' ||
+              value?.toString().toLowerCase() == 'true';
+          serverVisibility['$year-${monthNumber.toString().padLeft(2, '0')}'] =
+              isVisible;
+        }
+      } catch (_) {
+        // Mantém as preferências locais quando o servidor estiver indisponível.
+      }
       final albums = <String, List<PostModel>>{};
       final now = DateTime.now();
       final currentMonth = DateTime(now.year, now.month);
@@ -111,9 +132,16 @@ class _DumpPage extends State<DumpPage> {
         if (savedPhotoId != null) {
           _coverPhotoIds[key] = savedPhotoId;
         }
-        _visibleToFriends[key] = preferences
-                .getBool(_preferenceKey(_visiblePreferencePrefix, key)) ??
-            false;
+        final isVisible = serverVisibilityLoaded
+            ? serverVisibility[key] ?? false
+            : preferences
+                    .getBool(_preferenceKey(_visiblePreferencePrefix, key)) ??
+                false;
+        _visibleToFriends[key] = isVisible;
+        await preferences.setBool(
+          _preferenceKey(_visiblePreferencePrefix, key),
+          isVisible,
+        );
       }
 
       if (!mounted) return;
@@ -142,7 +170,6 @@ class _DumpPage extends State<DumpPage> {
   String _monthName(String key) {
     final month = int.parse(key.split('-')[1]);
     return _months[month - 1].toUpperCase();
-    
   }
 
   Future<void> _editCover(String key, List<PostModel> photos) async {
@@ -326,7 +353,10 @@ class _DumpPage extends State<DumpPage> {
         );
       }
     } catch (error) {
-      await preferences.setBool('$_visiblePreferencePrefix$key', !visible);
+      await preferences.setBool(
+        _preferenceKey(_visiblePreferencePrefix, key),
+        !visible,
+      );
       if (mounted) setState(() => _visibleToFriends[key] = !visible);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
