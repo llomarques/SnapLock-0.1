@@ -53,42 +53,30 @@ class _NotificacoesPage extends State<NotificacoesPage> {
       ]);
       if (!mounted) return;
       setState(() {
-        solicitacoes = resultados[0]
-            .where((item) => item['dismissed'] != true)
-            .toList();
-        avisosAceite = resultados[1]
-            .where((item) => item['dismissed'] != true)
-            .toList();
-        avisosCurtidas = resultados[2]
-          .where((item) => item['dismissed'] != true)
-          .toList();
+        solicitacoes =
+            resultados[0].where((item) => item['dismissed'] != true).toList();
+        avisosAceite =
+            resultados[1].where((item) => item['dismissed'] != true).toList();
+        avisosCurtidas =
+            resultados[2].where((item) => item['dismissed'] != true).toList();
         erro = null;
         carregando = false;
       });
 
-      final naoLidos = avisosAceite.where((item) => item['read'] != true);
-      if (naoLidos.isNotEmpty) {
-        try {
-          await ApiService.markAcceptedFriendNotificationsRead(naoLidos);
-          if (!mounted) return;
-          setState(() {
-            avisosAceite =
-                avisosAceite.map((item) => {...item, 'read': true}).toList();
-          });
-        } catch (_) {}
-      }
-
-      final curtidasNaoLidas = avisosCurtidas.where((item) => item['read'] != true);
-      if (curtidasNaoLidas.isNotEmpty) {
-        try {
-          await ApiService.markLikeNotificationsRead(curtidasNaoLidas);
-          if (!mounted) return;
-          setState(() {
-            avisosCurtidas =
-                avisosCurtidas.map((item) => {...item, 'read': true}).toList();
-          });
-        } catch (_) {}
-      }
+      await ApiService.markAllNotificationsRead(
+        friendRequests: solicitacoes,
+        acceptedFriendNotifications: avisosAceite,
+        likeNotifications: avisosCurtidas,
+      );
+      if (!mounted) return;
+      setState(() {
+        solicitacoes =
+            solicitacoes.map((item) => {...item, 'read': true}).toList();
+        avisosAceite =
+            avisosAceite.map((item) => {...item, 'read': true}).toList();
+        avisosCurtidas =
+            avisosCurtidas.map((item) => {...item, 'read': true}).toList();
+      });
     } catch (error) {
       if (!mounted) return;
       if (!silencioso) {
@@ -147,44 +135,44 @@ class _NotificacoesPage extends State<NotificacoesPage> {
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AvatarSquareWidget(imageUrl: avatarUrl, size: 36),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '@$username',
-                    style: const TextStyle(
-                      color: Color(0xFF3E3A36),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AvatarSquareWidget(imageUrl: avatarUrl, size: 36),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '@$username',
+                      style: const TextStyle(
+                        color: Color(0xFF3E3A36),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    mensagem,
-                    style: TextStyle(
-                      color: const Color(0xFF3E3A36),
-                      fontSize: 13,
-                      fontWeight: lida ? FontWeight.normal : FontWeight.w600,
+                    const SizedBox(height: 3),
+                    Text(
+                      mensagem,
+                      style: TextStyle(
+                        color: const Color(0xFF3E3A36),
+                        fontSize: 13,
+                        fontWeight: lida ? FontWeight.normal : FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  if (acoes != null) ...[
-                    const SizedBox(height: 8),
-                    acoes,
+                    if (acoes != null) ...[
+                      const SizedBox(height: 8),
+                      acoes,
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            if (trailing != null) ...[
-              const SizedBox(width: 6),
-              trailing,
+              if (trailing != null) ...[
+                const SizedBox(width: 6),
+                trailing,
+              ],
             ],
-          ],
           ),
         ),
       ),
@@ -356,15 +344,16 @@ class _NotificacoesPage extends State<NotificacoesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final quantidadeNotificacoes = solicitacoes.length +
-      avisosAceite.where((item) => item['read'] != true).length +
-      avisosCurtidas.where((item) => item['read'] != true).length;
+    final quantidadeNotificacoes =
+        solicitacoes.where((item) => item['read'] != true).length +
+            avisosAceite.where((item) => item['read'] != true).length +
+            avisosCurtidas.where((item) => item['read'] != true).length;
     final notificacoesAgrupadas = agruparNotificacoes();
     final temConteudo = solicitacoes.isNotEmpty ||
-      avisosAceite.isNotEmpty ||
-      avisosCurtidas.isNotEmpty;
+        avisosAceite.isNotEmpty ||
+        avisosCurtidas.isNotEmpty;
     final secoesFixas =
-      (avisosAceite.isEmpty ? 0 : 1) + (avisosCurtidas.isEmpty ? 0 : 1);
+        (avisosAceite.isEmpty ? 0 : 1) + (avisosCurtidas.isEmpty ? 0 : 1);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,8 +417,8 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          itemCount: notificacoesAgrupadas.keys.length +
-                              secoesFixas,
+                          itemCount:
+                              notificacoesAgrupadas.keys.length + secoesFixas,
                           itemBuilder: (context, indexGrupo) {
                             if (avisosAceite.isNotEmpty && indexGrupo == 0) {
                               return Column(

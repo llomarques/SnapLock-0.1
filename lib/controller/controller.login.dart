@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -23,6 +22,17 @@ class LoginController {
   static void _atualizarUsuario(Map<String, dynamic>? usuario) {
     usuarioAtual = usuario;
     usuarioNotifier.value = usuario;
+  }
+
+  static void atualizarEmailAtual(String email) {
+    final usuario = usuarioAtual;
+    if (usuario == null) return;
+    _atualizarUsuario({...usuario, 'email': email});
+  }
+
+  static void limparSessao() {
+    tokenAtual = null;
+    _atualizarUsuario(null);
   }
 
   static const _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL');
@@ -81,45 +91,49 @@ class LoginController {
   }
 
   static Future<String> atualizarFotoPerfil(Uint8List bytesImagem) async {
-  if (tokenAtual == null || tokenAtual!.isEmpty) {
-    throw const LoginException('Faça login novamente para editar o perfil.');
+    if (tokenAtual == null || tokenAtual!.isEmpty) {
+      throw const LoginException('Faça login novamente para editar o perfil.');
+    }
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$apiBaseUrl/api/profile/foto'),
+    )
+      ..headers['Authorization'] = 'Bearer $tokenAtual'
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'foto',
+          bytesImagem,
+          filename: 'foto_perfil.jpg',
+        ),
+      );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    final decoded = jsonDecode(response.body);
+    final data =
+        decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
+      throw LoginException(
+          data['message']?.toString() ?? 'Erro ao enviar a foto de perfil.');
+    }
+
+    final novaUrl = data['foto_perfil']?.toString() ?? '';
+
+    // Atualiza o usuário em memória com a nova foto
+    if (usuarioAtual != null) {
+      _atualizarUsuario({
+        ...usuarioAtual!,
+        'avatarUrl': novaUrl,
+      });
+    }
+
+    return novaUrl;
   }
-
-  final request = http.MultipartRequest(
-    'POST',
-    Uri.parse('$apiBaseUrl/api/profile/foto'),
-  )
-    ..headers['Authorization'] = 'Bearer $tokenAtual'
-    ..files.add(
-      http.MultipartFile.fromBytes(
-        'foto',
-        bytesImagem,
-        filename: 'foto_perfil.jpg',
-      ),
-    );
-
-  final streamedResponse = await request.send();
-  final response = await http.Response.fromStream(streamedResponse);
-
-  final decoded = jsonDecode(response.body);
-  final data = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
-
-  if (response.statusCode < 200 || response.statusCode >= 300 || data['success'] != true) {
-    throw LoginException(data['message']?.toString() ?? 'Erro ao enviar a foto de perfil.');
-  }
-
-  final novaUrl = data['foto_perfil']?.toString() ?? '';
-
-  // Atualiza o usuário em memória com a nova foto
-  if (usuarioAtual != null) {
-    _atualizarUsuario({
-      ...usuarioAtual!,
-      'avatarUrl': novaUrl,
-    });
-  }
-
-  return novaUrl;
-}
 
   static Future<Map<String, dynamic>> atualizarPerfil({
     required String nome,
@@ -144,9 +158,13 @@ class LoginController {
     );
 
     final decoded = jsonDecode(response.body);
-    final data = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
-    if (response.statusCode < 200 || response.statusCode >= 300 || data['success'] != true) {
-      throw LoginException(data['message']?.toString() ?? 'Erro ao salvar o perfil.');
+    final data =
+        decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
+      throw LoginException(
+          data['message']?.toString() ?? 'Erro ao salvar o perfil.');
     }
 
     final usuario = data['user'];
@@ -155,5 +173,4 @@ class LoginController {
     }
     return data;
   }
-
 }

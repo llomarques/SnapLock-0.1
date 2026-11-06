@@ -210,8 +210,8 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
   }
 
   Widget _buildGalleryGrid() {
-    const columnCount = 3;
-    const spacing = 4.0;
+    const columnCount = 2;
+    const spacing = 10.0;
     final aspectRatios = _aspectRatios;
     final columns = List.generate(columnCount, (_) => <int>[]);
     final columnHeights = List<double>.filled(columnCount, 0);

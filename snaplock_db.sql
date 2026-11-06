@@ -80,10 +80,13 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   `biografia` text DEFAULT NULL,
   `data_nascimento` date NOT NULL,
   `ativo` tinyint(1) NOT NULL DEFAULT 1,
+  `email_ativo` varchar(150) GENERATED ALWAYS AS (
+    CASE WHEN `ativo` = 1 THEN `email` ELSE NULL END
+  ) PERSISTENT,
   `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_usuario`),
   UNIQUE KEY `username` (`username`),
-  UNIQUE KEY `email` (`email`),
+  UNIQUE KEY `uq_usuario_email_ativo` (`email_ativo`),
   KEY `idx_usuario_ativo` (`ativo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
@@ -96,6 +99,14 @@ ALTER TABLE `usuario`
 -- Migração para bancos criados antes da coluna biografia.
 ALTER TABLE `usuario`
   ADD COLUMN IF NOT EXISTS `biografia` text DEFAULT NULL AFTER `foto_perfil`;
+
+-- Migração para permitir reutilizar e-mails de contas desativadas.
+ALTER TABLE `usuario`
+  DROP INDEX IF EXISTS `email`,
+  ADD COLUMN IF NOT EXISTS `email_ativo` varchar(150) GENERATED ALWAYS AS (
+    CASE WHEN `ativo` = 1 THEN `email` ELSE NULL END
+  ) PERSISTENT,
+  ADD UNIQUE KEY IF NOT EXISTS `uq_usuario_email_ativo` (`email_ativo`);
 
 CREATE TABLE IF NOT EXISTS `postagem` (
   `id_postagem` int(11) NOT NULL AUTO_INCREMENT,
@@ -120,6 +131,21 @@ CREATE TABLE IF NOT EXISTS `recuperacao_senha` (
   KEY `idx_recuperacao_usuario` (`id_usuario`),
   KEY `idx_recuperacao_token` (`token_hash`),
   CONSTRAINT `fk_recuperacao_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `alteracao_email_token` (
+  `id_alteracao` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) NOT NULL,
+  `novo_email` varchar(150) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expira_em` datetime NOT NULL,
+  `enviado_em` datetime NOT NULL DEFAULT current_timestamp(),
+  `usado_em` datetime DEFAULT NULL,
+  PRIMARY KEY (`id_alteracao`),
+  KEY `idx_alteracao_email_usuario` (`id_usuario`),
+  KEY `idx_alteracao_email_token` (`token_hash`),
+  CONSTRAINT `fk_alteracao_email_usuario`
+    FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Copiando dados para a tabela snaplock_db.usuario: ~0 rows (aproximadamente)
