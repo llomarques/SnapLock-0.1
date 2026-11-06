@@ -86,9 +86,9 @@ class FeedHeader extends StatelessWidget {
                     : null),
             centerTitle: true,
             title: Image.asset(
-              'assets/images/logo.png',
-              height: 80,
-              width: 80,
+              'assets/images/logo2.webp',
+              height: 200,
+              width: 200,
             ),
             actions: trailingAction != null
                 ? [trailingAction!]
