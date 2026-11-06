@@ -817,6 +817,18 @@ class ApiService {
     await prefs.setStringList(_pendingFriendRequestsReadKey, ids.toList());
   }
 
+  static Future<void> markAllNotificationsRead({
+    required Iterable<Map<String, dynamic>> friendRequests,
+    required Iterable<Map<String, dynamic>> acceptedFriendNotifications,
+    required Iterable<Map<String, dynamic>> likeNotifications,
+  }) async {
+    await Future.wait([
+      markPendingFriendRequestsRead(friendRequests),
+      markAcceptedFriendNotificationsRead(acceptedFriendNotifications),
+      markLikeNotificationsRead(likeNotifications),
+    ]);
+  }
+
   static Future<void> dismissFriendRequestNotification(String requestId) async {
     final prefs = await SharedPreferences.getInstance();
     final ids =

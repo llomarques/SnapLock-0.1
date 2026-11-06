@@ -63,32 +63,20 @@ class _NotificacoesPage extends State<NotificacoesPage> {
         carregando = false;
       });
 
-      await ApiService.markPendingFriendRequestsRead(solicitacoes);
-
-      final naoLidos = avisosAceite.where((item) => item['read'] != true);
-      if (naoLidos.isNotEmpty) {
-        try {
-          await ApiService.markAcceptedFriendNotificationsRead(naoLidos);
-          if (!mounted) return;
-          setState(() {
-            avisosAceite =
-                avisosAceite.map((item) => {...item, 'read': true}).toList();
-          });
-        } catch (_) {}
-      }
-
-      final curtidasNaoLidas =
-          avisosCurtidas.where((item) => item['read'] != true);
-      if (curtidasNaoLidas.isNotEmpty) {
-        try {
-          await ApiService.markLikeNotificationsRead(curtidasNaoLidas);
-          if (!mounted) return;
-          setState(() {
-            avisosCurtidas =
-                avisosCurtidas.map((item) => {...item, 'read': true}).toList();
-          });
-        } catch (_) {}
-      }
+      await ApiService.markAllNotificationsRead(
+        friendRequests: solicitacoes,
+        acceptedFriendNotifications: avisosAceite,
+        likeNotifications: avisosCurtidas,
+      );
+      if (!mounted) return;
+      setState(() {
+        solicitacoes =
+            solicitacoes.map((item) => {...item, 'read': true}).toList();
+        avisosAceite =
+            avisosAceite.map((item) => {...item, 'read': true}).toList();
+        avisosCurtidas =
+            avisosCurtidas.map((item) => {...item, 'read': true}).toList();
+      });
     } catch (error) {
       if (!mounted) return;
       if (!silencioso) {
@@ -356,9 +344,10 @@ class _NotificacoesPage extends State<NotificacoesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final quantidadeNotificacoes = solicitacoes.length +
-        avisosAceite.where((item) => item['read'] != true).length +
-        avisosCurtidas.where((item) => item['read'] != true).length;
+    final quantidadeNotificacoes =
+        solicitacoes.where((item) => item['read'] != true).length +
+            avisosAceite.where((item) => item['read'] != true).length +
+            avisosCurtidas.where((item) => item['read'] != true).length;
     final notificacoesAgrupadas = agruparNotificacoes();
     final temConteudo = solicitacoes.isNotEmpty ||
         avisosAceite.isNotEmpty ||

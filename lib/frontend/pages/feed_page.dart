@@ -468,6 +468,9 @@ class _FeedPage extends State<FeedPage> {
 
   Future<void> _atualizarNotificacoes({bool marcarComoLidas = false}) async {
     final versaoNoInicio = _versaoLeituraNotificacoes;
+    if (indice == 1) {
+      marcarComoLidas = true;
+    }
     try {
       final resultados = await Future.wait<List<Map<String, dynamic>>>([
         ApiService.getPendingRequests(),
@@ -507,9 +510,11 @@ class _FeedPage extends State<FeedPage> {
       final temCurtidaNova = idsCurtidasNaoLidas.isNotEmpty;
 
       if (marcarComoLidas) {
-        await ApiService.markPendingFriendRequestsRead(pendentes);
-        await ApiService.markAcceptedFriendNotificationsRead(avisosAmizade);
-        await ApiService.markLikeNotificationsRead(avisosCurtidas);
+        await ApiService.markAllNotificationsRead(
+          friendRequests: pendentes,
+          acceptedFriendNotifications: avisosAmizade,
+          likeNotifications: avisosCurtidas,
+        );
       }
       if (!mounted) return;
 
