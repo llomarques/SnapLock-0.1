@@ -27,6 +27,11 @@ class AjudaESuportePage extends StatelessWidget {
       answer:
           'Acesse seu perfil e toque em Editar perfil. Se o problema continuar, fale com nosso suporte pelo e-mail abaixo.',
     ),
+    _FaqItem(
+      question: 'O que é o Dump?',
+      answer:
+          'O Dump é um álbum criado com as fotos que você publicou. Ele ajuda você a guardar a revisitar suas memórias de forma organizada, você tambèm pode compartilha-ló com seus amigos.',
+    ),
   ];
 
   @override
