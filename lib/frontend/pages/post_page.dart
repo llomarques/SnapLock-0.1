@@ -10,6 +10,7 @@ import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/theme/app_theme.dart';
 import 'ajudaESuporte_page.dart';
 import 'configuracoes_page.dart';
+import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
 
 class PostMaximizadoPage extends StatefulWidget {
   const PostMaximizadoPage({
@@ -859,17 +860,26 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                                     ],
                                   ),
                                 ),
-                                child: Text(
-                                  '@$username',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black54,
-                                        blurRadius: 3,
-                                      ),
-                                    ],
+                                child: InkWell(
+                                  onTap: () => abrirPerfilUsuario(
+                                    context,
+                                    username: username ?? '',
+                                    userId: post.userId,
+                                    name: post.authorName,
+                                    avatarUrl: post.authorAvatar,
+                                  ),
+                                  child: Text(
+                                    '@$username',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black54,
+                                          blurRadius: 3,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),

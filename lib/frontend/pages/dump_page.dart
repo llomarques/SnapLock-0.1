@@ -3,6 +3,7 @@ import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
 
 class DumpPage extends StatefulWidget {
   const DumpPage({super.key});
@@ -400,6 +401,9 @@ class _DumpPage extends State<DumpPage> {
         final dump = _friendDumps[index];
         final cover = dump['capa_url']?.toString();
         final month = int.parse(dump['mes'].toString());
+        final username = dump['username']?.toString().trim() ?? '';
+        final displayUsername =
+            username.isEmpty ? 'usuario' : username.replaceFirst('@', '');
         final photos = (dump['photos'] as List)
             .map((item) => PostModel.fromJson({
                   'id': item['id_foto'],
@@ -445,9 +449,19 @@ class _DumpPage extends State<DumpPage> {
                                 shadows: [
                                   Shadow(color: Colors.black54, blurRadius: 4)
                                 ])),
-                        Text(dump['nome']?.toString() ?? 'Amigo',
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12)),
+                        InkWell(
+                          onTap: () => abrirPerfilUsuario(
+                            context,
+                            username: username,
+                            userId: dump['id_usuario']?.toString(),
+                            name: dump['nome']?.toString(),
+                          ),
+                          child: Text('@$displayUsername',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                )),
+                        ),
                       ])),
             ]),
           ),

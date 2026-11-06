@@ -6,6 +6,7 @@ class AvatarSquareWidget extends StatelessWidget {
   final Color backgroundColor;
   final Color iconColor;
   final String? fallbackAsset;
+  final VoidCallback? onTap;
 
   const AvatarSquareWidget({
     super.key,
@@ -14,6 +15,7 @@ class AvatarSquareWidget extends StatelessWidget {
     this.backgroundColor = const Color(0xFFD7CBBD),
     this.iconColor = const Color(0xFF5E3023),
     this.fallbackAsset,
+    this.onTap,
   });
 
   Widget _placeholder() => fallbackAsset != null
@@ -25,7 +27,7 @@ class AvatarSquareWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
+    final avatar = ClipRRect(
       borderRadius: BorderRadius.circular(5),
       child: SizedBox.square(
         dimension: size,
@@ -37,6 +39,12 @@ class AvatarSquareWidget extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) => _placeholder(),
               ),
       ),
+    );
+    if (onTap == null) return avatar;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(5),
+      child: avatar,
     );
   }
 }

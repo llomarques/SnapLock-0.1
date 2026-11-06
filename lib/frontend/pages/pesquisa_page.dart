@@ -6,6 +6,8 @@ import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
 import 'package:snaplock/models/user_model.dart';
 import 'package:snaplock/services/api_service.dart';
+import 'package:snaplock/frontend/pages/perfilAmigo_page.dart';
+import 'package:snaplock/frontend/utils/image_viewer.dart';
 
 class PesquisaPage extends StatefulWidget {
   const PesquisaPage({super.key});
@@ -116,11 +118,21 @@ class _PesquisaPage extends State<PesquisaPage> {
           dense: true,
           visualDensity: const VisualDensity(vertical: -2),
           contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PerfilAmigoPage(amigo: usuario),
+            ),
+          ),
           leading: AvatarSquareWidget(
             imageUrl: usuario.avatarUrl,
             size: 33,
             backgroundColor: Colors.black,
             iconColor: Colors.white,
+            onTap: () => mostrarImagemPerfilMaximizada(
+              context,
+              imageUrl: usuario.avatarUrl,
+            ),
           ),
           title: Text(
             usuario.name,

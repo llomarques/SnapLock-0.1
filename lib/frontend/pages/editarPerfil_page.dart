@@ -5,6 +5,7 @@ import '../../controller/controller.login.dart';
 import '../../theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/input_widget.dart';
 import 'package:snaplock/frontend/utils/foto_utils.dart';
+import 'package:snaplock/frontend/utils/image_viewer.dart';
 
 class EditarPerfilPage extends StatefulWidget {
   final String nomeInicial;
@@ -169,9 +170,10 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
       return;
     }
 
-    setState(() {
-      fotoPerfil = bytes;
-    });
+    final ajustada = await abrirEditorFotoPerfil(context, bytes);
+    if (ajustada == null || !mounted) return;
+
+    setState(() => fotoPerfil = ajustada);
   }
 
   ImageProvider<Object> get imagemPerfil {
@@ -223,14 +225,22 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: ClipRRect(
+              child: InkWell(
                 borderRadius: BorderRadius.circular(14),
-                child: Image(
-                  image: imagemPerfil,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Image.asset(
-                    'assets/images/monalisaPerfil.png',
+                onTap: () => mostrarImagemPerfilMaximizada(
+                  context,
+                  imageUrl: widget.fotoPerfilUrlInicial,
+                  memoryBytes: fotoPerfil,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image(
+                    image: imagemPerfil,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                      'assets/images/monalisaPerfil.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),

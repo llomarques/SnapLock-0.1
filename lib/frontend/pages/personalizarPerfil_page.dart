@@ -4,6 +4,7 @@ import 'package:snaplock/frontend/pages/feed_page.dart';
 import 'package:snaplock/frontend/utils/foto_utils.dart';
 import '../../controller/controller.login.dart';
 import 'package:snaplock/frontend/widgets/input_widget.dart';
+import 'package:snaplock/frontend/utils/image_viewer.dart';
 
 class personalizarPerfilPage extends StatefulWidget {
   const personalizarPerfilPage({super.key});
@@ -36,13 +37,15 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
         return;
       }
 
-      setState(() {
-        fotoPerfil = bytes;
-      });
+      final ajustada = await abrirEditorFotoPerfil(context, bytes);
+      if (ajustada == null || !mounted) return;
+
+      setState(() => fotoPerfil = ajustada);
     } on PlatformException catch (error) {
       if (mounted && error.code != 'already_active') {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível selecionar a imagem.')),
+          const SnackBar(
+              content: Text('Não foi possível selecionar a imagem.')),
         );
       }
     } finally {
@@ -136,14 +139,22 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: ClipRRect(
+              child: InkWell(
                 borderRadius: BorderRadius.circular(14),
-                child: Image(
-                  image: fotoPerfil != null
-                      ? MemoryImage(fotoPerfil!)
-                      : const AssetImage('assets/images/monalisaPerfil.png')
-                          as ImageProvider,
-                  fit: BoxFit.cover,
+                onTap: () => mostrarImagemPerfilMaximizada(
+                  context,
+                  imageUrl: '',
+                  memoryBytes: fotoPerfil,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image(
+                    image: fotoPerfil != null
+                        ? MemoryImage(fotoPerfil!)
+                        : const AssetImage('assets/images/monalisaPerfil.png')
+                            as ImageProvider,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
@@ -159,9 +170,8 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.camera_alt),
-                label: Text(selecionandoImagem
-                  ? 'Abrindo galeria...'
-                  : 'Adicionar foto'),
+              label: Text(
+                  selecionandoImagem ? 'Abrindo galeria...' : 'Adicionar foto'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF895737),
                 foregroundColor: Color(0xFFF3E9DC),
@@ -175,8 +185,8 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               texto: 'Digite sua biografia',
               icon: Icons.chat_bubble,
               maximoCaracteres: 150,
-			  linhasMinimas: 3,
-			  linhasMaximas: 6,
+              linhasMinimas: 3,
+              linhasMaximas: 6,
             ),
             const SizedBox(
               height: 20,

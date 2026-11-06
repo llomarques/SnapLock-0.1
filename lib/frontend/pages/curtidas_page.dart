@@ -4,6 +4,7 @@ import 'package:snaplock/frontend/pages/post_page.dart';
 import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/theme/app_theme.dart';
+import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
 
 class CurtidasPage extends StatefulWidget {
   const CurtidasPage({super.key});
@@ -162,17 +163,26 @@ class _CurtidasPageState extends State<CurtidasPage> {
                       colors: [Colors.transparent, Color(0xB3000000)],
                     ),
                   ),
-                  child: Text(
-                    '@${post.authorUsername?.isNotEmpty == true ? post.authorUsername : 'usuario'}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      shadows: [
-                        Shadow(color: Colors.black54, blurRadius: 3),
-                      ],
+                  child: InkWell(
+                    onTap: () => abrirPerfilUsuario(
+                      context,
+                      username: post.authorUsername ?? '',
+                      userId: post.userId,
+                      name: post.authorName,
+                      avatarUrl: post.authorAvatar,
+                    ),
+                    child: Text(
+                      '@${post.authorUsername?.isNotEmpty == true ? post.authorUsername : 'usuario'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        shadows: [
+                          Shadow(color: Colors.black54, blurRadius: 3),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -7,6 +7,7 @@ import 'package:snaplock/frontend/widgets/botoes_widget.dart';
 import 'package:snaplock/models/user_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/theme/app_theme.dart';
+import 'package:snaplock/frontend/utils/image_viewer.dart';
 
 class AmigosPage extends StatefulWidget {
   const AmigosPage({super.key});
@@ -230,6 +231,10 @@ class _AmigosPage extends State<AmigosPage> {
             imageUrl: amigo.avatarUrl,
             size: 33,
             backgroundColor: Colors.black,
+            onTap: () => mostrarImagemPerfilMaximizada(
+              context,
+              imageUrl: amigo.avatarUrl,
+            ),
           ),
           title: Text(
             amigo.name,
