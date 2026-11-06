@@ -352,6 +352,7 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
           Builder(
             builder: (context) => FeedHeader(
               onMenuPressed: () => Scaffold.of(context).openDrawer(),
+              mostrarVoltar: true,
             ),
           ),
           Expanded(
