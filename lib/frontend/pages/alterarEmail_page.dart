@@ -110,7 +110,6 @@ class _AlterarEmailPageState extends State<AlterarEmailPage> {
           icon: const Icon(Icons.arrow_back),
           tooltip: 'Voltar',
         ),
-        title: const Text('Alterar e-mail'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

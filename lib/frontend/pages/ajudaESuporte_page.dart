@@ -91,22 +91,8 @@ class AjudaESuportePage extends StatelessWidget {
   Widget _buildSupportLabel() {
     return Row(
       children: [
-        const Icon(Icons.support_agent, color: Colors.black, size: 27),
         const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
-          decoration: BoxDecoration(
-            color: AppTheme.cardBorder,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: Text(
-            'Ajuda e suporte',
-            style: GoogleFonts.poppins(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
-            ),
-          ),
-        ),
+        
       ],
     );
   }
