@@ -481,6 +481,9 @@ class _DumpPage extends State<DumpPage> {
           indicatorColor: Color(0xFFA77C5B),
           tabs: [Tab(text: 'Meus dumps'), Tab(text: 'Dumps de amigos')],
         ),
+
+        const SizedBox(height: 15),
+
         Expanded(
             child: TabBarView(children: [
           RefreshIndicator(
@@ -501,11 +504,15 @@ class _DumpPage extends State<DumpPage> {
                             color: Color(0x33000000),
                             blurRadius: 4,
                             offset: Offset(0, 2)),
+                      
                       ],
                     ),
+                  
+
                     child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        SizedBox(height: 5),
                         Text('O que é um Dump?',
                             style: TextStyle(
                                 color: Color(0xFFA77C5B),
@@ -522,6 +529,7 @@ class _DumpPage extends State<DumpPage> {
                       ],
                     ),
                   ),
+                const SizedBox(height: 12),
                 if (_loading)
                   const Padding(
                       padding: EdgeInsets.only(top: 40),
