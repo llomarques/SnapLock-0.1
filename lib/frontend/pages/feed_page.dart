@@ -87,9 +87,9 @@ class FeedHeader extends StatelessWidget {
                     : null),
             centerTitle: true,
             title: Image.asset(
-              'assets/images/logo.png',
-              height: 80,
-              width: 80,
+              'assets/images/logo2.webp',
+              height: 200,
+              width: 200,
             ),
             actions: trailingAction != null
                 ? [trailingAction!]
@@ -601,7 +601,7 @@ class _FeedPage extends State<FeedPage> {
             setState(() => _drawerAberto = aberto);
           },
           drawer: Drawer(
-            backgroundColor: const Color(0xFFC08552),
+            backgroundColor: AppTheme.mediumBrown,
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
@@ -617,8 +617,11 @@ class _FeedPage extends State<FeedPage> {
                   children: [
                     ListTile(
                       leading: const Icon(Icons.person),
-                      title: const Text('Perfil'),
-                      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+                      title: const Text(
+                        'Perfil',
+                        style: TextStyle(color: AppTheme.background),
+                      ),
+                      iconColor: AppTheme.background,
                       onTap: () {
                         Navigator.pop(context);
                         _selecionarAba(4);
@@ -628,12 +631,15 @@ class _FeedPage extends State<FeedPage> {
                       height: 1,
                       indent: 16,
                       endIndent: 16,
-                      color: AppTheme.darkBrown.withValues(alpha: 0.3),
+                      color: AppTheme.background.withValues(alpha: 0.55),
                     ),
                     ListTile(
                       leading: const Icon(Icons.notifications),
-                      title: const Text('Notificações'),
-                      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+                      title: const Text(
+                        'Notificações',
+                        style: TextStyle(color: AppTheme.background),
+                      ),
+                      iconColor: AppTheme.background,
                       onTap: () {
                         Navigator.pop(context);
                         _selecionarAba(1);
@@ -643,12 +649,15 @@ class _FeedPage extends State<FeedPage> {
                       height: 1,
                       indent: 16,
                       endIndent: 16,
-                      color: AppTheme.darkBrown.withValues(alpha: 0.3),
+                      color: AppTheme.background.withValues(alpha: 0.55),
                     ),
                     ListTile(
                       leading: const Icon(Icons.settings),
-                      title: const Text('Configurações'),
-                      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+                      title: const Text(
+                        'Configurações',
+                        style: TextStyle(color: AppTheme.background),
+                      ),
+                      iconColor: AppTheme.background,
                       onTap: () {
                         abrirConfiguracoes();
                       },
@@ -657,12 +666,15 @@ class _FeedPage extends State<FeedPage> {
                       height: 1,
                       indent: 16,
                       endIndent: 16,
-                      color: AppTheme.darkBrown.withValues(alpha: 0.3),
+                      color: AppTheme.background.withValues(alpha: 0.55),
                     ),
                     ListTile(
                       leading: const Icon(Icons.call),
-                      title: const Text('Ajuda e suporte'),
-                      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+                      title: const Text(
+                        'Ajuda e suporte',
+                        style: TextStyle(color: AppTheme.background),
+                      ),
+                      iconColor: AppTheme.background,
                       onTap: () {
                         abrirAjudaESuporte();
                       },
@@ -671,12 +683,17 @@ class _FeedPage extends State<FeedPage> {
                       height: 1,
                       indent: 16,
                       endIndent: 16,
-                      color: AppTheme.darkBrown.withValues(alpha: 0.3),
+                      color: AppTheme.background.withValues(alpha: 0.55),
                     ),
                     ListTile(
-                      leading: const Icon(Icons.logout),
-                      title: const Text('Sair'),
-                      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+                      leading: const Icon(
+                        Icons.logout,
+                        color: AppTheme.background,
+                      ),
+                      title: const Text(
+                        'Sair',
+                        style: TextStyle(color: AppTheme.background),
+                      ),
                       onTap: () async {
                         final confirmarSaida = await showDialog<bool>(
                           context: context,

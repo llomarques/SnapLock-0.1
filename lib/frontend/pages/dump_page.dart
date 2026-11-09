@@ -614,6 +614,11 @@ class _DumpPage extends State<DumpPage> {
                                   shape: const CircleBorder(),
                                   child: PopupMenuButton<String>(
                                     tooltip: 'Opções do dump',
+                                    color: const Color(0xFF3E3A36),
+                                    surfaceTintColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                     icon: const Icon(Icons.more_horiz,
                                         color: Colors.white, size: 22),
                                     onSelected: (option) {
@@ -633,9 +638,14 @@ class _DumpPage extends State<DumpPage> {
                                             children: [
                                               Icon(Icons.photo_library_outlined,
                                                   size: 20,
-                                                  color: Color(0xFF77716C)),
+                                                  color: Color(0xFFF3E9DC)),
                                               SizedBox(width: 10),
-                                              Text('Editar capa'),
+                                              Text(
+                                                'Editar capa',
+                                                style: TextStyle(
+                                                  color: Color(0xFFF3E9DC),
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -649,12 +659,17 @@ class _DumpPage extends State<DumpPage> {
                                                         .visibility_off_outlined
                                                     : Icons.visibility_outlined,
                                                 size: 20,
-                                                color: const Color(0xFFA77C5B),
+                                                color: const Color(0xFFF3E9DC),
                                               ),
                                               const SizedBox(width: 10),
-                                              Text(isVisible
-                                                  ? 'Ocultar Dump'
-                                                  : 'Mostrar para amigos'),
+                                              Text(
+                                                isVisible
+                                                    ? 'Ocultar Dump'
+                                                    : 'Mostrar para amigos',
+                                                style: const TextStyle(
+                                                  color: Color(0xFFF3E9DC),
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
