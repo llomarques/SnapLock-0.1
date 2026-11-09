@@ -254,10 +254,13 @@ class _CurtidasPageState extends State<CurtidasPage> {
           icon: const Icon(Icons.arrow_back, size: 30, color: Colors.black),
         ),
         centerTitle: true,
-        title: Image.asset(
-          'assets/images/logo.png',
-          height: 80,
-          width: 80,
+        title: SizedBox(
+          width: 220,
+          height: 100,
+          child: Image.asset(
+            'assets/images/logo_black.png',
+            fit: BoxFit.contain,
+          ),
         ),
         actions: [
           PopupMenuButton<bool>(
