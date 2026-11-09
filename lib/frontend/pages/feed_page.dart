@@ -598,11 +598,21 @@ class _FeedPage extends State<FeedPage> {
               padding: EdgeInsets.zero,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(top: 60, bottom: 12),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    height: 80,
-                    fit: BoxFit.contain,
+                  padding: const EdgeInsets.fromLTRB(18, 48, 18, 14),
+                  child: Container(
+                    height: 108,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.darkBrown.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppTheme.lightBrown.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Image.asset(
+                      'assets/images/logo_white.png',
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 Column(
