@@ -31,7 +31,9 @@ flutter:
 
   assets:
     - assets/images/logo.png
-    - assets/images/logo2.webp
+    - assets/images/logo_black.png
+    - assets/images/logo_white.png
+    - assets/images/logo_color.png
     - assets/images/monalisaPerfil.png
     - assets/images/dump.png
     - assets/images/efeitos.png
