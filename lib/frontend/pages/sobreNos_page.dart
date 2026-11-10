@@ -61,38 +61,51 @@ class SobreNosPage extends StatelessWidget {
                 const SizedBox(height: 26),
                 const _SectionHeading(
                   eyebrow: 'FEITO PARA VOCÊ',
-                  title: 'O que torna o SnapLock diferente?',
+                  title: 'O que você encontra dentro do SnapLock?',
                 ),
                 const SizedBox(height: 12),
                 const _FeatureCard(
-                  icon: Icons.lock_outline_rounded,
-                  title: 'Privacidade em primeiro lugar',
+                  icon: Icons.photo_library_outlined,
+                  category: '01 / PRIVACIDADE',
+                  title: 'Fotos para o seu círculo',
                   description:
-                      'Suas publicações são compartilhadas apenas com pessoas que você aprovou.',
-                ),
-                const _FeatureCard(
-                  icon: Icons.people_outline_rounded,
-                  title: 'Conexões de confiança',
-                  description:
-                      'Você decide quem pode fazer parte do seu círculo de amigos.',
+                      'Compartilhe momentos que só amigos autorizados podem ver.',
+                  highlighted: true,
                 ),
                 const _FeatureCard(
                   icon: Icons.favorite_outline_rounded,
-                  title: 'Interações positivas',
+                  category: '02 / INTERAÇÃO',
+                  title: 'Curtidas',
                   description:
-                      'Reações simples valorizam os momentos sem transformar a experiência em uma competição.',
-                ),
-                const _FeatureCard(
-                  icon: Icons.shield_outlined,
-                  title: 'Ambiente mais seguro',
-                  description:
-                      'Recursos de denúncia e moderação ajudam a manter a comunidade mais respeitosa.',
+                      'Reaja às publicações de forma leve, sem comentários ou mensagens privadas.',
                 ),
                 const _FeatureCard(
                   icon: Icons.auto_awesome_outlined,
-                  title: 'Suas memórias organizadas',
+                  category: '03 / PERSONALIZAÇÃO',
+                  title: 'Seu estilo, suas regras',
                   description:
-                      'O Dump reúne momentos para você reviver suas lembranças de forma especial.',
+                      'Personalize tema e fonte para deixar o app com a sua cara.',
+                ),
+                const _FeatureCard(
+                  icon: Icons.tune_rounded,
+                  category: '04 / FOTOS',
+                  title: 'Edite antes de postar',
+                  description:
+                      'Adicione legendas e ajuste suas fotos com filtros e formatos.',
+                ),
+                const _FeatureCard(
+                  icon: Icons.schedule_rounded,
+                  category: '05 / RETROSPECTIVAS',
+                  title: 'Reviva cada fase',
+                  description:
+                      'Relembre os registros especiais do mês e do ano.',
+                ),
+                const _FeatureCard(
+                  icon: Icons.account_circle_outlined,
+                  category: '06 / SEU PERFIL',
+                  title: 'Um perfil que é você',
+                  description:
+                      'Cuide das suas informações e mantenha seu espaço atualizado.',
                 ),
                 const SizedBox(height: 26),
                 _buildVision(),
@@ -128,17 +141,19 @@ class SobreNosPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 190,
-            height: 88,
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
             ),
-            child: Image.asset(
-              'assets/images/logo_white.png',
-              fit: BoxFit.contain,
+            child: const Text(
+              'Sobre Nós',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(height: 22),
@@ -318,38 +333,87 @@ class _InfoCard extends StatelessWidget {
 class _FeatureCard extends StatelessWidget {
   const _FeatureCard({
     required this.icon,
+    required this.category,
     required this.title,
     required this.description,
+    this.highlighted = false,
   });
 
   final IconData icon;
+  final String category;
   final String title;
   final String description;
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: _InfoCard(
-        icon: icon,
-        child: Column(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color:
+              highlighted ? SobreNosPage._darkBrown : const Color(0xFFFFFBF7),
+          borderRadius: BorderRadius.circular(20),
+          border:
+              highlighted ? null : Border.all(color: const Color(0xFFEADCCE)),
+        ),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                color: SobreNosPage._darkBrown,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: highlighted
+                    ? const Color(0xFFC17A45)
+                    : SobreNosPage._darkBrown,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 21,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              style: const TextStyle(
-                color: SobreNosPage._mutedText,
-                fontSize: 13,
-                height: 1.5,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category,
+                    style: TextStyle(
+                      color: highlighted
+                          ? const Color(0xFFEAB080)
+                          : SobreNosPage._mediumBrown,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color:
+                          highlighted ? Colors.white : SobreNosPage._darkBrown,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: highlighted
+                          ? Colors.white.withValues(alpha: 0.82)
+                          : SobreNosPage._mutedText,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
