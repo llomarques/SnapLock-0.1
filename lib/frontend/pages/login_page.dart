@@ -81,13 +81,13 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 50),
             const LogoSobreNosWidget(
               assetPath: 'assets/images/logo.png',
               width: 150,
-              height: 250,
+              height: 150,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 50),
             InputWidget(
               controller: loginControllerTexto,
               texto: 'Digite seu e-mail ou usuário',
