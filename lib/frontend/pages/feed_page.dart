@@ -7,6 +7,7 @@ import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/services/screen_security_service.dart';
 import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'package:snaplock/theme/app_theme.dart';
 import 'notificacoes_page.dart';
@@ -88,8 +89,8 @@ class FeedHeader extends StatelessWidget {
             title: SizedBox(
               width: 220,
               height: 100,
-              child: Image.asset(
-                'assets/images/logo_black.png',
+              child: const LogoSobreNosWidget(
+                assetPath: 'assets/images/logo_black.png',
                 fit: BoxFit.contain,
               ),
             ),
@@ -609,8 +610,8 @@ class _FeedPage extends State<FeedPage> {
                         color: AppTheme.lightBrown.withValues(alpha: 0.35),
                       ),
                     ),
-                    child: Image.asset(
-                      'assets/images/logo_white.png',
+                    child: const LogoSobreNosWidget(
+                      assetPath: 'assets/images/logo_white.png',
                       fit: BoxFit.contain,
                     ),
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:snaplock/frontend/pages/post_page.dart';
 import 'package:snaplock/models/post_model.dart';
@@ -257,8 +258,8 @@ class _CurtidasPageState extends State<CurtidasPage> {
         title: SizedBox(
           width: 220,
           height: 100,
-          child: Image.asset(
-            'assets/images/logo_black.png',
+          child: const LogoSobreNosWidget(
+            assetPath: 'assets/images/logo_black.png',
             fit: BoxFit.contain,
           ),
         ),

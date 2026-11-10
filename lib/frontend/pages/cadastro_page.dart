@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/frontend/pages/personalizarPerfil_page.dart';
 import 'package:snaplock/frontend/pages/login_page.dart';
 import 'package:snaplock/frontend/utils/mensagem_utils.dart';
@@ -145,8 +146,8 @@ class _CadastroPageState extends State<CadastroPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            Image.asset(
-              'assets/images/logo.png',
+            const LogoSobreNosWidget(
+              assetPath: 'assets/images/logo.png',
               width: 130,
               height: 130,
             ),

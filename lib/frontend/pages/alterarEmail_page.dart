@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:snaplock/controller/controller.alterarEmail.dart';
 import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
@@ -117,8 +118,8 @@ class _AlterarEmailPageState extends State<AlterarEmailPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            Image.asset(
-              'assets/images/logo.png',
+            const LogoSobreNosWidget(
+              assetPath: 'assets/images/logo.png',
               width: 150,
               height: 150,
             ),

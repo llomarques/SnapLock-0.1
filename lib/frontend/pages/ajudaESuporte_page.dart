@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/theme/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -64,8 +65,8 @@ class AjudaESuportePage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Center(
-                        child: Image.asset(
-                          'assets/images/logo.png',
+                        child: const LogoSobreNosWidget(
+                          assetPath: 'assets/images/logo.png',
                           width: 154,
                           height: 154,
                           fit: BoxFit.contain,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'package:snaplock/services/api_service.dart';
@@ -126,8 +127,8 @@ class _DeletarPageState extends State<DeletarPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Center(
-                    child: Image.asset(
-                      'assets/images/logo.png',
+                    child: const LogoSobreNosWidget(
+                      assetPath: 'assets/images/logo.png',
                       width: 132,
                       height: 132,
                       fit: BoxFit.contain,

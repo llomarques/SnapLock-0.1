@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:snaplock/frontend/pages/feed_page.dart';
 import 'package:snaplock/frontend/utils/foto_utils.dart';
@@ -207,8 +208,8 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
             const SizedBox(height: 55),
             Align(
               alignment: Alignment.topLeft,
-              child: Image.asset(
-                'assets/images/logo.png',
+              child: const LogoSobreNosWidget(
+                assetPath: 'assets/images/logo.png',
                 width: 50,
                 height: 50,
               ),

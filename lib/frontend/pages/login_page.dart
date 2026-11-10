@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:flutter/gestures.dart';
 import 'cadastro_page.dart';
 import 'esqueceuSenha_page.dart';
@@ -81,8 +82,8 @@ class _LoginPageState extends State<LoginPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            Image.asset(
-              'assets/images/logo.png',
+            const LogoSobreNosWidget(
+              assetPath: 'assets/images/logo.png',
               width: 150,
               height: 250,
             ),

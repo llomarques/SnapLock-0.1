@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -77,8 +78,8 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 60, bottom: 12),
-            child: Image.asset(
-              'assets/images/logo.png',
+            child: const LogoSobreNosWidget(
+              assetPath: 'assets/images/logo.png',
               height: 80,
               fit: BoxFit.contain,
             ),

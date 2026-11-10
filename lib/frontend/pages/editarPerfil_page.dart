@@ -5,6 +5,7 @@ import '../../controller/controller.login.dart';
 import '../../theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/input_widget.dart';
 import 'package:snaplock/frontend/utils/foto_utils.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 
 class EditarPerfilPage extends StatefulWidget {
   final String nomeInicial;
@@ -186,7 +187,6 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
 
   @override
   void dispose() {
-    
     nomeController.dispose();
     usuarioController.dispose();
     biografiaController.dispose();
@@ -281,8 +281,8 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             const SizedBox(height: 27),
             Align(
               alignment: Alignment.topLeft,
-              child: Image.asset(
-                'assets/images/logo.png',
+              child: const LogoSobreNosWidget(
+                assetPath: 'assets/images/logo.png',
                 width: 50,
                 height: 50,
               ),

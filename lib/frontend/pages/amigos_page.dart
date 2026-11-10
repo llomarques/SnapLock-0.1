@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/frontend/pages/configuracoes_page.dart';
 import 'package:snaplock/frontend/pages/perfilAmigo_page.dart';
@@ -274,8 +275,8 @@ class _AmigosPage extends State<AmigosPage> {
                   ),
                 ),
                 centerTitle: true,
-                title: Image.asset(
-                  'assets/images/logo.png',
+                title: const LogoSobreNosWidget(
+                  assetPath: 'assets/images/logo.png',
                   height: 80,
                   width: 80,
                 ),

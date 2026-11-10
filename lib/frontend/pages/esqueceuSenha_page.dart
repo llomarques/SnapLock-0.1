@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/theme/app_fonts.dart';
 import '../../controller/controller.cadastrar.dart';
 import 'recuperaSenha_page.dart';
@@ -81,8 +82,8 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            Image.asset(
-              'assets/images/logo.png',
+            const LogoSobreNosWidget(
+              assetPath: 'assets/images/logo.png',
               width: 130,
               height: 130,
             ),

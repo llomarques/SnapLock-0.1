@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/frontend/pages/configuracoes_page.dart';
 import 'package:snaplock/frontend/pages/feed_page.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
@@ -292,8 +293,8 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 60, bottom: 12),
-              child: Image.asset(
-                'assets/images/logo.png',
+              child: const LogoSobreNosWidget(
+                assetPath: 'assets/images/logo.png',
                 height: 80,
                 fit: BoxFit.contain,
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/frontend/utils/mensagem_utils.dart';
 import '../../controller/controller.cadastrar.dart';
 import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
@@ -24,7 +25,6 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
   bool esconderNovaSenha = true;
   bool esconderConfirmarSenha = true;
   bool carregando = false;
-
 
   Future<void> alterarSenha() async {
     setState(() => carregando = true);
@@ -62,8 +62,8 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
         child: Column(
           children: [
             const SizedBox(height: 20),
-            Image.asset(
-              'assets/images/logo.png',
+            const LogoSobreNosWidget(
+              assetPath: 'assets/images/logo.png',
               width: 150,
               height: 150,
             ),

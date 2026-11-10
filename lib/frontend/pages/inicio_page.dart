@@ -4,6 +4,7 @@ import 'cadastro_page.dart';
 import 'package:snaplock/frontend/utils/carrossel.dart';
 import 'package:snaplock/theme/app_fonts.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 
 class InicioPage extends StatelessWidget {
   const InicioPage({super.key});
@@ -32,8 +33,8 @@ class InicioPage extends StatelessWidget {
           children: [
             const SizedBox(height: 50),
             Center(
-              child: Image.asset(
-                'assets/images/logo.png',
+              child: const LogoSobreNosWidget(
+                assetPath: 'assets/images/logo.png',
                 width: 150,
                 height: 150,
               ),

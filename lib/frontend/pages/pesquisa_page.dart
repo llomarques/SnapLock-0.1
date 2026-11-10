@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/frontend/pages/configuracoes_page.dart';
 import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
@@ -174,8 +175,8 @@ class _PesquisaPage extends State<PesquisaPage> {
                   ),
                 ),
                 centerTitle: true,
-                title: Image.asset(
-                  'assets/images/logo.png',
+                title: const LogoSobreNosWidget(
+                  assetPath: 'assets/images/logo.png',
                   height: 80,
                   width: 80,
                 ),

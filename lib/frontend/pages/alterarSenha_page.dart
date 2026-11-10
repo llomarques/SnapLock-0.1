@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
 import '../../controller/controller.alterarSenha.dart';
 
@@ -77,8 +78,8 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
         child: Column(
           children: [
             const SizedBox(height: 20),
-            Image.asset(
-              'assets/images/logo.png',
+            const LogoSobreNosWidget(
+              assetPath: 'assets/images/logo.png',
               width: 150,
               height: 150,
             ),
