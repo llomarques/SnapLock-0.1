@@ -32,6 +32,11 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF3E9DC),
       appBar: AppBar(
+        leading: IconButton(
+          tooltip: 'Voltar',
+          onPressed: () => Navigator.maybePop(context),
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
+        ),
         title: const Text('Configurações'),
         backgroundColor: const Color(0xFFF3E9DC),
       ),

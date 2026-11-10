@@ -14,6 +14,11 @@ class SobreNosPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: _background,
       appBar: AppBar(
+        leading: IconButton(
+          tooltip: 'Voltar',
+          onPressed: () => Navigator.maybePop(context),
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
+        ),
         backgroundColor: _background,
         foregroundColor: _darkBrown,
         elevation: 0,

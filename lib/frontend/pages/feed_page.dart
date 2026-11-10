@@ -70,8 +70,8 @@ class FeedHeader extends StatelessWidget {
                 ? IconButton(
                     onPressed: () => Navigator.maybePop(context),
                     icon: const Icon(
-                      Icons.arrow_back,
-                      size: 30,
+                      Icons.arrow_back_ios,
+                      size: 20,
                       color: Colors.black,
                     ),
                   )

@@ -252,7 +252,7 @@ class _CurtidasPageState extends State<CurtidasPage> {
         leading: IconButton(
           tooltip: 'Voltar',
           onPressed: () => Navigator.maybePop(context),
-          icon: const Icon(Icons.arrow_back, size: 30, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios, size: 20, color: Colors.black),
         ),
         centerTitle: true,
         title: SizedBox(

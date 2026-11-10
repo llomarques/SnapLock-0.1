@@ -44,7 +44,7 @@ class AjudaESuportePage extends StatelessWidget {
         leading: IconButton(
           tooltip: 'Voltar',
           onPressed: () => Navigator.maybePop(context),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios),
         ),
       ),
       body: SafeArea(

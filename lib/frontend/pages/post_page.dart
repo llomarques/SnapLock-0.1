@@ -762,8 +762,8 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                 IconButton(
                   onPressed: () => Navigator.pop(context, _postUpdated),
                   icon: const Icon(
-                    Icons.arrow_back,
-                    size: 30,
+                    Icons.arrow_back_ios,
+                    size: 20,
                     color: Colors.black,
                   ),
                 ),
