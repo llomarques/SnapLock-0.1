@@ -82,6 +82,14 @@ Future<void> main() async {
     );
   }
 
+  final photoActiveColumn =
+      await connection.execute("SHOW COLUMNS FROM foto LIKE 'ativa'");
+  if (photoActiveColumn.rows.isEmpty) {
+    await connection.execute(
+      'ALTER TABLE foto ADD COLUMN ativa TINYINT(1) NOT NULL DEFAULT 1',
+    );
+  }
+
   await connection.execute(
     '''CREATE TABLE IF NOT EXISTS dump_visibilidade (
          id_usuario INT NOT NULL,
@@ -143,6 +151,14 @@ Future<void> main() async {
       if (idFoto == null) return _json(422, {'message': 'Post inválido.'});
 
       try {
+        final post = await connection.execute(
+          'SELECT id_foto FROM foto WHERE id_foto = :id_foto AND ativa = 1 LIMIT 1',
+          {'id_foto': idFoto},
+        );
+        if (post.rows.isEmpty) {
+          return _json(404, {'message': 'Publicação não encontrada.'});
+        }
+
         // A chave única usuário/publicação impede curtidas duplicadas.
         await connection.execute(
           '''INSERT INTO curtida (id_foto, id_usuario, data_curtida)
@@ -229,15 +245,70 @@ Future<void> main() async {
       }
 
       try {
-        // Insere a denúncia na tabela denúncia/report do seu banco de dados
+        final publicacao = await connection.execute(
+          '''SELECT f.id_foto, u.email, u.nome
+             FROM foto f
+             JOIN usuario u ON u.id_usuario = f.id_usuario
+             WHERE f.id_foto = :id_foto AND f.ativa = 1
+             LIMIT 1''',
+          {'id_foto': idFoto},
+        );
+        if (publicacao.rows.isEmpty) {
+          return _json(404, {'message': 'Publicação não encontrada.'});
+        }
+
         await connection.execute(
           '''INSERT INTO denuncia (id_foto, id_usuario, motivo, data_denuncia)
              VALUES (:id_foto, :id_usuario, :motivo, NOW())''',
           {'id_foto': idFoto, 'id_usuario': idUsuario, 'motivo': motivo},
         );
 
-        return _json(201,
-            {'success': true, 'message': 'Denúncia registrada com sucesso.'});
+        final totalDenuncias = await connection.execute(
+          'SELECT COUNT(*) AS total FROM denuncia WHERE id_foto = :id_foto',
+          {'id_foto': idFoto},
+        );
+        final total = int.parse(
+          totalDenuncias.rows.first.assoc()['total']?.toString() ?? '0',
+        );
+        var desativada = false;
+        if (total >= 4) {
+          final atualizacao = await connection.execute(
+            '''UPDATE foto f SET ativa = 0
+               WHERE f.id_foto = :id_foto AND f.ativa = 1
+                 AND (SELECT COUNT(*) FROM denuncia d
+                      WHERE d.id_foto = f.id_foto) >= 4''',
+            {'id_foto': idFoto},
+          );
+          desativada = atualizacao.affectedRows > BigInt.zero;
+
+          if (desativada) {
+            final dadosAutor = publicacao.rows.first.assoc();
+            try {
+              await sendPostDeactivationNotice(
+                dadosAutor['email'] ?? '',
+                dadosAutor['nome'] ?? '',
+                idFoto,
+                total,
+              );
+            } catch (error, stackTrace) {
+              print(
+                  'Erro ao notificar autor sobre publicação desativada: $error');
+              print(stackTrace);
+              return _json(500, {
+                'message':
+                    'A publicação foi desativada, mas não foi possível notificar o autor por e-mail.',
+              });
+            }
+          }
+        }
+
+        return _json(201, {
+          'success': true,
+          'publicationDeactivated': desativada,
+          'message': desativada
+              ? 'Denúncia registrada. A publicação foi desativada e o autor foi notificado por e-mail.'
+              : 'Denúncia registrada com sucesso.',
+        });
       } catch (error, stackTrace) {
         print('Erro ao reportar post: $error\n$stackTrace');
         // Caso a tabela ainda não exista no MySQL, crie com:
@@ -633,7 +704,8 @@ Future<void> main() async {
              JOIN usuario u ON u.id_usuario = c.id_usuario
                JOIN usuario autor ON autor.id_usuario = f.id_usuario
              WHERE f.id_usuario = :id_usuario
-               AND c.id_usuario <> :id_usuario
+                 AND f.ativa = 1
+                 AND c.id_usuario <> :id_usuario
                AND u.ativo = 1 AND autor.ativo = 1
              ORDER BY c.data_curtida DESC, c.id_foto DESC
              LIMIT 100''',
@@ -1069,7 +1141,7 @@ Future<void> main() async {
                               AND c.id_usuario = :id_usuario) AS user_liked
              FROM foto f
              JOIN usuario u ON u.id_usuario = f.id_usuario
-             WHERE u.ativo = 1 AND (
+             WHERE f.ativa = 1 AND u.ativo = 1 AND (
                f.id_usuario = :id_usuario
                 OR EXISTS (
                   SELECT 1 FROM amizade a
@@ -1125,7 +1197,7 @@ Future<void> main() async {
                         WHERE c.id_foto = f.id_foto
                           AND c.id_usuario = :id_usuario) AS user_liked
              FROM foto f
-         WHERE f.id_usuario = :id_usuario
+         WHERE f.ativa = 1 AND f.id_usuario = :id_usuario
              ORDER BY f.data_postagem DESC, f.id_foto DESC''',
           {'id_usuario': idUsuario},
         );
@@ -1270,7 +1342,7 @@ Future<void> main() async {
           final month = int.parse(dump['mes'].toString());
           final photos = await connection.execute(
             '''SELECT id_foto, midia_url, legenda, data_postagem, proporcao
-               FROM foto WHERE id_usuario = :friend_id
+               FROM foto WHERE ativa = 1 AND id_usuario = :friend_id
                  AND YEAR(data_postagem) = :year AND MONTH(data_postagem) = :month
                ORDER BY data_postagem ASC''',
             {'friend_id': friendId, 'year': year, 'month': month},
@@ -1319,7 +1391,7 @@ Future<void> main() async {
                               AND c.id_usuario = :id_usuario) AS user_liked
              FROM foto f
              JOIN usuario u ON u.id_usuario = f.id_usuario
-             WHERE f.id_usuario = :id_amigo AND u.ativo = 1
+             WHERE f.ativa = 1 AND f.id_usuario = :id_amigo AND u.ativo = 1
              ORDER BY f.data_postagem DESC, f.id_foto DESC''',
           {'id_amigo': idAmigo, 'id_usuario': idUsuario},
         );
@@ -1348,7 +1420,7 @@ Future<void> main() async {
 
       final publicacoes = await connection.execute(
         '''SELECT id_foto FROM foto
-           WHERE id_foto = :id_foto AND id_usuario = :id_usuario
+           WHERE id_foto = :id_foto AND id_usuario = :id_usuario AND ativa = 1
            LIMIT 1''',
         {'id_foto': idFoto, 'id_usuario': idUsuario},
       );
@@ -1402,7 +1474,8 @@ Future<void> main() async {
           await connection.execute(
             '''UPDATE foto
                SET legenda = COALESCE(:legenda, legenda), midia_url = :midia_url
-               WHERE id_foto = :id_foto AND id_usuario = :id_usuario''',
+               WHERE id_foto = :id_foto AND id_usuario = :id_usuario
+                 AND ativa = 1''',
             {
               'legenda': legenda,
               'midia_url': midiaUrl,
@@ -1413,7 +1486,8 @@ Future<void> main() async {
         } else {
           await connection.execute(
             '''UPDATE foto SET legenda = :legenda
-               WHERE id_foto = :id_foto AND id_usuario = :id_usuario''',
+               WHERE id_foto = :id_foto AND id_usuario = :id_usuario
+                 AND ativa = 1''',
             {
               'legenda': legenda,
               'id_foto': idFoto,
@@ -1425,9 +1499,13 @@ Future<void> main() async {
         final atualizada = await connection.execute(
           '''SELECT legenda, midia_url FROM foto
              WHERE id_foto = :id_foto AND id_usuario = :id_usuario
+               AND ativa = 1
              LIMIT 1''',
           {'id_foto': idFoto, 'id_usuario': idUsuario},
         );
+        if (atualizada.rows.isEmpty) {
+          return _json(404, {'message': 'Publicação não encontrada.'});
+        }
         final dados = atualizada.rows.first.assoc();
         return _json(200, {
           'success': true,

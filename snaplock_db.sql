@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS `foto` (
   `legenda` text DEFAULT NULL,
   `filtro_aplicado` varchar(50) DEFAULT NULL,
   `proporcao` double DEFAULT NULL,
+  `ativa` tinyint(1) NOT NULL DEFAULT 1,
   `data_postagem` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_foto`),
   KEY `idx_foto_usuario_data` (`id_usuario`,`data_postagem`),
@@ -65,7 +66,8 @@ CREATE TABLE IF NOT EXISTS `foto` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 ALTER TABLE `foto`
-  ADD COLUMN IF NOT EXISTS `proporcao` double DEFAULT NULL;
+  ADD COLUMN IF NOT EXISTS `proporcao` double DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `ativa` tinyint(1) NOT NULL DEFAULT 1;
 
 -- Copiando dados para a tabela snaplock_db.foto: ~0 rows (aproximadamente)
 
