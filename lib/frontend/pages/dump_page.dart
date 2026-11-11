@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -181,7 +182,7 @@ class _DumpPage extends State<DumpPage> {
     final selected = await showModalBottomSheet<dynamic>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFFF7F2EA),
+      backgroundColor: AppTheme.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -191,11 +192,11 @@ class _DumpPage extends State<DumpPage> {
             height: MediaQuery.sizeOf(sheetContext).height * 0.72,
             child: Column(
               children: [
-                const Padding(
+                Padding(
                   padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text('Editar capa do dump',
                       style: TextStyle(
-                          color: Color(0xFF3E3A36),
+                          color: AppTheme.textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.bold)),
                 ),
@@ -236,8 +237,8 @@ class _DumpPage extends State<DumpPage> {
                           borderRadius: BorderRadius.circular(12),
                           child: Image.network(photo.imageUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const ColoredBox(
-                                  color: Color(0xFFDDD1C2),
+                              errorBuilder: (_, __, ___) => ColoredBox(
+                                  color: AppTheme.surface,
                                   child: Icon(Icons.broken_image_outlined))),
                         ),
                       );
@@ -370,7 +371,7 @@ class _DumpPage extends State<DumpPage> {
   void _openAlbum(String title, List<PostModel> photos) {
     showDialog<void>(
       context: context,
-      barrierColor: const Color(0xFFF3E9DC).withValues(alpha: 0.96),
+      barrierColor: AppTheme.background.withValues(alpha: 0.96),
       builder: (dialogContext) => _MonthlyPhotoCarousel(
         title: title,
         photos: photos,
@@ -380,8 +381,8 @@ class _DumpPage extends State<DumpPage> {
 
   Widget _buildFriendDumps() {
     if (_loadingFriends) {
-      return const Center(
-          child: CircularProgressIndicator(color: Color(0xFFA77C5B)));
+      return Center(
+          child: CircularProgressIndicator(color: AppTheme.mediumBrown));
     }
     if (_friendDumps.isEmpty) {
       return const Center(
@@ -410,21 +411,21 @@ class _DumpPage extends State<DumpPage> {
                 }))
             .toList();
         return Material(
-          color: const Color(0xFFDDD1C2),
+          color: AppTheme.surface,
           borderRadius: BorderRadius.circular(18),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () => _openAlbum(_months[month - 1], photos),
             child: Stack(fit: StackFit.expand, children: [
               if (cover == null || cover.isEmpty)
-                const Center(
+                Center(
                     child: Icon(Icons.photo_library_outlined,
-                        size: 42, color: Color(0xFFA77C5B)))
+                        size: 42, color: AppTheme.mediumBrown))
               else
                 Image.network(cover,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) =>
-                        const ColoredBox(color: Color(0xFFDDD1C2))),
+                        ColoredBox(color: AppTheme.surface)),
               const DecoratedBox(
                   decoration: BoxDecoration(color: Colors.black26)),
               Positioned(
@@ -458,20 +459,27 @@ class _DumpPage extends State<DumpPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final menuTextStyle = TextStyle(
+      color: isDark ? colorScheme.onSurface : const Color(0xFFF3E9DC),
+    );
+
     return DefaultTabController(
       length: 2,
       child: Column(children: [
-        const TabBar(
-          labelColor: Color(0xFF3E3A36),
-          unselectedLabelColor: Color(0xFF77716C),
-          indicatorColor: Color(0xFFA77C5B),
+        TabBar(
+          labelColor: AppTheme.textPrimary,
+          unselectedLabelColor: AppTheme.textSecondary,
+          indicatorColor: AppTheme.mediumBrown,
           tabs: [Tab(text: 'Meus dumps'), Tab(text: 'Dumps de amigos')],
         ),
         Expanded(
             child: TabBarView(children: [
           RefreshIndicator(
             onRefresh: _loadAlbums,
-            color: const Color(0xFFA77C5B),
+            color: AppTheme.mediumBrown,
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               children: [
@@ -480,7 +488,7 @@ class _DumpPage extends State<DumpPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 218, 206, 191),
+                      color: AppTheme.surface,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: const [
                         BoxShadow(
@@ -489,19 +497,19 @@ class _DumpPage extends State<DumpPage> {
                             offset: Offset(0, 2)),
                       ],
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('O que é um Dump?',
                             style: TextStyle(
-                                color: Color(0xFFA77C5B),
+                                color: AppTheme.mediumBrown,
                                 fontSize: 20,
                                 height: 1.2)),
                         SizedBox(height: 10),
                         Text(
                           'O Dump é um álbum criado com as fotos que você publicou. Ele ajuda você a guardar e revisitar suas memórias de forma organizada. Toque em um dump para ver suas memórias do mês.',
                           style: TextStyle(
-                              color: Color(0xFF77716C),
+                              color: AppTheme.textSecondary,
                               fontSize: 16,
                               height: 1.15),
                         ),
@@ -509,26 +517,25 @@ class _DumpPage extends State<DumpPage> {
                     ),
                   ),
                 if (_loading)
-                  const Padding(
+                  Padding(
                       padding: EdgeInsets.only(top: 40),
                       child: Center(
                           child: CircularProgressIndicator(
-                              color: Color(0xFFA77C5B))))
+                              color: AppTheme.mediumBrown)))
                 else if (_error != null)
                   Padding(
                       padding: const EdgeInsets.only(top: 32),
                       child: Center(
                           child: Text(_error!,
                               textAlign: TextAlign.center,
-                              style:
-                                  const TextStyle(color: Color(0xFF77716C)))))
+                              style: TextStyle(color: AppTheme.textSecondary))))
                 else if (_monthlyAlbums.isEmpty)
-                  const Padding(
+                  Padding(
                       padding: EdgeInsets.only(top: 32),
                       child: Center(
                           child: Text('Você ainda não publicou fotos.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Color(0xFF77716C)))))
+                              style: TextStyle(color: AppTheme.textSecondary))))
                 else
                   GridView.builder(
                     shrinkWrap: true,
@@ -561,7 +568,7 @@ class _DumpPage extends State<DumpPage> {
                       }
 
                       return Material(
-                        color: const Color(0xFFDDD1C2),
+                        color: AppTheme.surface,
                         borderRadius: BorderRadius.circular(18),
                         clipBehavior: Clip.antiAlias,
                         child: InkWell(
@@ -570,17 +577,17 @@ class _DumpPage extends State<DumpPage> {
                             fit: StackFit.expand,
                             children: [
                               if (cover.isEmpty)
-                                const Center(
+                                Center(
                                   child: Icon(Icons.photo_library_outlined,
-                                      size: 42, color: Color(0xFFA77C5B)),
+                                      size: 42, color: AppTheme.mediumBrown),
                                 )
                               else
                                 Image.network(
                                   cover,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Center(
+                                  errorBuilder: (_, __, ___) => Center(
                                     child: Icon(Icons.broken_image_outlined,
-                                        size: 42, color: Color(0xFFA77C5B)),
+                                        size: 42, color: AppTheme.mediumBrown),
                                   ),
                                 ),
                               const DecoratedBox(
@@ -600,7 +607,9 @@ class _DumpPage extends State<DumpPage> {
                                   shape: const CircleBorder(),
                                   child: PopupMenuButton<String>(
                                     tooltip: 'Opções do dump',
-                                    color: const Color(0xFF3E3A36),
+                                    color: isDark
+                                        ? colorScheme.surface
+                                        : AppTheme.textPrimary,
                                     surfaceTintColor: Colors.transparent,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -618,19 +627,17 @@ class _DumpPage extends State<DumpPage> {
                                       final isVisible =
                                           _visibleToFriends[key] ?? false;
                                       return [
-                                        const PopupMenuItem<String>(
+                                        PopupMenuItem<String>(
                                           value: 'edit',
                                           child: Row(
                                             children: [
                                               Icon(Icons.photo_library_outlined,
                                                   size: 20,
-                                                  color: Color(0xFFF3E9DC)),
+                                                  color: menuTextStyle.color),
                                               SizedBox(width: 10),
                                               Text(
                                                 'Editar capa',
-                                                style: TextStyle(
-                                                  color: Color(0xFFF3E9DC),
-                                                ),
+                                                style: menuTextStyle,
                                               ),
                                             ],
                                           ),
@@ -645,16 +652,14 @@ class _DumpPage extends State<DumpPage> {
                                                         .visibility_off_outlined
                                                     : Icons.visibility_outlined,
                                                 size: 20,
-                                                color: const Color(0xFFF3E9DC),
+                                                color: menuTextStyle.color,
                                               ),
                                               const SizedBox(width: 10),
                                               Text(
                                                 isVisible
                                                     ? 'Ocultar Dump'
                                                     : 'Mostrar para amigos',
-                                                style: const TextStyle(
-                                                  color: Color(0xFFF3E9DC),
-                                                ),
+                                                style: menuTextStyle,
                                               ),
                                             ],
                                           ),
@@ -751,9 +756,17 @@ class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
   @override
   Widget build(BuildContext context) {
     final photo = widget.photos[_currentPage];
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final headerBackground = isDark
+        ? colorScheme.surface
+        : const Color(0xFFF3E9DC).withValues(alpha: 0.96);
+    final headerForeground =
+        isDark ? colorScheme.onSurface : AppTheme.mediumBrown;
 
     return Dialog.fullscreen(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: theme.scaffoldBackgroundColor,
       child: SafeArea(
         child: Stack(
           children: [
@@ -769,16 +782,16 @@ class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(20),
                       child: DecoratedBox(
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFEADBCB),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surface,
                         ),
                         child: Image.network(
                           url,
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Center(
+                          errorBuilder: (_, __, ___) => Center(
                             child: Icon(
                               Icons.broken_image_outlined,
-                              color: Color(0xFF895737),
+                              color: AppTheme.mediumBrown,
                               size: 64,
                             ),
                           ),
@@ -802,9 +815,11 @@ class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
                           ? () => _moveTo(_currentPage - 1)
                           : null,
                       style: IconButton.styleFrom(
-                        backgroundColor:
-                            const Color(0xFFF3E9DC).withValues(alpha: 0.92),
-                        foregroundColor: const Color(0xFF895737),
+                        backgroundColor: isDark
+                            ? colorScheme.surfaceContainerHighest
+                            : const Color(0xFFF3E9DC).withValues(alpha: 0.92),
+                        foregroundColor:
+                            isDark ? colorScheme.onSurface : AppTheme.mediumBrown,
                       ),
                       icon: const Icon(Icons.chevron_left_rounded, size: 32),
                     ),
@@ -823,9 +838,11 @@ class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
                           ? () => _moveTo(_currentPage + 1)
                           : null,
                       style: IconButton.styleFrom(
-                        backgroundColor:
-                            const Color(0xFFF3E9DC).withValues(alpha: 0.92),
-                        foregroundColor: const Color(0xFF895737),
+                        backgroundColor: isDark
+                            ? colorScheme.surfaceContainerHighest
+                            : const Color(0xFFF3E9DC).withValues(alpha: 0.92),
+                        foregroundColor:
+                            isDark ? colorScheme.onSurface : AppTheme.mediumBrown,
                       ),
                       icon: const Icon(Icons.chevron_right_rounded, size: 32),
                     ),
@@ -839,19 +856,19 @@ class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
               right: 8,
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3E9DC).withValues(alpha: 0.96),
-                  border: const Border(
-                    bottom: BorderSide(color: Color(0xFFD7CBBD)),
+                  color: headerBackground,
+                  border: Border(
+                    bottom: BorderSide(color: colorScheme.outlineVariant),
                   ),
                 ),
                 child: Row(children: [
                   IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, color: Color(0xFF895737))),
+                      icon: Icon(Icons.close, color: headerForeground)),
                   const Spacer(),
                   Text(widget.title,
-                      style: const TextStyle(
-                          color: Color(0xFF895737),
+                      style: TextStyle(
+                          color: headerForeground,
                           fontFamily: 'serif',
                           fontSize: 16,
                           fontWeight: FontWeight.w700)),
@@ -872,8 +889,8 @@ class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF895737),
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -888,8 +905,8 @@ class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
                         margin: const EdgeInsets.symmetric(horizontal: 3),
                         decoration: BoxDecoration(
                           color: _currentPage == index
-                              ? const Color(0xFF895737)
-                              : const Color(0xFFD7CBBD),
+                              ? AppTheme.mediumBrown
+                              : AppTheme.surfaceLight,
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),

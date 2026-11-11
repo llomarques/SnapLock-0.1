@@ -47,11 +47,11 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
     final confirmou = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppTheme.cardBorder),
+          side: BorderSide(color: AppTheme.cardBorder),
         ),
         title: Row(
           children: [
@@ -62,7 +62,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                 color: AppTheme.mediumBrown.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.edit_note_rounded,
                 color: AppTheme.mediumBrown,
                 size: 22,
@@ -195,15 +195,16 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF3E9DC),
+        backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios),
-          color: const Color(0xFF5E3023),
+          color: theme.colorScheme.onSurface,
           tooltip: 'Voltar',
         ),
       ),
@@ -211,14 +212,17 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const Text('Editar perfil'),
+            Text(
+              'Editar perfil',
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
             const SizedBox(height: 30),
             Container(
               width: 120,
               height: 120,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xFF895737),
+                  color: AppTheme.mediumBrown,
                   width: 2,
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -241,7 +245,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               icon: const Icon(Icons.camera_alt),
               label: const Text('Alterar foto'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: const Color(0xFFF3E9DC),
               ),
             ),
@@ -259,26 +263,28 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               icon: Icons.alternate_email,
               maximoCaracteresSemContador: 20,
             ),
-            const SizedBox(height: 20,),
+            const SizedBox(
+              height: 20,
+            ),
             InputWidget(
               controller: biografiaController,
               texto: 'Digite sua biografia',
               icon: Icons.chat_bubble,
               maximoCaracteres: 150,
-			  linhasMinimas: 3,
-			  linhasMaximas: 6,
+              linhasMinimas: 3,
+              linhasMaximas: 6,
             ),
             const SizedBox(height: 25),
             ElevatedButton(
               onPressed: salvando ? null : confirmarAlteracao,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: const Color(0xFFF3E9DC),
                 minimumSize: const Size.fromHeight(50),
               ),
               child: const Text('Salvar alterações'),
             ),
-            const SizedBox(height: 27),
+            const SizedBox(height: 20),
             Align(
               alignment: Alignment.topLeft,
               child: const LogoSobreNosWidget(

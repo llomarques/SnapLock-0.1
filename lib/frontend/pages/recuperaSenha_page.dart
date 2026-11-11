@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/frontend/utils/mensagem_utils.dart';
 import '../../controller/controller.cadastrar.dart';
@@ -20,7 +21,8 @@ class RecuperaSenhaPage extends StatefulWidget {
 
 class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
   final TextEditingController novaSenhaController = TextEditingController();
-  final TextEditingController confirmarSenhaController = TextEditingController();
+  final TextEditingController confirmarSenhaController =
+      TextEditingController();
   final CadastroController cadastroController = CadastroController();
   bool esconderNovaSenha = true;
   bool esconderConfirmarSenha = true;
@@ -56,7 +58,7 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -69,19 +71,19 @@ class _RecuperaSenhaPageState extends State<RecuperaSenhaPage> {
             ),
             const SizedBox(height: 60),
             InputsenhaWidget(
-							controller: novaSenhaController,
-							texto: 'Nova senha',
-						),
+              controller: novaSenhaController,
+              texto: 'Nova senha',
+            ),
             const SizedBox(height: 20),
             InputsenhaWidget(
-							controller: confirmarSenhaController,
-							texto: 'Confirmar senha',
-						),
+              controller: confirmarSenhaController,
+              texto: 'Confirmar senha',
+            ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: carregando ? null : alterarSenha,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: Color(0xFFF3E9DC),
               ),
               child: carregando

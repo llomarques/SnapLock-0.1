@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:snaplock/services/api_service.dart';
@@ -110,7 +111,7 @@ class _PerfilPage extends State<PerfilPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -126,9 +127,9 @@ class _PerfilPage extends State<PerfilPage> {
                     child: Text(
                       '$quantidadeAmigos\nAmigos',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
-                        color: Color(0xFF5E3023),
+                        color: AppTheme.darkBrown,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -142,7 +143,7 @@ class _PerfilPage extends State<PerfilPage> {
                       height: 90,
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: const Color(0xFF895737),
+                          color: AppTheme.mediumBrown,
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(16),
@@ -182,9 +183,9 @@ class _PerfilPage extends State<PerfilPage> {
                     child: Text(
                       '$quantidadeFotos\nMemórias',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
-                        color: Color(0xFF5E3023),
+                        color: AppTheme.darkBrown,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -222,11 +223,11 @@ class _PerfilPage extends State<PerfilPage> {
                   enableInteractiveSelection: false,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: const Color(0xFFD7CBBD),
+                    fillColor: AppTheme.surfaceLight,
                     hintText: 'Biografia',
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.chat_bubble,
-                      color: Color(0xFF5E3023),
+                      color: AppTheme.darkBrown,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),

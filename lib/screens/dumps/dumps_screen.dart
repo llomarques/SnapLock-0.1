@@ -38,7 +38,9 @@ class _DumpsScreenState extends State<DumpsScreen> {
       final res = await ApiService.generateMonthlyDump();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Dump gerado com sucesso! Total de fotos no período: ${res['postCount']}')),
+          SnackBar(
+              content: Text(
+                  'Dump gerado com sucesso! Total de fotos no período: ${res['postCount']}')),
         );
       }
       _loadDumps();
@@ -56,10 +58,13 @@ class _DumpsScreenState extends State<DumpsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text('Galeria Dump', style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold, fontSize: 22)),
+        title: Text('Galeria Dump',
+            style: GoogleFonts.cormorantGaramond(
+                fontWeight: FontWeight.bold, fontSize: 22)),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.darkBrown))
+          ? Center(
+              child: CircularProgressIndicator(color: AppTheme.darkBrown))
           : RefreshIndicator(
               onRefresh: _loadDumps,
               child: SingleChildScrollView(
@@ -80,24 +85,35 @@ class _DumpsScreenState extends State<DumpsScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.help_outline, color: AppTheme.darkBrown, size: 20),
+                              Icon(Icons.help_outline,
+                                  color: AppTheme.darkBrown, size: 20),
                               const SizedBox(width: 8),
                               Text(
                                 'O que é um Dump?',
-                                style: GoogleFonts.poppins(color: AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                                style: GoogleFonts.poppins(
+                                    color: AppTheme.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'O Dump é um álbum criado com as fotos que você publicou no mês, de forma que você guarde e controle suas memórias de forma organizada (RN15). A geração ocorre no último dia do mês às 23:59.',
-                            style: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 12, height: 1.4),
+                            style: GoogleFonts.poppins(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12,
+                                height: 1.4),
                           ),
                           const SizedBox(height: 12),
                           ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkBrown),
-                            icon: const Icon(Icons.flash_on, color: Colors.white, size: 16),
-                            label: Text('Gerar Dump do Mês Atual', style: GoogleFonts.poppins(color: Colors.white, fontSize: 12)),
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.darkBrown),
+                            icon: const Icon(Icons.flash_on,
+                                color: Colors.white, size: 16),
+                            label: Text('Gerar Dump do Mês Atual',
+                                style: GoogleFonts.poppins(
+                                    color: Colors.white, fontSize: 12)),
                             onPressed: _triggerDump,
                           ),
                         ],
@@ -107,7 +123,10 @@ class _DumpsScreenState extends State<DumpsScreen> {
                     const SizedBox(height: 24),
                     Text(
                       'Álbuns de Dumps Mensais',
-                      style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                      style: GoogleFonts.cormorantGaramond(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary),
                     ),
                     const SizedBox(height: 12),
 
@@ -117,14 +136,16 @@ class _DumpsScreenState extends State<DumpsScreen> {
                             child: Center(
                               child: Text(
                                 'Nenhum Dump gerado ainda no sistema.',
-                                style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+                                style: GoogleFonts.poppins(
+                                    color: AppTheme.textSecondary),
                               ),
                             ),
                           )
                         : GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
@@ -141,7 +162,8 @@ class _DumpsScreenState extends State<DumpsScreen> {
                                 decoration: BoxDecoration(
                                   color: AppTheme.surface,
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: AppTheme.cardBorder),
+                                  border:
+                                      Border.all(color: AppTheme.cardBorder),
                                 ),
                                 padding: const EdgeInsets.all(14),
                                 child: Column(
@@ -149,21 +171,29 @@ class _DumpsScreenState extends State<DumpsScreen> {
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.all(14),
-                                      decoration: const BoxDecoration(
+                                      decoration: BoxDecoration(
                                         color: AppTheme.surfaceLight,
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.collections_bookmark, color: AppTheme.darkBrown, size: 32),
+                                      child: Icon(
+                                          Icons.collections_bookmark,
+                                          color: AppTheme.darkBrown,
+                                          size: 32),
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
                                       'Dump $month/$year',
-                                      style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                                      style: GoogleFonts.cormorantGaramond(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppTheme.textPrimary),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       '$postCount fotos salvas',
-                                      style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                                      style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          color: AppTheme.textSecondary),
                                     ),
                                   ],
                                 ),

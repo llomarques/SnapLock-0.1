@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:snaplock/frontend/pages/feed_page.dart';
@@ -43,7 +44,8 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
     } on PlatformException catch (error) {
       if (mounted && error.code != 'already_active') {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível selecionar a imagem.')),
+          const SnackBar(
+              content: Text('Não foi possível selecionar a imagem.')),
         );
       }
     } finally {
@@ -114,7 +116,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -132,7 +134,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               height: 120,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xFF895737),
+                  color: AppTheme.mediumBrown,
                   width: 2,
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -160,11 +162,10 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.camera_alt),
-                label: Text(selecionandoImagem
-                  ? 'Abrindo galeria...'
-                  : 'Adicionar foto'),
+              label: Text(
+                  selecionandoImagem ? 'Abrindo galeria...' : 'Adicionar foto'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: Color(0xFFF3E9DC),
               ),
             ),
@@ -176,8 +177,8 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               texto: 'Digite sua biografia',
               icon: Icons.chat_bubble,
               maximoCaracteres: 150,
-			  linhasMinimas: 3,
-			  linhasMaximas: 6,
+              linhasMinimas: 3,
+              linhasMaximas: 6,
             ),
             const SizedBox(
               height: 20,
@@ -189,7 +190,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
                 child: Text(
                   'Deixar para mais tarde',
                   style: TextStyle(
-                      color: Color(0xFF895737), fontWeight: FontWeight.w900),
+                      color: AppTheme.mediumBrown, fontWeight: FontWeight.w900),
                 ),
               ),
             ),
@@ -199,7 +200,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
             ElevatedButton(
               onPressed: salvando ? null : personalizarPerfil,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: Color(0xFFF3E9DC),
                 minimumSize: const Size.fromHeight(50),
               ),

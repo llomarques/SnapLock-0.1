@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:snaplock/controller/controller.alterarEmail.dart';
@@ -102,9 +103,9 @@ class _AlterarEmailPageState extends State<AlterarEmailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF3E9DC),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
@@ -129,9 +130,9 @@ class _AlterarEmailPageState extends State<AlterarEmailPage> {
                   ? 'Digite o código enviado para ${_emailSolicitado ?? 'seu novo e-mail'}.'
                   : 'Informe seu novo e-mail e confirme sua senha atual.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
-                color: Color(0xFF2F211C),
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 24),
@@ -151,7 +152,7 @@ class _AlterarEmailPageState extends State<AlterarEmailPage> {
               ElevatedButton(
                 onPressed: _carregando ? null : _enviarCodigo,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF895737),
+                  backgroundColor: AppTheme.mediumBrown,
                   foregroundColor: const Color(0xFFF3E9DC),
                   minimumSize: const Size.fromHeight(50),
                 ),
@@ -173,11 +174,11 @@ class _AlterarEmailPageState extends State<AlterarEmailPage> {
                 decoration: InputDecoration(
                   counterText: '',
                   filled: true,
-                  fillColor: const Color(0xFFD7CBBD),
+                  fillColor: AppTheme.surfaceLight,
                   hintText: 'Código de 6 números',
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.verified_user,
-                    color: Color(0xFF5E3023),
+                    color: AppTheme.darkBrown,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -189,7 +190,7 @@ class _AlterarEmailPageState extends State<AlterarEmailPage> {
               ElevatedButton(
                 onPressed: _carregando ? null : _confirmarCodigo,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF895737),
+                  backgroundColor: AppTheme.mediumBrown,
                   foregroundColor: const Color(0xFFF3E9DC),
                   minimumSize: const Size.fromHeight(50),
                 ),

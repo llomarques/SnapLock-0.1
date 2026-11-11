@@ -12,19 +12,20 @@ class InputWidget extends StatelessWidget {
   final int? linhasMaximas;
 
   const InputWidget({
-		super.key,
-		required this.texto,
-		required this.controller,
-		required this.icon,
-		this.keyboardType,
+    super.key,
+    required this.texto,
+    required this.controller,
+    required this.icon,
+    this.keyboardType,
     this.maximoCaracteres,
     this.maximoCaracteresSemContador,
     this.linhasMinimas,
     this.linhasMaximas,
-	});
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
@@ -36,9 +37,9 @@ class InputWidget extends StatelessWidget {
           : [LengthLimitingTextInputFormatter(maximoCaracteresSemContador)],
       decoration: InputDecoration(
         filled: true,
-        fillColor: const Color(0xFFD7CBBD),
+        fillColor: theme.colorScheme.surfaceContainerHighest,
         hintText: texto,
-        prefixIcon: Icon(icon, color: const Color(0xFF5E3023)),
+        prefixIcon: Icon(icon, color: theme.colorScheme.primary),
         counterText: maximoCaracteresSemContador == null ? null : '',
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),

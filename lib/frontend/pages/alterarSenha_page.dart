@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
 import '../../controller/controller.alterarSenha.dart';
@@ -61,15 +62,16 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF3E9DC),
+        backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios),
-          color: const Color(0xFF5E3023),
+          color: theme.colorScheme.onSurface,
           tooltip: 'Voltar',
         ),
       ),
@@ -102,7 +104,7 @@ class _AlterarSenhaPageState extends State<AlterarSenhaPage> {
             ElevatedButton(
               onPressed: carregando ? null : alterarSenha,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: const Color(0xFFF3E9DC),
               ),
               child: carregando

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:flutter/gestures.dart';
 import 'cadastro_page.dart';
@@ -74,8 +75,9 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Color(0xFFF3E9DC),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -97,9 +99,9 @@ class _LoginPageState extends State<LoginPage> {
               height: 15,
             ),
             InputsenhaWidget(
-							controller: senhaController,
-							texto: 'Digite sua senha',
-						),
+              controller: senhaController,
+              texto: 'Digite sua senha',
+            ),
             const SizedBox(
               height: 10,
             ),
@@ -112,9 +114,8 @@ class _LoginPageState extends State<LoginPage> {
                 child: Text(
                   'Esqueceu a senha?',
                   style: TextStyle(
-                    color: Color(0xFF895737),
-                    fontWeight: FontWeight.w900
-                  ),
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w900),
                 ),
               ),
             ),
@@ -124,26 +125,33 @@ class _LoginPageState extends State<LoginPage> {
             ElevatedButton.icon(
                 onPressed: carregando ? null : entrar,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF895737),
+                  backgroundColor: AppTheme.mediumBrown,
                   foregroundColor: Color(0xFFF3E9DC),
                 ),
                 label: carregando
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Entrar')),
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Text('Entrar')),
             const SizedBox(
               height: 10,
             ),
             RichText(
               text: TextSpan(
-                style: TextStyle(color: Colors.black, fontSize: 16),
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 16,
+                ),
                 children: [
                   TextSpan(
-                    text: 'Nao tem uma conta? ',
+                    text: 'Não tem uma conta? ',
                   ),
                   TextSpan(
                     text: 'Cadastre-se',
                     style: TextStyle(
-                      color: Color(0xFF895737),
+                      color: AppTheme.mediumBrown,
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.underline,
                     ),

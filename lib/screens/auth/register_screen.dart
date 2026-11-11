@@ -105,12 +105,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Cadastre-se',
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Apenas para maiores de 16 anos (RN01)',
                       style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                     ),

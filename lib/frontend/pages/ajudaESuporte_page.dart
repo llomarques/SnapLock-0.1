@@ -31,16 +31,16 @@ class AjudaESuportePage extends StatelessWidget {
     _FaqItem(
       question: 'O que é o Dump?',
       answer:
-          'O Dump é um álbum criado com as fotos que você publicou. Ele ajuda você a guardar a revisitar suas memórias de forma organizada, você tambèm pode compartilha-ló com seus amigos.',
+          'O Dump é um álbum criado com as fotos que você publicou. Ele ajuda você a guardar e revisitar suas memórias de forma organizada. Você também pode compartilhá-lo com seus amigos.',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         leading: IconButton(
           tooltip: 'Voltar',
           onPressed: () => Navigator.maybePop(context),
@@ -93,7 +93,6 @@ class AjudaESuportePage extends StatelessWidget {
     return Row(
       children: [
         const SizedBox(width: 8),
-        
       ],
     );
   }
@@ -130,9 +129,9 @@ class AjudaESuportePage extends StatelessWidget {
               childrenPadding: const EdgeInsets.fromLTRB(6, 0, 32, 12),
               minTileHeight: 44,
               visualDensity: VisualDensity.compact,
-              trailing: const Icon(
+              trailing: Icon(
                 Icons.arrow_drop_down,
-                color: Colors.black,
+                color: AppTheme.textPrimary,
                 size: 20,
               ),
               title: Text(
@@ -185,7 +184,7 @@ class AjudaESuportePage extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.help_outline,
                   color: AppTheme.darkBrown,
                   size: 22,
@@ -224,7 +223,8 @@ class AjudaESuportePage extends StatelessWidget {
                 if (!launched && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Não foi possível abrir o aplicativo de e-mail.'),
+                      content: Text(
+                          'Não foi possível abrir o aplicativo de e-mail.'),
                     ),
                   );
                 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/pages/post_page.dart';
 import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/services/api_service.dart';
@@ -128,7 +129,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 5),
-      color: lida ? const Color(0xFFD7CBBD) : const Color(0xFFE9D1B4),
+      color: lida ? AppTheme.surfaceLight : AppTheme.surfaceLight,
       child: InkWell(
         onTap: aoTocar,
         borderRadius: BorderRadius.circular(4),
@@ -146,8 +147,8 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                   children: [
                     Text(
                       '@$username',
-                      style: const TextStyle(
-                        color: Color(0xFF3E3A36),
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -156,7 +157,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                     Text(
                       mensagem,
                       style: TextStyle(
-                        color: const Color(0xFF3E3A36),
+                        color: AppTheme.textPrimary,
                         fontSize: 13,
                         fontWeight: lida ? FontWeight.normal : FontWeight.w600,
                       ),
@@ -232,9 +233,15 @@ class _NotificacoesPage extends State<NotificacoesPage> {
         mensagem: aviso['message']?.toString() ?? '',
         lida: lido,
         trailing: lido
-            ? const Icon(Icons.check, color: Colors.black38, size: 18)
-            : const Icon(Icons.fiber_manual_record,
-                color: Color(0xFFC08552), size: 12),
+            ? Icon(
+                Icons.check,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkThemeTextPrimary
+                    : Colors.black38,
+                size: 18,
+              )
+            : Icon(Icons.fiber_manual_record,
+                color: AppTheme.lightBrown, size: 12),
       ),
     );
   }
@@ -275,8 +282,14 @@ class _NotificacoesPage extends State<NotificacoesPage> {
         mensagem: aviso['message']?.toString() ?? 'curtiu sua publicação.',
         lida: lido,
         trailing: lido
-            ? const Icon(Icons.check, color: Colors.black38, size: 18)
-            : const Icon(Icons.favorite, color: Color(0xFFC08552), size: 16),
+            ? Icon(
+                Icons.check,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkThemeTextPrimary
+                    : Colors.black38,
+                size: 18,
+              )
+            : Icon(Icons.favorite, color: AppTheme.lightBrown, size: 16),
         aoTocar: () => _abrirPublicacaoCurtida(aviso),
       ),
     );
@@ -287,7 +300,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
       margin: const EdgeInsets.symmetric(vertical: 5),
       padding: const EdgeInsets.only(right: 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF895737),
+        color: AppTheme.mediumBrown,
         borderRadius: BorderRadius.circular(4),
       ),
       alignment: Alignment.centerRight,
@@ -364,10 +377,10 @@ class _NotificacoesPage extends State<NotificacoesPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'Notificações',
                   style: TextStyle(
-                    color: Color(0xFF3E3A36),
+                    color: AppTheme.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.normal,
                   ),
@@ -380,8 +393,8 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                       minHeight: 24,
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFC08552),
+                    decoration: BoxDecoration(
+                      color: AppTheme.lightBrown,
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
@@ -515,7 +528,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                                                 vertical: 8,
                                               ),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFFD7CBBD),
+                                                color: AppTheme.surfaceLight,
                                                 borderRadius:
                                                     BorderRadius.circular(10),
                                               ),
@@ -526,8 +539,9 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                                                 children: [
                                                   Text(
                                                     '@$username quer ser seu amigo(a).',
-                                                    style: const TextStyle(
-                                                      color: Color(0xFF3E3A36),
+                                                    style: TextStyle(
+                                                      color:
+                                                          AppTheme.textPrimary,
                                                       fontSize: 14,
                                                     ),
                                                   ),

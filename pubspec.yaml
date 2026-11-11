@@ -33,11 +33,14 @@ flutter:
     - assets/images/logo.png
     - assets/images/logo_black.png
     - assets/images/logo_white.png
+    - assets/images/logo_oficial_white.png
     - assets/images/logo_color.png
     - assets/images/monalisaPerfil.png
     - assets/images/dump.png
     - assets/images/efeitos.png
     - assets/images/proporcao.png
+    - assets/images/efeitos_white.png.png
+    - assets/images/proporcao_white.png.png
 
 flutter_launcher_icons:
   android: true

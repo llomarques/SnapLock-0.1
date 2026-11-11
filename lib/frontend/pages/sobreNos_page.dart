@@ -1,26 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 
 class SobreNosPage extends StatelessWidget {
   const SobreNosPage({super.key});
 
-  static const _background = Color(0xFFF3E9DC);
   static const _darkBrown = Color(0xFF5E3023);
-  static const _mediumBrown = Color(0xFF895737);
-  static const _textColor = Color(0xFF3E3A36);
-  static const _mutedText = Color(0xFF6E6760);
+  static Color get _mediumBrown => AppTheme.mediumBrown;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         leading: IconButton(
           tooltip: 'Voltar',
           onPressed: () => Navigator.maybePop(context),
           icon: const Icon(Icons.arrow_back_ios, size: 20),
         ),
-        backgroundColor: _background,
-        foregroundColor: _darkBrown,
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -38,10 +37,10 @@ class SobreNosPage extends StatelessWidget {
                   title: 'Um espaço só seu e de quem importa.',
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'O SnapLock é uma rede social privada para compartilhar momentos especiais com pessoas de confiança. Aqui, suas memórias não precisam ser expostas para todo mundo: você escolhe quem faz parte delas.',
                   style: TextStyle(
-                    color: _mutedText,
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontSize: 15,
                     height: 1.65,
                   ),
@@ -52,15 +51,11 @@ class SobreNosPage extends StatelessWidget {
                   title: 'Nossa missão',
                 ),
                 const SizedBox(height: 12),
-                const _InfoCard(
+                _InfoCard(
                   icon: Icons.favorite_border_rounded,
                   child: Text(
                     'Criar uma experiência de compartilhamento mais íntima e consciente, colocando privacidade, segurança e conexões reais em primeiro lugar.',
-                    style: TextStyle(
-                      color: _textColor,
-                      fontSize: 15,
-                      height: 1.6,
-                    ),
+                    style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
                   ),
                 ),
                 const SizedBox(height: 26),
@@ -90,6 +85,7 @@ class SobreNosPage extends StatelessWidget {
                   title: 'Seu estilo, suas regras',
                   description:
                       'Personalize tema e fonte para deixar o app com a sua cara.',
+                      highlighted: true,
                 ),
                 const _FeatureCard(
                   icon: Icons.tune_rounded,
@@ -104,6 +100,7 @@ class SobreNosPage extends StatelessWidget {
                   title: 'Reviva cada fase',
                   description:
                       'Relembre os registros especiais do mês e do ano.',
+                      highlighted: true,
                 ),
                 const _FeatureCard(
                   icon: Icons.account_circle_outlined,
@@ -113,9 +110,9 @@ class SobreNosPage extends StatelessWidget {
                       'Cuide das suas informações e mantenha seu espaço atualizado.',
                 ),
                 const SizedBox(height: 26),
-                _buildVision(),
+                _buildVision(context),
                 const SizedBox(height: 28),
-                _buildFooter(),
+                _buildFooter(context),
               ],
             ),
           ),
@@ -128,7 +125,7 @@ class SobreNosPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [_darkBrown, _mediumBrown],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -185,19 +182,24 @@ class SobreNosPage extends StatelessWidget {
     );
   }
 
-  Widget _buildVision() {
+  Widget _buildVision(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBF7),
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFD7CBBD)),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.visibility_outlined, color: _mediumBrown, size: 25),
-          SizedBox(width: 14),
+          Icon(
+            Icons.visibility_outlined,
+            color: theme.colorScheme.primary,
+            size: 25,
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,16 +207,16 @@ class SobreNosPage extends StatelessWidget {
                 Text(
                   'Nossa visão',
                   style: TextStyle(
-                    color: _darkBrown,
+                    color: theme.colorScheme.onSurface,
                     fontSize: 19,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'Construir uma rede social onde compartilhar não significa se expor, e onde cada memória possa ser vivida e guardada com mais segurança.',
                   style: TextStyle(
-                    color: _mutedText,
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontSize: 14,
                     height: 1.6,
                   ),
@@ -227,13 +229,14 @@ class SobreNosPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter() {
-    return const Column(
+  Widget _buildFooter(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
       children: [
         Text(
           'SnapLock',
           style: TextStyle(
-            color: _darkBrown,
+            color: theme.colorScheme.onSurface,
             fontSize: 25,
             fontWeight: FontWeight.w700,
             letterSpacing: 1,
@@ -243,32 +246,39 @@ class SobreNosPage extends StatelessWidget {
         Text(
           'FOR YOU ONLY',
           style: TextStyle(
-            color: _mediumBrown,
+            color: theme.colorScheme.primary,
             fontSize: 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 2.4,
           ),
         ),
-        SizedBox(height: 18),
+        const SizedBox(height: 18),
         Text(
           'Versão 1.4.0  ·  Feito com carinho pela equipe CyberSisters',
           textAlign: TextAlign.center,
-          style: TextStyle(color: _mutedText, fontSize: 12, height: 1.5),
+          style: TextStyle(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontSize: 12,
+            height: 1.5,
+          ),
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         SelectableText(
           'snaplock.support@gmail.com',
           style: TextStyle(
-            color: _mediumBrown,
+            color: theme.colorScheme.primary,
             fontSize: 13,
             decoration: TextDecoration.underline,
           ),
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         Text(
           '© 2026 SnapLock. Todos os direitos reservados.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: _mutedText, fontSize: 11),
+          style: TextStyle(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontSize: 11,
+          ),
         ),
       ],
     );
@@ -283,13 +293,14 @@ class _SectionHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           eyebrow,
-          style: const TextStyle(
-            color: SobreNosPage._mediumBrown,
+          style: TextStyle(
+            color: theme.colorScheme.primary,
             fontSize: 10,
             fontWeight: FontWeight.w700,
             letterSpacing: 2,
@@ -298,8 +309,8 @@ class _SectionHeading extends StatelessWidget {
         const SizedBox(height: 5),
         Text(
           title,
-          style: const TextStyle(
-            color: SobreNosPage._darkBrown,
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
             fontSize: 21,
             fontWeight: FontWeight.w600,
           ),
@@ -317,16 +328,17 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFEADCCE),
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: SobreNosPage._mediumBrown, size: 24),
+          Icon(icon, color: theme.colorScheme.primary, size: 24),
           const SizedBox(width: 14),
           Expanded(child: child),
         ],
@@ -352,16 +364,20 @@ class _FeatureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final highlighted = this.highlighted;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color:
-              highlighted ? SobreNosPage._darkBrown : const Color(0xFFFFFBF7),
+          color: highlighted
+              ? theme.colorScheme.primary
+              : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
-          border:
-              highlighted ? null : Border.all(color: const Color(0xFFEADCCE)),
+          border: highlighted
+              ? null
+              : Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,8 +387,8 @@ class _FeatureCard extends StatelessWidget {
               height: 42,
               decoration: BoxDecoration(
                 color: highlighted
-                    ? const Color(0xFFC17A45)
-                    : SobreNosPage._darkBrown,
+                    ? theme.colorScheme.onPrimary.withValues(alpha: 0.18)
+                    : theme.colorScheme.primary,
                 borderRadius: BorderRadius.circular(13),
               ),
               child: Icon(
@@ -390,8 +406,8 @@ class _FeatureCard extends StatelessWidget {
                     category,
                     style: TextStyle(
                       color: highlighted
-                          ? const Color(0xFFEAB080)
-                          : SobreNosPage._mediumBrown,
+                          ? theme.colorScheme.onPrimary.withValues(alpha: 0.8)
+                          : theme.colorScheme.primary,
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.5,
@@ -401,8 +417,9 @@ class _FeatureCard extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      color:
-                          highlighted ? Colors.white : SobreNosPage._darkBrown,
+                      color: highlighted
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onSurface,
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
                     ),
@@ -412,8 +429,8 @@ class _FeatureCard extends StatelessWidget {
                     description,
                     style: TextStyle(
                       color: highlighted
-                          ? Colors.white.withValues(alpha: 0.82)
-                          : SobreNosPage._mutedText,
+                          ? theme.colorScheme.onPrimary.withValues(alpha: 0.82)
+                          : theme.colorScheme.onSurfaceVariant,
                       fontSize: 13,
                       height: 1.5,
                     ),

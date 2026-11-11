@@ -141,8 +141,8 @@ class _CurtidasPageState extends State<CurtidasPage> {
               Image.network(
                 post.imageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const ColoredBox(
-                  color: Color(0xFFD7CBBD),
+                errorBuilder: (context, error, stackTrace) => ColoredBox(
+                  color: AppTheme.surfaceLight,
                   child: Center(
                     child: Icon(
                       Icons.broken_image_outlined,
@@ -164,7 +164,7 @@ class _CurtidasPageState extends State<CurtidasPage> {
                     ),
                   ),
                   child: Text(
-                    '@${post.authorUsername?.isNotEmpty == true ? post.authorUsername : 'usuario'}',
+                    '@${post.authorUsername?.isNotEmpty == true ? post.authorUsername : 'usuário'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -206,7 +206,7 @@ class _CurtidasPageState extends State<CurtidasPage> {
                 ? 'Nenhuma curtida por aqui'
                 : 'Não foi possível carregar',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -219,7 +219,7 @@ class _CurtidasPageState extends State<CurtidasPage> {
               _errorMessage ??
                   'Quando você curtir uma publicação, ela aparecerá nesta coleção.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 14,
                 height: 1.5,
@@ -238,36 +238,56 @@ class _CurtidasPageState extends State<CurtidasPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final filterTextStyle = TextStyle(
+      color: isDark ? colorScheme.onSurface : const Color(0xFFF3E9DC),
+    );
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         toolbarHeight: 104,
-        backgroundColor: const Color(0xFFD7CBBD),
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Color(0xFFD7CBBD),
-          statusBarIconBrightness: Brightness.dark,
-          statusBarBrightness: Brightness.light,
+        backgroundColor: theme.colorScheme.surface,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: theme.colorScheme.surface,
+          statusBarIconBrightness: theme.brightness == Brightness.dark
+              ? Brightness.light
+              : Brightness.dark,
+          statusBarBrightness: theme.brightness == Brightness.dark
+              ? Brightness.dark
+              : Brightness.light,
         ),
         leading: IconButton(
           tooltip: 'Voltar',
           onPressed: () => Navigator.maybePop(context),
-          icon: const Icon(Icons.arrow_back_ios, size: 20, color: Colors.black),
+          icon: Icon(
+            Icons.arrow_back_ios,
+            size: 20,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
         centerTitle: true,
         title: SizedBox(
           width: 220,
           height: 100,
-          child: const LogoSobreNosWidget(
-            assetPath: 'assets/images/logo_black.png',
+          child: LogoSobreNosWidget(
+            assetPath: theme.brightness == Brightness.dark
+                ? 'assets/images/logo_white.png'
+                : 'assets/images/logo_black.png',
             fit: BoxFit.contain,
           ),
         ),
         actions: [
           PopupMenuButton<bool>(
             tooltip: 'Filtrar curtidas',
-            icon: const Icon(Icons.filter_alt, size: 30, color: Colors.black),
-            color: const Color(0xFF3E3A36),
+            icon: Icon(
+              Icons.filter_alt,
+              size: 30,
+              color: AppTheme.textPrimary,
+            ),
+            color: isDark ? colorScheme.surface : AppTheme.textPrimary,
             surfaceTintColor: Colors.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -285,19 +305,19 @@ class _CurtidasPageState extends State<CurtidasPage> {
                 });
               });
             },
-            itemBuilder: (context) => const [
+            itemBuilder: (context) => [
               PopupMenuItem(
                 value: false,
                 child: Text(
                   'Mais recentes',
-                  style: TextStyle(color: Color(0xFFF3E9DC)),
+                  style: filterTextStyle,
                 ),
               ),
               PopupMenuItem(
                 value: true,
                 child: Text(
                   'Mais antigas',
-                  style: TextStyle(color: Color(0xFFF3E9DC)),
+                  style: filterTextStyle,
                 ),
               ),
             ],
@@ -311,10 +331,10 @@ class _CurtidasPageState extends State<CurtidasPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFD7CBBD),
+                color: AppTheme.surfaceLight,
                 borderRadius: BorderRadius.circular(11),
               ),
-              child: const Text(
+              child: Text(
                 'Memórias curtidas',
                 style: TextStyle(
                   color: AppTheme.textSecondary,
@@ -326,7 +346,7 @@ class _CurtidasPageState extends State<CurtidasPage> {
           const SizedBox(height: 2),
           Expanded(
             child: _isLoading && _posts.isEmpty
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(
                       color: AppTheme.mediumBrown,
                     ),

@@ -66,11 +66,11 @@ class _AmigosPage extends State<AmigosPage> {
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppTheme.cardBorder),
+          side: BorderSide(color: AppTheme.cardBorder),
         ),
         title: Row(
           children: [
@@ -81,7 +81,7 @@ class _AmigosPage extends State<AmigosPage> {
                 color: AppTheme.mediumBrown.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.heart_broken_outlined,
                 color: AppTheme.mediumBrown,
                 size: 22,
@@ -230,7 +230,7 @@ class _AmigosPage extends State<AmigosPage> {
           leading: AvatarSquareWidget(
             imageUrl: amigo.avatarUrl,
             size: 33,
-            backgroundColor: Colors.black,
+            backgroundColor: AppTheme.surfaceLight,
           ),
           title: Text(
             amigo.name,
@@ -255,12 +255,13 @@ class _AmigosPage extends State<AmigosPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
           Container(
-            color: const Color(0xFFD7CBBD),
+            color: theme.colorScheme.surface,
             child: SafeArea(
               bottom: false,
               child: AppBar(
@@ -268,17 +269,19 @@ class _AmigosPage extends State<AmigosPage> {
                 toolbarHeight: 110,
                 leading: IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.arrow_back_ios,
-                    size: 30,
-                    color: Colors.black,
+                    size: 20,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 centerTitle: true,
-                title: const LogoSobreNosWidget(
-                  assetPath: 'assets/images/logo.png',
-                  height: 80,
-                  width: 80,
+                title: LogoSobreNosWidget(
+                  assetPath: theme.brightness == Brightness.dark
+                      ? 'assets/images/logo_white.png'
+                      : 'assets/images/logo_black.png',
+                  height: 180,
+                  width: 180,
                 ),
                 actions: [
                   IconButton(
@@ -288,14 +291,14 @@ class _AmigosPage extends State<AmigosPage> {
                         builder: (context) => const ConfiguracoesPage(),
                       ),
                     ),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.settings,
                       size: 32,
-                      color: Colors.black,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ],
-                backgroundColor: const Color(0xFFD7CBBD),
+                backgroundColor: theme.colorScheme.surface,
               ),
             ),
           ),
@@ -307,11 +310,11 @@ class _AmigosPage extends State<AmigosPage> {
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFD7CBBD),
+                fillColor: theme.colorScheme.surfaceContainerHighest,
                 hintText: 'Nome ou username',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search,
-                  color: Color(0xFF5E3023),
+                  color: theme.colorScheme.primary,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -325,11 +328,13 @@ class _AmigosPage extends State<AmigosPage> {
             ),
           ),
           Expanded(child: listaAmigos()),
-          const Padding(
-            padding: EdgeInsets.only(top: 12, bottom: 22),
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 22),
             child: Text(
               'Isso é tudo.',
-              style: TextStyle(color: Colors.black38),
+              style: TextStyle(
+                color: AppTheme.textSecondary.withValues(alpha: 0.75),
+              ),
             ),
           ),
         ],
@@ -417,7 +422,7 @@ class _AnimacaoCorteLacosState extends State<_AnimacaoCorteLacos>
                   top: 31,
                   child: Transform.rotate(
                     angle: -0.45 + progress * 0.9,
-                    child: const Icon(
+                    child: Icon(
                       Icons.content_cut,
                       color: AppTheme.darkBrown,
                       size: 48,

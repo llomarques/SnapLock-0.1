@@ -53,14 +53,18 @@ class FeedHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final headerColor = theme.colorScheme.surface;
+    final iconColor = theme.colorScheme.onSurface;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFFD7CBBD),
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+      value: SystemUiOverlayStyle(
+        statusBarColor: headerColor,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
       ),
       child: Container(
-        color: const Color(0xFFD7CBBD),
+        color: headerColor,
         child: SafeArea(
           bottom: false,
           child: AppBar(
@@ -69,19 +73,19 @@ class FeedHeader extends StatelessWidget {
             leading: mostrarVoltar
                 ? IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_ios,
                       size: 20,
-                      color: Colors.black,
+                      color: iconColor,
                     ),
                   )
                 : (mostrarAcoes
                     ? IconButton(
                         onPressed: onMenuPressed,
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.menu,
                           size: 35.0,
-                          color: Colors.black,
+                          color: iconColor,
                         ),
                       )
                     : null),
@@ -89,8 +93,10 @@ class FeedHeader extends StatelessWidget {
             title: SizedBox(
               width: 220,
               height: 100,
-              child: const LogoSobreNosWidget(
-                assetPath: 'assets/images/logo_black.png',
+              child: LogoSobreNosWidget(
+                assetPath: isDark
+                    ? 'assets/images/logo_white.png'
+                    : 'assets/images/logo_black.png',
                 fit: BoxFit.contain,
               ),
             ),
@@ -100,15 +106,15 @@ class FeedHeader extends StatelessWidget {
                     ? [
                         IconButton(
                           onPressed: () => abrirPesquisa(context),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.person_search,
                             size: 35.0,
-                            color: Colors.black,
+                            color: iconColor,
                           ),
                         ),
                       ]
                     : const [],
-            backgroundColor: const Color(0xFFD7CBBD),
+            backgroundColor: headerColor,
           ),
         ),
       ),
@@ -135,17 +141,22 @@ class FeedNavigationBar extends StatelessWidget {
         imageUrl: usuario?['avatarUrl']?.toString() ?? '',
         size: tamanho,
         backgroundColor: Colors.transparent,
-        iconColor: Colors.black,
+        iconColor: Theme.of(context).colorScheme.onSurface,
         fallbackAsset: 'assets/images/monalisaPerfil.png',
       ),
     );
   }
 
-  Widget _iconeNotificacoes(IconData icone, double tamanho) {
+  Widget _iconeNotificacoes(
+    IconData icone,
+    double tamanho,
+    Color iconColor,
+    Color borderColor,
+  ) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Icon(icone, size: tamanho, color: Colors.black),
+        Icon(icone, size: tamanho, color: iconColor),
         if (temNotificacaoNova)
           Positioned(
             top: 0,
@@ -154,10 +165,10 @@ class FeedNavigationBar extends StatelessWidget {
               width: 10,
               height: 10,
               decoration: BoxDecoration(
-                color: const Color(0xFFC08552),
+                color: AppTheme.lightBrown,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFFD7CBBD),
+                  color: borderColor,
                   width: 1.5,
                 ),
               ),
@@ -169,31 +180,44 @@ class FeedNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final barColor = theme.colorScheme.surface;
+    final iconColor = theme.colorScheme.onSurface;
     return NavigationBar(
-      backgroundColor: const Color(0xFFD7CBBD),
+      backgroundColor: barColor,
       indicatorColor: Colors.transparent,
       onDestinationSelected: onDestinationSelected,
       selectedIndex: selectedIndex,
       destinations: [
         NavigationDestination(
           icon: _TapScale(
-            child: const Icon(
+            child: Icon(
               Icons.home_outlined,
               size: 33,
-              color: Colors.black,
+              color: iconColor,
             ),
           ),
           selectedIcon: _TapScale(
-            child: const Icon(Icons.home, size: 40, color: Colors.black),
+            child: Icon(Icons.home, size: 40, color: iconColor),
           ),
           label: '',
         ),
         NavigationDestination(
           icon: _TapScale(
-            child: _iconeNotificacoes(Icons.notifications_outlined, 33),
+            child: _iconeNotificacoes(
+              Icons.notifications_outlined,
+              33,
+              iconColor,
+              barColor,
+            ),
           ),
           selectedIcon: _TapScale(
-            child: _iconeNotificacoes(Icons.notifications, 40),
+            child: _iconeNotificacoes(
+              Icons.notifications,
+              40,
+              iconColor,
+              barColor,
+            ),
           ),
           label: '',
         ),
@@ -204,17 +228,17 @@ class FeedNavigationBar extends StatelessWidget {
         ),
         NavigationDestination(
           icon: _TapScale(
-            child: const ImageIcon(
+            child: ImageIcon(
               AssetImage('assets/images/dump.png'),
               size: 33,
-              color: Colors.black,
+              color: iconColor,
             ),
           ),
           selectedIcon: _TapScale(
-            child: const ImageIcon(
+            child: ImageIcon(
               AssetImage('assets/images/dump.png'),
               size: 50,
-              color: Colors.black,
+              color: iconColor,
             ),
           ),
           label: '',
@@ -327,12 +351,12 @@ class _FeedConteudoPageState extends State<FeedConteudoPage> {
                                   _posts[index].imageUrl,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) =>
-                                      const ColoredBox(
-                                    color: Color(0xFFD7CBBD),
+                                      ColoredBox(
+                                    color: AppTheme.surfaceLight,
                                     child: Center(
                                       child: Icon(
                                         Icons.broken_image_outlined,
-                                        color: Color(0xFF6F5C4A),
+                                        color: AppTheme.textSecondary,
                                       ),
                                     ),
                                   ),
@@ -358,7 +382,7 @@ class _FeedConteudoPageState extends State<FeedConteudoPage> {
                                       ),
                                     ),
                                     child: Text(
-                                      '@${_posts[index].authorUsername ?? 'usuario'}',
+                                      '@${_posts[index].authorUsername ?? 'usuário'}',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
@@ -395,8 +419,8 @@ class _FeedConteudoPageState extends State<FeedConteudoPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _posts.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF895737)),
+      return Center(
+        child: CircularProgressIndicator(color: AppTheme.mediumBrown),
       );
     }
 
@@ -583,18 +607,29 @@ class _FeedPage extends State<FeedPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final drawerTextColor =
+        isDark ? colorScheme.onSurface : AppTheme.darkThemeTextPrimary;
+    final drawerIconColor =
+        isDark ? colorScheme.onSurfaceVariant : AppTheme.darkThemeTextPrimary;
+    final drawerDividerColor = isDark
+        ? colorScheme.outlineVariant
+        : AppTheme.darkThemeTextPrimary.withValues(alpha: 0.55);
     final distanciaInferior = MediaQuery.viewPaddingOf(context).bottom + 38;
 
     return Stack(
       fit: StackFit.expand,
       children: [
         Scaffold(
-          backgroundColor: const Color(0xFFF3E9DC),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           onDrawerChanged: (aberto) {
             setState(() => _drawerAberto = aberto);
           },
           drawer: Drawer(
-            backgroundColor: AppTheme.mediumBrown,
+            backgroundColor:
+                isDark ? colorScheme.surface : AppTheme.mediumBrown,
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
@@ -604,10 +639,14 @@ class _FeedPage extends State<FeedPage> {
                     height: 108,
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.darkBrown.withValues(alpha: 0.18),
+                      color: isDark
+                          ? colorScheme.surfaceContainerHighest
+                          : AppTheme.darkBrown.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppTheme.lightBrown.withValues(alpha: 0.35),
+                        color: isDark
+                            ? colorScheme.outlineVariant
+                            : AppTheme.lightBrown.withValues(alpha: 0.35),
                       ),
                     ),
                     child: const LogoSobreNosWidget(
@@ -620,11 +659,11 @@ class _FeedPage extends State<FeedPage> {
                   children: [
                     ListTile(
                       leading: const Icon(Icons.person),
-                      title: const Text(
+                      title: Text(
                         'Perfil',
-                        style: TextStyle(color: AppTheme.background),
+                        style: TextStyle(color: drawerTextColor),
                       ),
-                      iconColor: AppTheme.background,
+                      iconColor: drawerIconColor,
                       onTap: () {
                         Navigator.pop(context);
                         _selecionarAba(4);
@@ -634,15 +673,15 @@ class _FeedPage extends State<FeedPage> {
                       height: 1,
                       indent: 16,
                       endIndent: 16,
-                      color: AppTheme.background.withValues(alpha: 0.55),
+                      color: drawerDividerColor,
                     ),
                     ListTile(
                       leading: const Icon(Icons.notifications),
-                      title: const Text(
+                      title: Text(
                         'Notificações',
-                        style: TextStyle(color: AppTheme.background),
+                        style: TextStyle(color: drawerTextColor),
                       ),
-                      iconColor: AppTheme.background,
+                      iconColor: drawerIconColor,
                       onTap: () {
                         Navigator.pop(context);
                         _selecionarAba(1);
@@ -652,15 +691,15 @@ class _FeedPage extends State<FeedPage> {
                       height: 1,
                       indent: 16,
                       endIndent: 16,
-                      color: AppTheme.background.withValues(alpha: 0.55),
+                      color: drawerDividerColor,
                     ),
                     ListTile(
                       leading: const Icon(Icons.settings),
-                      title: const Text(
+                      title: Text(
                         'Configurações',
-                        style: TextStyle(color: AppTheme.background),
+                        style: TextStyle(color: drawerTextColor),
                       ),
-                      iconColor: AppTheme.background,
+                      iconColor: drawerIconColor,
                       onTap: () {
                         abrirConfiguracoes();
                       },
@@ -669,15 +708,15 @@ class _FeedPage extends State<FeedPage> {
                       height: 1,
                       indent: 16,
                       endIndent: 16,
-                      color: AppTheme.background.withValues(alpha: 0.55),
+                      color: drawerDividerColor,
                     ),
                     ListTile(
                       leading: const Icon(Icons.call),
-                      title: const Text(
+                      title: Text(
                         'Ajuda e suporte',
-                        style: TextStyle(color: AppTheme.background),
+                        style: TextStyle(color: drawerTextColor),
                       ),
-                      iconColor: AppTheme.background,
+                      iconColor: drawerIconColor,
                       onTap: () {
                         abrirAjudaESuporte();
                       },
@@ -686,16 +725,16 @@ class _FeedPage extends State<FeedPage> {
                       height: 1,
                       indent: 16,
                       endIndent: 16,
-                      color: AppTheme.background.withValues(alpha: 0.55),
+                      color: drawerDividerColor,
                     ),
                     ListTile(
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.logout,
-                        color: AppTheme.background,
+                        color: drawerIconColor,
                       ),
-                      title: const Text(
+                      title: Text(
                         'Sair',
-                        style: TextStyle(color: AppTheme.background),
+                        style: TextStyle(color: drawerTextColor),
                       ),
                       onTap: () async {
                         final confirmarSaida = await showDialog<bool>(
@@ -705,8 +744,7 @@ class _FeedPage extends State<FeedPage> {
                             surfaceTintColor: Colors.transparent,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(24),
-                              side:
-                                  const BorderSide(color: AppTheme.cardBorder),
+                              side: BorderSide(color: AppTheme.cardBorder),
                             ),
                             title: Row(
                               children: [
@@ -719,7 +757,7 @@ class _FeedPage extends State<FeedPage> {
                                     ),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.logout,
                                     color: AppTheme.mediumBrown,
                                     size: 22,
@@ -828,10 +866,10 @@ class _FeedPage extends State<FeedPage> {
                         scale: indice == 2 ? 50 / 44 : 1,
                         duration: const Duration(milliseconds: 150),
                         curve: Curves.easeOut,
-                        child: const Icon(
+                        child: Icon(
                           Icons.add_circle,
                           size: 44,
-                          color: Colors.black,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                     ),

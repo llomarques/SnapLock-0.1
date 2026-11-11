@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/frontend/pages/configuracoes_page.dart';
 import 'package:snaplock/frontend/pages/feed_page.dart';
@@ -62,6 +63,11 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
       );
 
   Widget _buildProfileHeader() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final profileStatsTextColor = theme.brightness == Brightness.dark
+        ? colorScheme.onSurface
+        : colorScheme.primary;
     final avatar = widget.amigo.avatarUrl.isEmpty
         ? Image.asset(
             'assets/images/monalisaPerfil.png',
@@ -84,9 +90,9 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
               child: Text(
                 '${widget.amigo.friendsCount}\nAmigos',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
-                  color: Color(0xFF5E3023),
+                  color: profileStatsTextColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -95,7 +101,7 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
               width: 90,
               height: 90,
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFF895737), width: 2),
+                border: Border.all(color: colorScheme.primary, width: 2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: ClipRRect(
@@ -107,9 +113,9 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
               child: Text(
                 '${_publicacoes.length}\nMemórias',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
-                  color: Color(0xFF5E3023),
+                  color: profileStatsTextColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -120,8 +126,8 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
         Text(
           widget.amigo.name,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.black,
+          style: TextStyle(
+            color: colorScheme.onSurface,
             fontSize: 13,
             fontWeight: FontWeight.bold,
           ),
@@ -131,35 +137,38 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
           widget.amigo.username.isEmpty
               ? '@username'
               : '@${widget.amigo.username}',
-          style: const TextStyle(color: Colors.black, fontSize: 10),
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: 10,
+          ),
         ),
         const SizedBox(height: 20),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFD7CBBD),
+            color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.chat_bubble, color: Color(0xFF5E3023)),
+              Icon(Icons.chat_bubble, color: colorScheme.primary),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   widget.amigo.bio.isEmpty
                       ? 'Biografia não informada.'
                       : widget.amigo.bio,
-                  style: const TextStyle(color: Color(0xFF5E3023)),
+                  style: TextStyle(color: colorScheme.onSurface),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 20),
-        const Divider(
-          color: Color.fromARGB(255, 202, 196, 186),
+        Divider(
+          color: colorScheme.outlineVariant,
           thickness: 2,
           height: 20,
         ),
@@ -169,11 +178,12 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
   }
 
   Widget _buildGallery() {
+    final colorScheme = Theme.of(context).colorScheme;
     if (_carregando) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
+      return Padding(
+        padding: const EdgeInsets.all(24),
         child: Center(
-          child: CircularProgressIndicator(color: Color(0xFF895737)),
+          child: CircularProgressIndicator(color: colorScheme.primary),
         ),
       );
     }
@@ -186,7 +196,7 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
             Text(
               _erro!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF6F5C4A)),
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
             TextButton(
               onPressed: _carregarPublicacoes,
@@ -198,11 +208,11 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
     }
 
     if (_publicacoes.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
         child: Text(
           'Nenhuma memória ainda.',
-          style: TextStyle(color: Color(0xFF6F5C4A)),
+          style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -211,6 +221,7 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
   }
 
   Widget _buildGalleryGrid() {
+    final colorScheme = Theme.of(context).colorScheme;
     const columnCount = 2;
     const spacing = 10.0;
     final aspectRatios = _aspectRatios;
@@ -248,12 +259,12 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
                           _publicacoes[index].imageUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
-                              const ColoredBox(
-                            color: Color(0xFFD7CBBD),
+                              ColoredBox(
+                            color: colorScheme.surfaceContainerHighest,
                             child: Center(
                               child: Icon(
                                 Icons.broken_image_outlined,
-                                color: Color(0xFF6F5C4A),
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -284,16 +295,18 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: theme.scaffoldBackgroundColor,
       drawer: Drawer(
-        backgroundColor: const Color(0xFFC08552),
+        backgroundColor: isDark ? theme.colorScheme.surface : AppTheme.lightBrown,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 60, bottom: 12),
-              child: const LogoSobreNosWidget(
+            const Padding(
+              padding: EdgeInsets.only(top: 60, bottom: 12),
+              child: LogoSobreNosWidget(
                 assetPath: 'assets/images/logo.png',
                 height: 80,
                 fit: BoxFit.contain,

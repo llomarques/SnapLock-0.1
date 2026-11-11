@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
@@ -42,44 +43,44 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
   }
 
   Future<void> salvarAlteracoes() async {
-  if (salvando) return;
+    if (salvando) return;
 
-  setState(() => salvando = true);
-  try {
-    String? novaFotoUrl;
+    setState(() => salvando = true);
+    try {
+      String? novaFotoUrl;
 
-    // Se o usuário escolheu uma nova foto, envia primeiro
-    if (fotoPerfil != null) {
-      novaFotoUrl = await LoginController.atualizarFotoPerfil(fotoPerfil!);
-    }
-
-    final resposta = await LoginController.atualizarPerfil(
-      nome: nomeController.text.trim(),
-      username: usernameController.text.trim(),
-      biografia: biografiaController.text.trim(),
-    );
-
-    if (mounted) {
-      final usuarioAtualizado = Map<String, dynamic>.from(
-        resposta['user'] as Map<String, dynamic>,
-      );
-
-      // O endpoint de nome/bio não sabe da nova foto, então mesclamos aqui
-      if (novaFotoUrl != null) {
-        usuarioAtualizado['avatarUrl'] = novaFotoUrl;
+      // Se o usuário escolheu uma nova foto, envia primeiro
+      if (fotoPerfil != null) {
+        novaFotoUrl = await LoginController.atualizarFotoPerfil(fotoPerfil!);
       }
 
-      Navigator.pop(context, usuarioAtualizado);
-    }
-  } catch (error) {
-    if (mounted) {
-      setState(() => salvando = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
+      final resposta = await LoginController.atualizarPerfil(
+        nome: nomeController.text.trim(),
+        username: usernameController.text.trim(),
+        biografia: biografiaController.text.trim(),
       );
+
+      if (mounted) {
+        final usuarioAtualizado = Map<String, dynamic>.from(
+          resposta['user'] as Map<String, dynamic>,
+        );
+
+        // O endpoint de nome/bio não sabe da nova foto, então mesclamos aqui
+        if (novaFotoUrl != null) {
+          usuarioAtualizado['avatarUrl'] = novaFotoUrl;
+        }
+
+        Navigator.pop(context, usuarioAtualizado);
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => salvando = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
+      }
     }
   }
-}
 
   Future<void> escolherDaGaleria() async {
     final XFile? imagem = await picker.pickImage(
@@ -122,14 +123,14 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF3E9DC),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios),
-          color: const Color(0xFF5E3023),
+          color: AppTheme.darkBrown,
           tooltip: 'Voltar',
         ),
       ),
@@ -144,7 +145,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               height: 120,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xFF895737),
+                  color: AppTheme.mediumBrown,
                   width: 2,
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -167,7 +168,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               icon: const Icon(Icons.camera_alt),
               label: const Text('Adicionar foto'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: const Color(0xFFF3E9DC),
               ),
             ),
@@ -176,11 +177,11 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               controller: nomeController,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFD7CBBD),
+                fillColor: AppTheme.surfaceLight,
                 hintText: 'Nome',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.person,
-                  color: Color(0xFF5E3023),
+                  color: AppTheme.darkBrown,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -197,11 +198,11 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               controller: usernameController,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFD7CBBD),
+                fillColor: AppTheme.surfaceLight,
                 hintText: 'Username',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.alternate_email,
-                  color: Color(0xFF5E3023),
+                  color: AppTheme.darkBrown,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -218,11 +219,11 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
               controller: biografiaController,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFD7CBBD),
+                fillColor: AppTheme.surfaceLight,
                 hintText: 'Biografia',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.chat_bubble,
-                  color: Color(0xFF5E3023),
+                  color: AppTheme.darkBrown,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -238,7 +239,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             ElevatedButton(
               onPressed: salvando ? null : salvarAlteracoes,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: const Color(0xFFF3E9DC),
                 minimumSize: const Size.fromHeight(50),
               ),

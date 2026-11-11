@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/frontend/pages/personalizarPerfil_page.dart';
 import 'package:snaplock/frontend/pages/login_page.dart';
@@ -45,7 +46,7 @@ class _CadastroPageState extends State<CadastroPage> {
     }
 
     if (!email.contains('@')) {
-      mostrarMensagem(context, 'Digite um e-mail valido');
+      mostrarMensagem(context, 'Digite um e-mail válido.');
       return;
     }
 
@@ -55,7 +56,7 @@ class _CadastroPageState extends State<CadastroPage> {
     }
 
     if (senha != confirmaSenha) {
-      mostrarMensagem(context, 'As senhas nao coincidem.');
+      mostrarMensagem(context, 'As senhas não coincidem.');
       return;
     }
 
@@ -71,7 +72,7 @@ class _CadastroPageState extends State<CadastroPage> {
       );
       await LoginController().entrar(login: email, senha: senha);
       if (mounted) {
-        mostrarMensagem(context, 'Usuario cadastrado com sucesso');
+        mostrarMensagem(context, 'Usuário cadastrado com sucesso.');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -104,14 +105,7 @@ class _CadastroPageState extends State<CadastroPage> {
       errorFormatText: 'Digite no formato dia/mês/ano.',
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF895737),
-              onPrimary: Colors.white,
-              surface: Color(0xFFF3E9DC),
-              onSurface: Color(0xFF3E3A36),
-            ),
-          ),
+          data: Theme.of(context),
           child: child!,
         );
       },
@@ -139,7 +133,7 @@ class _CadastroPageState extends State<CadastroPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -172,13 +166,14 @@ class _CadastroPageState extends State<CadastroPage> {
               onTap: carregando ? null : selecionarData,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFD7CBBD),
+                fillColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
                 hintText: dataNascimento == null
                     ? 'Digite sua data de nascimento'
                     : '${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.cake,
-                  color: Color(0xFF5E3023),
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -211,7 +206,7 @@ class _CadastroPageState extends State<CadastroPage> {
             ElevatedButton.icon(
               onPressed: carregando ? null : cadastrar,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: Colors.white,
               ),
               label: carregando
@@ -226,9 +221,9 @@ class _CadastroPageState extends State<CadastroPage> {
             GestureDetector(
                 onTap: () => abrirLogin(context),
                 child: Text(
-                  'Ja tenho uma conta',
+                  'Já tenho uma conta',
                   style: TextStyle(
-                    color: Color(0xFF895737),
+                    color: AppTheme.mediumBrown,
                     fontWeight: FontWeight.bold, // Opcional: sublinha a palavra
                   ),
                   textAlign: TextAlign.center,

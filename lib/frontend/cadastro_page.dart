@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/frontend/pages/login_page.dart';
 import 'package:snaplock/frontend/pages/personalizarPerfil_page.dart';
@@ -100,11 +101,11 @@ class _CadastroPageState extends State<CadastroPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF895737),
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.mediumBrown,
               onPrimary: Colors.white,
               surface: Color(0xFFF3E9DC),
-              onSurface: Color(0xFF3E3A36),
+              onSurface: AppTheme.textPrimary,
             ),
           ),
           child: child!,
@@ -124,7 +125,7 @@ class _CadastroPageState extends State<CadastroPage> {
     super.dispose();
   }
 
-    void abrirLogin(BuildContext context) {
+  void abrirLogin(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -134,7 +135,7 @@ class _CadastroPageState extends State<CadastroPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -152,11 +153,12 @@ class _CadastroPageState extends State<CadastroPage> {
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFD7CBBD),
+                fillColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
                 hintText: 'Digite seu nome',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.person,
-                  color: Color(0xFF5E3023),
+                  color: AppTheme.darkBrown,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -173,10 +175,10 @@ class _CadastroPageState extends State<CadastroPage> {
               controller: usernameController,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFD7CBBD),
+                fillColor: AppTheme.surfaceLight,
                 hintText: 'Digite seu username',
                 prefixIcon:
-                    const Icon(Icons.alternate_email, color: Color(0xFF5E3023)),
+                    Icon(Icons.alternate_email, color: AppTheme.darkBrown),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
@@ -194,13 +196,13 @@ class _CadastroPageState extends State<CadastroPage> {
               onTap: carregando ? null : selecionarData,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFD7CBBD),
+                fillColor: AppTheme.surfaceLight,
                 hintText: dataNascimento == null
                     ? 'Digite sua data de nascimento'
                     : 'Nascimento: ${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.cake,
-                  color: Color(0xFF5E3023),
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -218,11 +220,11 @@ class _CadastroPageState extends State<CadastroPage> {
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFD7CBBD),
+                fillColor: AppTheme.surfaceLight,
                 hintText: 'Digite seu e-mail',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.email,
-                  color: Color(0xFF5E3023),
+                  color: AppTheme.darkBrown,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -240,11 +242,11 @@ class _CadastroPageState extends State<CadastroPage> {
               obscureText: esconderSenha,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: Color(0xFFD7CBBD),
+                fillColor: AppTheme.surfaceLight,
                 hintText: 'Digite sua senha',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.lock,
-                  color: Color(0xFF5E3023),
+                  color: AppTheme.darkBrown,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -262,7 +264,7 @@ class _CadastroPageState extends State<CadastroPage> {
                     },
                     icon: Icon(
                       esconderSenha ? Icons.visibility : Icons.visibility_off,
-                      color: Color(0xFF5E3023),
+                      color: AppTheme.darkBrown,
                     )),
               ),
             ),
@@ -272,11 +274,11 @@ class _CadastroPageState extends State<CadastroPage> {
               obscureText: esconderAfirmacao,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: Color(0xFFD7CBBD),
+                fillColor: AppTheme.surfaceLight,
                 hintText: 'Confirme sua senha',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.lock,
-                  color: Color(0xFF5E3023),
+                  color: AppTheme.darkBrown,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -294,7 +296,7 @@ class _CadastroPageState extends State<CadastroPage> {
                   },
                   icon: Icon(
                     esconderAfirmacao ? Icons.visibility : Icons.visibility_off,
-                    color: Color(0xFF5E3023),
+                    color: AppTheme.darkBrown,
                   ),
                 ),
               ),
@@ -303,7 +305,7 @@ class _CadastroPageState extends State<CadastroPage> {
             ElevatedButton.icon(
               onPressed: carregando ? null : cadastrar,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: Colors.white,
               ),
               label: carregando
@@ -320,7 +322,7 @@ class _CadastroPageState extends State<CadastroPage> {
                 child: Text(
                   'Já tenho uma conta',
                   style: TextStyle(
-                    color: Color(0xFF895737),
+                    color: AppTheme.mediumBrown,
                     fontWeight: FontWeight.bold, // Opcional: sublinha a palavra
                   ),
                   textAlign: TextAlign.center,

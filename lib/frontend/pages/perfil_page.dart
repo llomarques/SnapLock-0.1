@@ -134,8 +134,15 @@ class _PerfilPage extends State<PerfilPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final profileDetailTextColor = isDark
+        ? theme.colorScheme.onSurface
+        : theme.colorScheme.onSurfaceVariant;
+    final profileStatsTextColor =
+        isDark ? theme.colorScheme.onSurface : theme.colorScheme.primary;
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -164,9 +171,9 @@ class _PerfilPage extends State<PerfilPage> {
                         child: Text(
                           '$quantidadeAmigos\nAmigos',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 17,
-                            color: Color(0xFF5E3023),
+                            color: profileStatsTextColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -182,7 +189,7 @@ class _PerfilPage extends State<PerfilPage> {
                       height: 90,
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: const Color(0xFF895737),
+                          color: theme.colorScheme.primary,
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(16),
@@ -207,8 +214,8 @@ class _PerfilPage extends State<PerfilPage> {
                         onPressed: () => abrirEditarPerfil(context),
                         icon: const Icon(Icons.edit, size: 17),
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: const Color(0xFFF3E9DC),
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
                           minimumSize: const Size(32, 32),
                           padding: EdgeInsets.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -222,9 +229,9 @@ class _PerfilPage extends State<PerfilPage> {
                     child: Text(
                       '${fotos.length}\nMemórias',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
-                        color: Color(0xFF5E3023),
+                        color: profileStatsTextColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -237,8 +244,8 @@ class _PerfilPage extends State<PerfilPage> {
             ),
             Text(
               nomeUsuario,
-              style: const TextStyle(
-                color: Colors.black,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
               ),
@@ -248,7 +255,10 @@ class _PerfilPage extends State<PerfilPage> {
             ),
             Text(
               username.isEmpty ? '@username' : '@$username',
-              style: const TextStyle(color: Colors.black, fontSize: 10),
+              style: TextStyle(
+                color: profileDetailTextColor,
+                fontSize: 10,
+              ),
             ),
             const SizedBox(
               height: 20,
@@ -263,14 +273,17 @@ class _PerfilPage extends State<PerfilPage> {
                 minLines: 1,
                 maxLines: null,
                 maxLength: 150,
+                style: isDark
+                    ? TextStyle(color: theme.colorScheme.onSurface)
+                    : null,
                 decoration: InputDecoration(
                   counterText: '',
                   filled: true,
-                  fillColor: const Color(0xFFD7CBBD),
+                  fillColor: theme.colorScheme.surfaceContainerHighest,
                   hintText: 'Biografia',
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.chat_bubble,
-                    color: Color(0xFF5E3023),
+                    color: theme.colorScheme.primary,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -287,7 +300,7 @@ class _PerfilPage extends State<PerfilPage> {
               height: 20,
             ),
             Divider(
-              color: const Color.fromARGB(255, 202, 196, 186), // Cor da linha
+              color: theme.colorScheme.outlineVariant,
               thickness: 2.0, // Espessura da linha
               height: 20.0, // Espaço ao redor da linha
             ),
@@ -295,27 +308,26 @@ class _PerfilPage extends State<PerfilPage> {
               height: 20,
             ),
             if (carregandoFotos)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(
-                  color: Color(0xFF895737),
-                ),
+                child:
+                    CircularProgressIndicator(color: theme.colorScheme.primary),
               )
             else if (erroAoCarregarFotos)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Text(
                   'Não foi possível carregar suas memórias. Tente novamente.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF6F5C4A)),
+                  style: TextStyle(color: profileDetailTextColor),
                 ),
               )
             else if (fotos.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Text(
                   'Nenhuma memória ainda.',
-                  style: TextStyle(color: Color(0xFF6F5C4A)),
+                  style: TextStyle(color: profileDetailTextColor),
                 ),
               )
             else
@@ -384,10 +396,12 @@ class _PerfilPage extends State<PerfilPage> {
                             }
 
                             return Container(
-                              color: const Color(0xFFD7CBBD),
-                              child: const Center(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              child: Center(
                                 child: CircularProgressIndicator(
-                                  color: Color(0xFF895737),
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                             );
@@ -398,11 +412,13 @@ class _PerfilPage extends State<PerfilPage> {
                             stackTrace,
                           ) {
                             return Container(
-                              color: const Color(0xFFD7CBBD),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
                               alignment: Alignment.center,
-                              child: const Icon(
+                              child: Icon(
                                 Icons.broken_image_outlined,
-                                color: Color(0xFF895737),
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             );
                           },

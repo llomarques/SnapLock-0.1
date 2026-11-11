@@ -35,7 +35,7 @@ class _PostCardState extends _PostCardStateBase {
         return Container(
           height: 220,
           color: AppTheme.surfaceLight,
-          child: const Center(
+          child: Center(
             child: Icon(
               Icons.broken_image,
               color: AppTheme.textSecondary,
@@ -101,7 +101,7 @@ class _PostCardState extends _PostCardStateBase {
                 if (isAuthor)
                   PopupMenuButton<String>(
                     tooltip: 'Ações da publicação',
-                    color: const Color(0xFF3E3A36),
+                    color: AppTheme.textPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -128,7 +128,7 @@ class _PostCardState extends _PostCardStateBase {
                         ),
                       ),
                     ],
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.more_vert,
                       color: AppTheme.textPrimary,
                       size: 20,
@@ -136,7 +136,7 @@ class _PostCardState extends _PostCardStateBase {
                   )
                 else
                   IconButton(
-                    icon: const Icon(Icons.flag_outlined,
+                    icon: Icon(Icons.flag_outlined,
                         color: AppTheme.mediumBrown, size: 20),
                     onPressed: _showReportDialog,
                   ),
@@ -165,7 +165,7 @@ class _PostCardState extends _PostCardStateBase {
               child: Text(
                 widget.post.caption,
                 style: GoogleFonts.poppins(
-                  color: AppTheme.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 13,
                   height: 1.4,
                 ),
@@ -177,8 +177,7 @@ class _PostCardState extends _PostCardStateBase {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             child: Row(
               children: [
-                const Icon(Icons.lock_outline,
-                    size: 14, color: AppTheme.mediumBrown),
+                Icon(Icons.lock_outline, size: 14, color: AppTheme.mediumBrown),
                 const SizedBox(width: 6),
                 Text(
                   'Visível apenas para amigos autorizados (RN13)',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:snaplock/theme/app_fonts.dart';
 import '../../controller/controller.cadastrar.dart';
@@ -51,7 +52,8 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
     final email = confirmaEmailController.text.trim();
     final token = tokenController.text.trim();
     if (token.length != 6) {
-      mostrarMensagem(context, 'Digite o codigo de 6 numeros recebido por e-mail.');
+      mostrarMensagem(
+          context, 'Digite o código de 6 números recebido por e-mail.');
       return;
     }
     setState(() => carregando = true);
@@ -75,7 +77,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -89,11 +91,11 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
             ),
             const SizedBox(height: 37),
             Text(
-              'Digite seu e-mail para receber o link de recuperacao',
+              'Digite seu e-mail para receber o link de recuperação',
               textAlign: TextAlign.center,
               style: AppFonts.poppinsRegular.copyWith(
                 fontSize: 12.5,
-                color: Color(0xFF3E3A36),
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 20),
@@ -110,17 +112,17 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
               ElevatedButton(
                 onPressed: carregando ? null : solicitarToken,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF895737),
+                  backgroundColor: AppTheme.mediumBrown,
                   foregroundColor: const Color(0xFFF3E9DC),
                   minimumSize: const Size.fromHeight(50),
                 ),
                 child: carregando
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Enviar codigo'),
+                    : const Text('Enviar código'),
               ),
             if (tokenEnviado) ...[
               Text(
-                'Digite o codigo de 6 numeros enviado para seu e-mail',
+                'Digite o código de 6 números enviado para seu e-mail',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -132,8 +134,8 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
                 decoration: InputDecoration(
                   counterText: '',
                   filled: true,
-                  fillColor: const Color(0xFFD7CBBD),
-                  hintText: 'Codigo de 6 numeros',
+                  fillColor: AppTheme.surfaceLight,
+                  hintText: 'Código de 6 números',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -144,7 +146,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
               ElevatedButton(
                 onPressed: carregando ? null : validarToken,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF895737),
+                  backgroundColor: AppTheme.mediumBrown,
                   foregroundColor: const Color(0xFFF3E9DC),
                   minimumSize: const Size.fromHeight(50),
                 ),
@@ -161,7 +163,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
                 child: Text(
                   'Voltar para o login',
                   style: TextStyle(
-                    color: Color(0xFF895737),
+                    color: AppTheme.mediumBrown,
                     fontWeight: FontWeight.bold, // Opcional: sublinha a palavra
                   ),
                   textAlign: TextAlign.center,

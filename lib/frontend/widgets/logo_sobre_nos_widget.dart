@@ -17,6 +17,11 @@ class LogoSobreNosWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final logoAssetPath = isDark && assetPath == 'assets/images/logo.png'
+        ? 'assets/images/logo_oficial_white.png'
+        : assetPath;
+
     return Semantics(
       button: true,
       label: 'Sobre Nós',
@@ -29,7 +34,7 @@ class LogoSobreNosWidget extends StatelessWidget {
           );
         },
         child: Image.asset(
-          assetPath,
+          logoAssetPath,
           width: width,
           height: height,
           fit: fit,

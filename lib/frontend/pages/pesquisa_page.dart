@@ -155,12 +155,13 @@ class _PesquisaPage extends State<PesquisaPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
           Container(
-            color: const Color(0xFFD7CBBD),
+            color: theme.colorScheme.surface,
             child: SafeArea(
               bottom: false,
               child: AppBar(
@@ -168,17 +169,19 @@ class _PesquisaPage extends State<PesquisaPage> {
                 toolbarHeight: 110,
                 leading: IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.arrow_back_ios,
-                    size: 30,
-                    color: Colors.black,
+                    size: 20,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 centerTitle: true,
-                title: const LogoSobreNosWidget(
-                  assetPath: 'assets/images/logo.png',
-                  height: 80,
-                  width: 80,
+                title: LogoSobreNosWidget(
+                  assetPath: theme.brightness == Brightness.dark
+                      ? 'assets/images/logo_white.png'
+                      : 'assets/images/logo_black.png',
+                  height: 180,
+                  width: 180,
                 ),
                 actions: [
                   IconButton(
@@ -188,14 +191,14 @@ class _PesquisaPage extends State<PesquisaPage> {
                         builder: (context) => const ConfiguracoesPage(),
                       ),
                     ),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.settings,
                       size: 32,
-                      color: Colors.black,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ],
-                backgroundColor: const Color(0xFFD7CBBD),
+                backgroundColor: theme.colorScheme.surface,
               ),
             ),
           ),
@@ -207,11 +210,11 @@ class _PesquisaPage extends State<PesquisaPage> {
               onChanged: aoAlterarBusca,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFD7CBBD),
+                fillColor: theme.colorScheme.surfaceContainerHighest,
                 hintText: 'Nome ou username',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search,
-                  color: Color(0xFF5E3023),
+                  color: theme.colorScheme.primary,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),

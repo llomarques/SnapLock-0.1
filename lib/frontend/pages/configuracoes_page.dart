@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'package:snaplock/frontend/widgets/criarOpcao_widget.dart';
 import 'package:snaplock/theme/app_theme.dart';
+import 'package:snaplock/theme/app_theme_controller.dart';
 import 'alterarSenha_page.dart';
 import 'sobreNos_page.dart';
 import 'alterarEmail_page.dart';
@@ -19,6 +20,23 @@ class ConfiguracoesPage extends StatefulWidget {
 
 class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
   bool notificacoesAtivas = true;
+  bool alterandoTema = false;
+
+  Future<void> alterarTema(bool ativarModoEscuro) async {
+    if (alterandoTema) return;
+    setState(() => alterandoTema = true);
+    try {
+      await AppThemeController.instance.setDark(ativarModoEscuro);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Não foi possível alterar o tema: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => alterandoTema = false);
+    }
+  }
 
   void abrirSobreNos() {
     Navigator.push(
@@ -30,7 +48,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         leading: IconButton(
           tooltip: 'Voltar',
@@ -38,7 +56,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
           icon: const Icon(Icons.arrow_back_ios, size: 20),
         ),
         title: const Text('Configurações'),
-        backgroundColor: const Color(0xFFF3E9DC),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       ),
       body: ListView(
         children: [
@@ -49,9 +67,9 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
               scale: 0.8,
               child: Switch(
                 value: notificacoesAtivas,
-                activeThumbColor: Colors.green,
-                inactiveThumbColor: Colors.red,
-                inactiveTrackColor: Colors.red.shade200,
+                activeThumbColor: AppTheme.success,
+                inactiveThumbColor: AppTheme.danger,
+                inactiveTrackColor: AppTheme.danger.withValues(alpha: 0.35),
                 onChanged: (valor) {
                   setState(() {
                     notificacoesAtivas = valor;
@@ -60,10 +78,90 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
               ),
             ),
           ),
-          CriarOpcaoWidget(
-            icone: Icons.palette,
-            titulo: 'Tema',
-            aoClicar: () {},
+          AnimatedBuilder(
+            animation: AppThemeController.instance,
+            builder: (context, _) {
+              final isDark = AppThemeController.instance.isDark;
+              final theme = Theme.of(context);
+              return ListTile(
+                leading: const Icon(Icons.palette_outlined),
+                title: const Text('Tema'),
+                trailing: PopupMenuButton<bool>(
+                  enabled: !alterandoTema,
+                  onSelected: alterarTema,
+                  color: theme.colorScheme.surface,
+                  surfaceTintColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: theme.colorScheme.outlineVariant),
+                  ),
+                  itemBuilder: (context) => [
+                    PopupMenuItem<bool>(
+                      value: false,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.light_mode_outlined,
+                            color: isDark
+                                ? theme.colorScheme.onSurfaceVariant
+                                : theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          const Text('Claro'),
+                          if (!isDark) ...[
+                            const Spacer(),
+                            Icon(Icons.check, color: theme.colorScheme.primary),
+                          ],
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<bool>(
+                      value: true,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.dark_mode_outlined,
+                            color: isDark
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 10),
+                          const Text('Escuro'),
+                          if (isDark) ...[
+                            const Spacer(),
+                            Icon(Icons.check, color: theme.colorScheme.primary),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 112),
+                    height: 38,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          isDark ? 'Escuro' : 'Claro',
+                          style: theme.textTheme.labelMedium,
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 20,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
           CriarOpcaoWidget(
             icone: Icons.favorite,
@@ -125,11 +223,13 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
               final confirmarSaida = await showDialog<bool>(
                 context: context,
                 builder: (dialogContext) => AlertDialog(
-                  backgroundColor: AppTheme.background,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
                   surfaceTintColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
-                    side: const BorderSide(color: AppTheme.cardBorder),
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                   title: Row(
                     children: [
@@ -140,7 +240,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
                           color: AppTheme.mediumBrown.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.logout,
                           color: AppTheme.mediumBrown,
                           size: 22,
@@ -151,7 +251,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
                         child: Text(
                           'Sair da conta?',
                           style: GoogleFonts.cormorantGaramond(
-                            color: AppTheme.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
@@ -162,7 +262,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
                   content: Text(
                     'Tem certeza que deseja sair?',
                     style: GoogleFonts.poppins(
-                      color: AppTheme.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 14,
                     ),
                   ),
@@ -170,7 +270,8 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
                     TextButton(
                       onPressed: () => Navigator.pop(dialogContext, false),
                       style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.textSecondary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onSurfaceVariant,
                         textStyle: GoogleFonts.poppins(
                           fontWeight: FontWeight.w500,
                         ),
@@ -206,10 +307,10 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.delete, color: Colors.red),
+            leading: Icon(Icons.delete, color: AppTheme.danger),
             title: Text(
               'Deletar conta',
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: AppTheme.danger),
             ),
             onTap: () {
               Navigator.push(
