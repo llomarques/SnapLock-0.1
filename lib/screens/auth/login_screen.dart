@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/snaplock_logo.dart';
+import 'package:snaplock/frontend/pages/sobreNos_page.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -177,7 +178,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Emblema do Figma: SnapLock • FOR YOU ONLY •
-                    const SnapLockLogo(size: 130),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SobreNosPage(),
+                          ),
+                        );
+                      },
+                      child: const SnapLockLogo(size: 130),
+                    ),
                     const SizedBox(height: 20),
 
                     Text(

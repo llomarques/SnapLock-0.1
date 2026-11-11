@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 
 class BotoesWidget extends StatelessWidget {
   final String texto;
@@ -18,7 +19,7 @@ class BotoesWidget extends StatelessWidget {
       return ElevatedButton(
         onPressed: aoTocar,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFC08552),
+          backgroundColor: AppTheme.lightBrown,
           foregroundColor: const Color(0xFFF3E9DC),
           minimumSize: const Size(104, 28),
           padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -42,7 +43,7 @@ class BotoesWidget extends StatelessWidget {
           ElevatedButton(
             onPressed: aoTocar,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF895737),
+              backgroundColor: AppTheme.mediumBrown,
               foregroundColor: const Color(0xFFF3E9DC),
               minimumSize: const Size.fromHeight(50),
             ),
@@ -51,7 +52,7 @@ class BotoesWidget extends StatelessWidget {
               style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
           ),
-      ],
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/theme/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,20 +31,20 @@ class AjudaESuportePage extends StatelessWidget {
     _FaqItem(
       question: 'O que é o Dump?',
       answer:
-          'O Dump é um álbum criado com as fotos que você publicou. Ele ajuda você a guardar a revisitar suas memórias de forma organizada, você tambèm pode compartilha-ló com seus amigos.',
+          'O Dump é um álbum criado com as fotos que você publicou. Ele ajuda você a guardar e revisitar suas memórias de forma organizada. Você também pode compartilhá-lo com seus amigos.',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         leading: IconButton(
           tooltip: 'Voltar',
           onPressed: () => Navigator.maybePop(context),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios),
         ),
       ),
       body: SafeArea(
@@ -64,8 +65,8 @@ class AjudaESuportePage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Center(
-                        child: Image.asset(
-                          'assets/images/logo.png',
+                        child: const LogoSobreNosWidget(
+                          assetPath: 'assets/images/logo.png',
                           width: 154,
                           height: 154,
                           fit: BoxFit.contain,
@@ -91,22 +92,7 @@ class AjudaESuportePage extends StatelessWidget {
   Widget _buildSupportLabel() {
     return Row(
       children: [
-        const Icon(Icons.support_agent, color: Colors.black, size: 27),
         const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
-          decoration: BoxDecoration(
-            color: AppTheme.cardBorder,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: Text(
-            'Ajuda e suporte',
-            style: GoogleFonts.poppins(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -143,9 +129,9 @@ class AjudaESuportePage extends StatelessWidget {
               childrenPadding: const EdgeInsets.fromLTRB(6, 0, 32, 12),
               minTileHeight: 44,
               visualDensity: VisualDensity.compact,
-              trailing: const Icon(
+              trailing: Icon(
                 Icons.arrow_drop_down,
-                color: Colors.black,
+                color: AppTheme.textPrimary,
                 size: 20,
               ),
               title: Text(
@@ -198,7 +184,7 @@ class AjudaESuportePage extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.help_outline,
                   color: AppTheme.darkBrown,
                   size: 22,
@@ -237,7 +223,8 @@ class AjudaESuportePage extends StatelessWidget {
                 if (!launched && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Não foi possível abrir o aplicativo de e-mail.'),
+                      content: Text(
+                          'Não foi possível abrir o aplicativo de e-mail.'),
                     ),
                   );
                 }

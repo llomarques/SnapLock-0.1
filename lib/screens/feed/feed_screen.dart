@@ -54,7 +54,8 @@ class _FeedScreenState extends State<FeedScreen> {
     bool isUploading = false;
 
     try {
-      pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      pickedFile =
+          await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
       if (pickedFile == null) return;
       imageBytes = await pickedFile.readAsBytes();
     } catch (e) {
@@ -75,7 +76,8 @@ class _FeedScreenState extends State<FeedScreen> {
         builder: (context, setDialogState) => AlertDialog(
           title: Text(
             'Postar/editar foto (RN02)',
-            style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold, fontSize: 20),
+            style: GoogleFonts.cormorantGaramond(
+                fontWeight: FontWeight.bold, fontSize: 20),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -84,7 +86,8 @@ class _FeedScreenState extends State<FeedScreen> {
                 if (imageBytes != null)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.memory(imageBytes, height: 180, fit: BoxFit.cover),
+                    child: Image.memory(imageBytes,
+                        height: 180, fit: BoxFit.cover),
                   ),
                 const SizedBox(height: 12),
                 TextField(
@@ -93,21 +96,25 @@ class _FeedScreenState extends State<FeedScreen> {
                   style: GoogleFonts.poppins(fontSize: 13),
                   decoration: InputDecoration(
                     hintText: 'Escreva uma legenda...',
-                    hintStyle: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 12),
+                    hintStyle: GoogleFonts.poppins(
+                        color: AppTheme.textSecondary, fontSize: 12),
                     filled: true,
                     fillColor: AppTheme.surface,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.lock_outline, size: 14, color: AppTheme.mediumBrown),
+                    Icon(Icons.lock_outline,
+                        size: 14, color: AppTheme.mediumBrown),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         'Visível apenas para amigos autorizados (RN13)',
-                        style: GoogleFonts.poppins(color: AppTheme.mediumBrown, fontSize: 11),
+                        style: GoogleFonts.poppins(
+                            color: AppTheme.mediumBrown, fontSize: 11),
                       ),
                     ),
                   ],
@@ -118,10 +125,12 @@ class _FeedScreenState extends State<FeedScreen> {
           actions: [
             TextButton(
               onPressed: isUploading ? null : () => Navigator.pop(ctx),
-              child: Text('Cancelar', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+              child: Text('Cancelar',
+                  style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkBrown),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: AppTheme.darkBrown),
               onPressed: isUploading
                   ? null
                   : () async {
@@ -142,14 +151,22 @@ class _FeedScreenState extends State<FeedScreen> {
                         setDialogState(() => isUploading = false);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+                            SnackBar(
+                                content: Text(e
+                                    .toString()
+                                    .replaceAll('Exception: ', ''))),
                           );
                         }
                       }
                     },
               child: isUploading
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Postar', style: GoogleFonts.poppins(color: Colors.white)),
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : Text('Postar',
+                      style: GoogleFonts.poppins(color: Colors.white)),
             ),
           ],
         ),
@@ -164,18 +181,22 @@ class _FeedScreenState extends State<FeedScreen> {
       body: RefreshIndicator(
         onRefresh: _loadFeed,
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppTheme.darkBrown))
+            ? Center(
+                child: CircularProgressIndicator(color: AppTheme.darkBrown))
             : _errorMessage != null
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(_errorMessage!, style: GoogleFonts.poppins(color: AppTheme.danger)),
+                        Text(_errorMessage!,
+                            style: GoogleFonts.poppins(color: AppTheme.danger)),
                         const SizedBox(height: 12),
                         ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkBrown),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.darkBrown),
                           onPressed: _loadFeed,
-                          child: Text('Tentar Novamente', style: GoogleFonts.poppins(color: Colors.white)),
+                          child: Text('Tentar Novamente',
+                              style: GoogleFonts.poppins(color: Colors.white)),
                         ),
                       ],
                     ),
@@ -187,23 +208,33 @@ class _FeedScreenState extends State<FeedScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.photo_library_outlined, size: 60, color: AppTheme.mediumBrown),
+                              Icon(Icons.photo_library_outlined,
+                                  size: 60, color: AppTheme.mediumBrown),
                               const SizedBox(height: 16),
                               Text(
                                 'Sua Tela Inicial está vazia',
-                                style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                                style: GoogleFonts.cormorantGaramond(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.textPrimary),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Poste fotos e adicione seus amigos mais próximos para compartilhar momentos em um ambiente seguro e sem cyberbullying (RN13).',
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 12),
+                                style: GoogleFonts.poppins(
+                                    color: AppTheme.textSecondary,
+                                    fontSize: 12),
                               ),
                               const SizedBox(height: 20),
                               ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkBrown),
-                                icon: const Icon(Icons.add_a_photo, color: Colors.white, size: 18),
-                                label: Text('Postar Primeira Foto', style: GoogleFonts.poppins(color: Colors.white)),
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.darkBrown),
+                                icon: const Icon(Icons.add_a_photo,
+                                    color: Colors.white, size: 18),
+                                label: Text('Postar Primeira Foto',
+                                    style: GoogleFonts.poppins(
+                                        color: Colors.white)),
                                 onPressed: _showCreatePostDialog,
                               ),
                             ],

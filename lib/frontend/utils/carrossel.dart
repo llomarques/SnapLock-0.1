@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:snaplock/theme/app_fonts.dart';
 
@@ -15,10 +16,10 @@ class _CarrosselDeInformacoesState extends State<CarrosselDeInformacoes> {
   @override
   Widget build(BuildContext context) {
     final listaDeTexto = [
-      'Guarde memorias em um clique',
-      'Aqui sua privacidade e preservada',
+      'Guarde memórias em um clique',
+      'Aqui sua privacidade é preservada',
       'Curta as fotos dos seus amigos',
-      'Faca login ou crie sua conta para continuar',
+      'Faça login ou crie sua conta para continuar',
     ];
     return Column(
       children: [
@@ -48,7 +49,7 @@ class _CarrosselDeInformacoesState extends State<CarrosselDeInformacoes> {
                     itemText,
                     textAlign: TextAlign.center,
                     style: AppFonts.poppinsRegular.copyWith(
-                      color: Color(0xFF3E3A36),
+                      color: AppTheme.textPrimary,
                       fontSize: 16.0,
                     ),
                   ),
@@ -68,8 +69,8 @@ class _CarrosselDeInformacoesState extends State<CarrosselDeInformacoes> {
               margin: const EdgeInsets.symmetric(horizontal: 3),
               decoration: BoxDecoration(
                 color: paginaAtual == index
-                    ? const Color(0xFF895737)
-                    : const Color(0xFFB9A18E),
+                    ? AppTheme.mediumBrown
+                    : AppTheme.textSecondary,
                 borderRadius: BorderRadius.circular(8),
               ),
             ),

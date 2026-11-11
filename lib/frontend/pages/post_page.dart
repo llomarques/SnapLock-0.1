@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -71,15 +72,19 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
   }
 
   Widget _buildDrawer() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Drawer(
-      backgroundColor: const Color(0xFFC08552),
+      backgroundColor: isDark ? colorScheme.surface : AppTheme.lightBrown,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 60, bottom: 12),
-            child: Image.asset(
-              'assets/images/logo.png',
+          const Padding(
+            padding: EdgeInsets.only(top: 60, bottom: 12),
+            child: LogoSobreNosWidget(
+              assetPath: 'assets/images/logo.png',
               height: 80,
               fit: BoxFit.contain,
             ),
@@ -133,30 +138,46 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
     required String title,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     return ListTile(
       leading: Icon(icon),
-      title: Text(title),
-      hoverColor: AppTheme.surface.withValues(alpha: 0.35),
+      iconColor: isDark ? colorScheme.onSurfaceVariant : null,
+      title: Text(
+        title,
+        style: isDark ? TextStyle(color: colorScheme.onSurface) : null,
+      ),
+      hoverColor: isDark
+          ? colorScheme.surfaceContainerHighest
+          : AppTheme.surface.withValues(alpha: 0.35),
       onTap: onTap,
     );
   }
 
-  Widget _drawerDivider() => Divider(
-        height: 1,
-        indent: 16,
-        endIndent: 16,
-        color: AppTheme.darkBrown.withValues(alpha: 0.3),
-      );
+  Widget _drawerDivider() {
+    final theme = Theme.of(context);
+    final color = theme.brightness == Brightness.dark
+        ? theme.colorScheme.outlineVariant
+        : AppTheme.darkBrown.withValues(alpha: 0.3);
+
+    return Divider(
+      height: 1,
+      indent: 16,
+      endIndent: 16,
+      color: color,
+    );
+  }
 
   Future<void> _confirmarSaida() async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppTheme.cardBorder),
+          side: BorderSide(color: AppTheme.cardBorder),
         ),
         title: Row(
           children: [
@@ -167,7 +188,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                 color: AppTheme.mediumBrown.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.logout,
                 color: AppTheme.mediumBrown,
                 size: 22,
@@ -267,11 +288,11 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppTheme.cardBorder),
+          side: BorderSide(color: AppTheme.cardBorder),
         ),
         title: Row(
           children: [
@@ -282,7 +303,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                 color: AppTheme.mediumBrown.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.delete_outline,
                 color: AppTheme.mediumBrown,
                 size: 23,
@@ -361,11 +382,11 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          backgroundColor: AppTheme.background,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: const BorderSide(color: AppTheme.cardBorder),
+            side: BorderSide(color: AppTheme.cardBorder),
           ),
           title: Row(
             children: [
@@ -376,7 +397,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                   color: AppTheme.mediumBrown.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.edit_outlined,
                   color: AppTheme.mediumBrown,
                   size: 22,
@@ -411,11 +432,11 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                   fillColor: AppTheme.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppTheme.cardBorder),
+                    borderSide: BorderSide(color: AppTheme.cardBorder),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppTheme.mediumBrown),
+                    borderSide: BorderSide(color: AppTheme.mediumBrown),
                   ),
                 ),
               ),
@@ -470,7 +491,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
         _postUpdated = true;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           backgroundColor: AppTheme.mediumBrown,
           content: Text('Publicação atualizada.'),
         ),
@@ -520,7 +541,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                         value: selectedReasons.contains(value),
                         activeColor: AppTheme.mediumBrown,
                         checkColor: Colors.white,
-                        side: const BorderSide(color: AppTheme.mediumBrown),
+                        side: BorderSide(color: AppTheme.mediumBrown),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         onChanged: (selected) {
@@ -553,11 +574,11 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                 _reportReasonController.text.trim().isNotEmpty;
 
             return AlertDialog(
-              backgroundColor: AppTheme.background,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               surfaceTintColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
-                side: const BorderSide(color: AppTheme.cardBorder),
+                side: BorderSide(color: AppTheme.cardBorder),
               ),
               title: Text(
                 'Por que deseja reportar esse post?',
@@ -622,13 +643,13 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(
+                                borderSide: BorderSide(
                                   color: AppTheme.cardBorder,
                                 ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(
+                                borderSide: BorderSide(
                                   color: AppTheme.mediumBrown,
                                 ),
                               ),
@@ -684,7 +705,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
         final messenger = ScaffoldMessenger.of(context);
         Navigator.pop(context, true);
         messenger.showSnackBar(
-          const SnackBar(
+          SnackBar(
             backgroundColor: AppTheme.mediumBrown,
             content: Text('Denúncia enviada para análise da administração.'),
           ),
@@ -709,6 +730,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
     required String tooltip,
   }) {
     final selected = _reaction == type;
+    final colorScheme = Theme.of(context).colorScheme;
     return IconButton(
       onPressed: _reacting ? null : () => _toggleReaction(type),
       tooltip: tooltip,
@@ -716,13 +738,16 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
       icon: Icon(
         icon,
         size: 25,
-        color: selected ? const Color(0xFF5E3023) : Colors.black45,
+        color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final captionColor = colorScheme.onSurface;
     final post = widget.post;
     final username = post.authorUsername;
     final savedAspectRatio = post.aspectRatio;
@@ -731,7 +756,9 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
             savedAspectRatio > 0
         ? savedAspectRatio
         : 4 / 5;
-    const menuTextStyle = TextStyle(color: Color(0xFFF3E9DC));
+    final menuTextStyle = TextStyle(
+      color: isDark ? colorScheme.onSurface : const Color(0xFFF3E9DC),
+    );
     var formattedDate = post.createdAt;
     try {
       formattedDate = DateFormat(
@@ -742,7 +769,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       drawerEnableOpenDragGesture: !widget.abertaPelasCurtidas,
       drawer: _buildDrawer(),
       body: Column(
@@ -762,16 +789,16 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                 IconButton(
                   onPressed: () => Navigator.pop(context, _postUpdated),
                   icon: const Icon(
-                    Icons.arrow_back,
-                    size: 30,
-                    color: Colors.black,
+                    Icons.arrow_back_ios,
+                    size: 20,
                   ),
+                  color: colorScheme.onSurface,
                 ),
                 const Spacer(),
                 if (_isAuthor)
                   PopupMenuButton<String>(
                     enabled: !_deleting && !_editing,
-                    color: const Color(0xFF3E3A36),
+                    color: isDark ? colorScheme.surface : AppTheme.textPrimary,
                     surfaceTintColor: Colors.transparent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -781,12 +808,9 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                       if (value == 'delete') _deletePost();
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'edit',
-                        child: Text(
-                          'Editar',
-                          style: TextStyle(color: Color(0xFFF3E9DC)),
-                        ),
+                        child: Text('Editar', style: menuTextStyle),
                       ),
                       PopupMenuItem(
                         value: 'delete',
@@ -797,9 +821,9 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                         ),
                       ),
                     ],
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.more_vert,
-                      color: Color(0xFF3E3A36),
+                      color: AppTheme.textPrimary,
                       size: 26,
                     ),
                   )
@@ -827,13 +851,13 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                               _imageUrl,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
-                                  const ColoredBox(
-                                color: Color(0xFFD7CBBD),
+                                  ColoredBox(
+                                color: AppTheme.surfaceLight,
                                 child: Center(
                                   child: Icon(
                                     Icons.broken_image_outlined,
                                     size: 50,
-                                    color: Color(0xFF895737),
+                                    color: AppTheme.mediumBrown,
                                   ),
                                 ),
                               ),
@@ -925,10 +949,10 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                           onPressed: _reporting ? null : _reportPost,
                           tooltip: 'Denunciar publicação',
                           visualDensity: VisualDensity.compact,
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.report_gmailerrorred_outlined,
                             size: 25,
-                            color: Colors.black45,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                     ],

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:snaplock/frontend/pages/feed_page.dart';
 import 'package:snaplock/frontend/utils/foto_utils.dart';
@@ -116,7 +118,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -134,7 +136,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               height: 120,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xFF895737),
+                  color: AppTheme.mediumBrown,
                   width: 2,
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -173,7 +175,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
               label: Text(
                   selecionandoImagem ? 'Abrindo galeria...' : 'Adicionar foto'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: Color(0xFFF3E9DC),
               ),
             ),
@@ -198,7 +200,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
                 child: Text(
                   'Deixar para mais tarde',
                   style: TextStyle(
-                      color: Color(0xFF895737), fontWeight: FontWeight.w900),
+                      color: AppTheme.mediumBrown, fontWeight: FontWeight.w900),
                 ),
               ),
             ),
@@ -208,7 +210,7 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
             ElevatedButton(
               onPressed: salvando ? null : personalizarPerfil,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF895737),
+                backgroundColor: AppTheme.mediumBrown,
                 foregroundColor: Color(0xFFF3E9DC),
                 minimumSize: const Size.fromHeight(50),
               ),
@@ -217,8 +219,8 @@ class _personalizarPerfilPage extends State<personalizarPerfilPage> {
             const SizedBox(height: 55),
             Align(
               alignment: Alignment.topLeft,
-              child: Image.asset(
-                'assets/images/logo.png',
+              child: const LogoSobreNosWidget(
+                assetPath: 'assets/images/logo.png',
                 width: 50,
                 height: 50,
               ),

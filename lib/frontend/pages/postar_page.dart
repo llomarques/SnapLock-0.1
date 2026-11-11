@@ -110,7 +110,7 @@ class _PostarPageState extends State<PostarPage> {
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: const BorderSide(color: AppTheme.cardBorder),
+            side: BorderSide(color: AppTheme.cardBorder),
           ),
           title: Row(
             children: [
@@ -121,7 +121,7 @@ class _PostarPageState extends State<PostarPage> {
                   color: AppTheme.mediumBrown.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.crop_rotate_rounded,
                   color: AppTheme.mediumBrown,
                   size: 22,
@@ -152,7 +152,7 @@ class _PostarPageState extends State<PostarPage> {
                 interactive: true,
                 baseColor: AppTheme.darkBrown,
                 maskColor: Colors.black.withValues(alpha: 0.62),
-                progressIndicator: const CircularProgressIndicator(
+                progressIndicator: CircularProgressIndicator(
                   color: AppTheme.lightBrown,
                 ),
                 onStatusChanged: (status) {
@@ -251,7 +251,7 @@ class _PostarPageState extends State<PostarPage> {
     final selectedIndex = await showModalBottomSheet<int>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       builder: (context) {
         final maxHeight = MediaQuery.sizeOf(context).height * 0.75;
         return SafeArea(
@@ -280,7 +280,7 @@ class _PostarPageState extends State<PostarPage> {
                     ListTile(
                       title: Text(_aspectRatioOptions[index].label),
                       trailing: index == _selectedAspectRatioIndex
-                          ? const Icon(Icons.check, color: Color(0xFF895737))
+                          ? Icon(Icons.check, color: AppTheme.mediumBrown)
                           : null,
                       onTap: () => Navigator.pop(context, index),
                     ),
@@ -425,7 +425,7 @@ class _PostarPageState extends State<PostarPage> {
         nome: 'Sépia',
         id: 'sepia',
         colorFilter: ColorFilter.mode(
-          const Color(0xFF704214).withValues(alpha: 0.35),
+          AppTheme.darkBrown.withValues(alpha: 0.35),
           BlendMode.color,
         ),
       ),
@@ -449,7 +449,7 @@ class _PostarPageState extends State<PostarPage> {
 
     final filtroSelecionado = await showModalBottomSheet<String?>(
       context: context,
-      backgroundColor: const Color(0xFFF3E9DC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -461,12 +461,12 @@ class _PostarPageState extends State<PostarPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Escolha um efeito',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF5E3023),
+                    color: AppTheme.darkBrown,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -491,7 +491,7 @@ class _PostarPageState extends State<PostarPage> {
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
-                                      ? const Color(0xFF895737)
+                                      ? AppTheme.mediumBrown
                                       : Colors.transparent,
                                   width: 3,
                                 ),
@@ -515,7 +515,7 @@ class _PostarPageState extends State<PostarPage> {
                                 fontWeight: isSelected
                                     ? FontWeight.bold
                                     : FontWeight.normal,
-                                color: const Color(0xFF5E3023),
+                                color: AppTheme.darkBrown,
                               ),
                             ),
                           ],
@@ -559,10 +559,11 @@ class _PostarPageState extends State<PostarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF3E9DC),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Align(
           alignment: Alignment.topCenter,
           child: SingleChildScrollView(
@@ -572,7 +573,13 @@ class _PostarPageState extends State<PostarPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 12),
-                const Text('Nova memória', style: TextStyle(fontSize: 17)),
+                Text(
+                  'Nova memória',
+                  style: TextStyle(
+                    fontSize: 17,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
                 const SizedBox(height: 18),
                 LayoutBuilder(
                   builder: (context, constraints) {
@@ -596,9 +603,9 @@ class _PostarPageState extends State<PostarPage> {
                             width: photoWidth,
                             height: photoHeight,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFD7CBBD),
+                              color: AppTheme.surfaceLight,
                               border: Border.all(
-                                color: const Color(0xFF895737),
+                                color: AppTheme.mediumBrown,
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(16),
@@ -614,8 +621,7 @@ class _PostarPageState extends State<PostarPage> {
                                             Icons.add_photo_alternate,
                                             size: 40),
                                         style: IconButton.styleFrom(
-                                          backgroundColor:
-                                              const Color(0xFF895737),
+                                          backgroundColor: AppTheme.mediumBrown,
                                           foregroundColor:
                                               const Color(0xFFF3E9DC),
                                           fixedSize: const Size(72, 72),
@@ -675,9 +681,9 @@ class _PostarPageState extends State<PostarPage> {
                           decoration: InputDecoration(
                             hintText: 'Escreva sua legenda...',
                             filled: legendaController.text.trim().isNotEmpty,
-                            fillColor: const Color(0xFFD7CBBD),
-                            hintStyle: const TextStyle(
-                              color: Color(0xFF6F5C4A),
+                            fillColor: AppTheme.surfaceLight,
+                            hintStyle: TextStyle(
+                              color: AppTheme.textSecondary,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -697,8 +703,8 @@ class _PostarPageState extends State<PostarPage> {
                               vertical: 8,
                             ),
                           ),
-                          style: const TextStyle(
-                            color: Color(0xFF5E3023),
+                          style: TextStyle(
+                            color: AppTheme.darkBrown,
                             fontSize: 16,
                           ),
                         ),
@@ -718,13 +724,15 @@ class _PostarPageState extends State<PostarPage> {
                                   FocusScope.of(context).unfocus();
                                 },
                                 tooltip: 'Concluir legenda',
-                                color: const Color(0xFF895737),
+                                color: AppTheme.mediumBrown,
                                 icon: const Icon(Icons.check_circle),
                               ),
                             IconButton(
                               onPressed: _aplicarEfeito,
                               icon: Image.asset(
-                                'assets/images/efeitos.png',
+                                isDark
+                                    ? 'assets/images/efeitos_white.png.png'
+                                    : 'assets/images/efeitos.png',
                                 width: 32,
                                 height: 32,
                                 semanticLabel: 'Efeitos',
@@ -743,7 +751,9 @@ class _PostarPageState extends State<PostarPage> {
                               ),
                               padding: EdgeInsets.zero,
                               icon: Image.asset(
-                                'assets/images/proporcao.png',
+                                isDark
+                                    ? 'assets/images/proporcao_white.png.png'
+                                    : 'assets/images/proporcao.png',
                                 width: 32,
                                 height: 32,
                               ),
@@ -773,7 +783,7 @@ class _PostarPageState extends State<PostarPage> {
         return const ColorFilter.mode(Colors.black, BlendMode.color);
       case 'sepia':
         return ColorFilter.mode(
-          const Color(0xFF704214).withValues(alpha: 0.35),
+          AppTheme.darkBrown.withValues(alpha: 0.35),
           BlendMode.color,
         );
       case 'vintage':

@@ -252,7 +252,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 fontWeight: FontWeight.bold, fontSize: 22)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined,
+            icon: Icon(Icons.settings_outlined,
                 color: AppTheme.textPrimary),
             onPressed: () {
               _showSettingsModal();
@@ -261,7 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(color: AppTheme.darkBrown))
           : RefreshIndicator(
               onRefresh: _loadProfile,
@@ -425,7 +425,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fit: BoxFit.cover,
         errorBuilder: (ctx, err, stack) => Container(
           color: AppTheme.surfaceLight,
-          child: const Icon(Icons.image, color: AppTheme.textSecondary),
+          child: Icon(Icons.image, color: AppTheme.textSecondary),
         ),
       ),
     );
@@ -448,7 +448,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(Icons.lock_reset, color: AppTheme.darkBrown),
+              leading: Icon(Icons.lock_reset, color: AppTheme.darkBrown),
               title: Text('Alterar senha (RN14)', style: GoogleFonts.poppins()),
               onTap: () {
                 Navigator.pop(ctx);
@@ -456,7 +456,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.logout, color: AppTheme.mediumBrown),
+              leading: Icon(Icons.logout, color: AppTheme.mediumBrown),
               title: Text('Sair da conta', style: GoogleFonts.poppins()),
               onTap: () async {
                 Navigator.pop(ctx);
@@ -465,7 +465,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_forever, color: AppTheme.danger),
+              leading: Icon(Icons.delete_forever, color: AppTheme.danger),
               title: Text('Excluir conta (RN10)',
                   style: GoogleFonts.poppins(color: AppTheme.danger)),
               onTap: () {

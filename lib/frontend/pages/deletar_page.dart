@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'package:snaplock/services/api_service.dart';
@@ -18,11 +19,11 @@ class _DeletarPageState extends State<DeletarPage> {
     final confirmou = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppTheme.cardBorder),
+          side: BorderSide(color: AppTheme.cardBorder),
         ),
         title: Row(
           children: [
@@ -33,7 +34,7 @@ class _DeletarPageState extends State<DeletarPage> {
                 color: AppTheme.danger.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.delete_outline,
                 color: AppTheme.danger,
                 size: 22,
@@ -110,11 +111,18 @@ class _DeletarPageState extends State<DeletarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Excluir conta'),
-        backgroundColor: AppTheme.background,
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: _excluindo ? null : () => Navigator.maybePop(context),
+          icon: const Icon(Icons.arrow_back_ios),
+          color: theme.colorScheme.onSurface,
+          tooltip: 'Voltar',
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -126,8 +134,8 @@ class _DeletarPageState extends State<DeletarPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Center(
-                    child: Image.asset(
-                      'assets/images/logo.png',
+                    child: const LogoSobreNosWidget(
+                      assetPath: 'assets/images/logo.png',
                       width: 132,
                       height: 132,
                       fit: BoxFit.contain,
@@ -164,7 +172,7 @@ class _DeletarPageState extends State<DeletarPage> {
                                 color: AppTheme.danger.withValues(alpha: 0.12),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.warning_amber_rounded,
                                 color: AppTheme.danger,
                               ),
@@ -204,7 +212,7 @@ class _DeletarPageState extends State<DeletarPage> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.info_outline,
                           color: AppTheme.mediumBrown,
                           size: 21,
@@ -231,7 +239,7 @@ class _DeletarPageState extends State<DeletarPage> {
                           _excluindo ? null : () => Navigator.maybePop(context),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppTheme.mediumBrown,
-                        side: const BorderSide(color: AppTheme.mediumBrown),
+                        side: BorderSide(color: AppTheme.mediumBrown),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

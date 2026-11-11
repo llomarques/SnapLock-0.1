@@ -52,27 +52,31 @@ class CustomTextField extends StatelessWidget {
           style: GoogleFonts.poppins(color: AppTheme.textPrimary, fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.poppins(color: AppTheme.textSecondary.withValues(alpha: 0.7), fontSize: 13),
+            hintStyle: GoogleFonts.poppins(
+                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                fontSize: 13),
             prefixIcon: Icon(prefixIcon, color: AppTheme.mediumBrown, size: 19),
             suffixIcon: suffixIcon,
             filled: true,
             fillColor: AppTheme.surface,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppTheme.cardBorder),
+              borderSide: BorderSide(color: AppTheme.cardBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppTheme.cardBorder),
+              borderSide: BorderSide(color: AppTheme.cardBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppTheme.darkBrown, width: 1.8),
+              borderSide:
+                  BorderSide(color: AppTheme.darkBrown, width: 1.8),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppTheme.danger),
+              borderSide: BorderSide(color: AppTheme.danger),
             ),
           ),
         ),
