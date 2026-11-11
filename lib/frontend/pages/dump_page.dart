@@ -4,6 +4,8 @@ import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
+import 'package:snaplock/frontend/widgets/dump_photo_carousel.dart';
 
 class DumpPage extends StatefulWidget {
   const DumpPage({super.key});
@@ -371,8 +373,8 @@ class _DumpPage extends State<DumpPage> {
   void _openAlbum(String title, List<PostModel> photos) {
     showDialog<void>(
       context: context,
-      barrierColor: AppTheme.background.withValues(alpha: 0.96),
-      builder: (dialogContext) => _MonthlyPhotoCarousel(
+      barrierColor: const Color(0xFFF3E9DC).withValues(alpha: 0.96),
+      builder: (dialogContext) => DumpPhotoCarousel(
         title: title,
         photos: photos,
       ),
@@ -401,6 +403,9 @@ class _DumpPage extends State<DumpPage> {
         final dump = _friendDumps[index];
         final cover = dump['capa_url']?.toString();
         final month = int.parse(dump['mes'].toString());
+        final username = dump['username']?.toString().trim() ?? '';
+        final displayUsername =
+            username.isEmpty ? 'usuario' : username.replaceFirst('@', '');
         final photos = (dump['photos'] as List)
             .map((item) => PostModel.fromJson({
                   'id': item['id_foto'],
@@ -446,9 +451,19 @@ class _DumpPage extends State<DumpPage> {
                                 shadows: [
                                   Shadow(color: Colors.black54, blurRadius: 4)
                                 ])),
-                        Text(dump['nome']?.toString() ?? 'Amigo',
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12)),
+                        InkWell(
+                          onTap: () => abrirPerfilUsuario(
+                            context,
+                            username: username,
+                            userId: dump['id_usuario']?.toString(),
+                            name: dump['nome']?.toString(),
+                          ),
+                          child: Text('@$displayUsername',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                )),
+                        ),
                       ])),
             ]),
           ),
@@ -475,6 +490,9 @@ class _DumpPage extends State<DumpPage> {
           indicatorColor: AppTheme.mediumBrown,
           tabs: [Tab(text: 'Meus dumps'), Tab(text: 'Dumps de amigos')],
         ),
+
+        const SizedBox(height: 15),
+
         Expanded(
             child: TabBarView(children: [
           RefreshIndicator(
@@ -495,11 +513,15 @@ class _DumpPage extends State<DumpPage> {
                             color: Color(0x33000000),
                             blurRadius: 4,
                             offset: Offset(0, 2)),
+                      
                       ],
                     ),
-                    child: Column(
+                  
+
+                    child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        SizedBox(height: 5),
                         Text('O que é um Dump?',
                             style: TextStyle(
                                 color: AppTheme.mediumBrown,
@@ -516,6 +538,7 @@ class _DumpPage extends State<DumpPage> {
                       ],
                     ),
                   ),
+                const SizedBox(height: 12),
                 if (_loading)
                   Padding(
                       padding: EdgeInsets.only(top: 40),
@@ -720,204 +743,6 @@ class _DumpPage extends State<DumpPage> {
               onRefresh: _loadFriendDumps, child: _buildFriendDumps()),
         ])),
       ]),
-    );
-  }
-}
-
-class _MonthlyPhotoCarousel extends StatefulWidget {
-  const _MonthlyPhotoCarousel({required this.title, required this.photos});
-
-  final String title;
-  final List<PostModel> photos;
-
-  @override
-  State<_MonthlyPhotoCarousel> createState() => _MonthlyPhotoCarouselState();
-}
-
-class _MonthlyPhotoCarouselState extends State<_MonthlyPhotoCarousel> {
-  final _controller = PageController();
-  int _currentPage = 0;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _moveTo(int page) {
-    if (page < 0 || page >= widget.photos.length) return;
-    _controller.animateToPage(
-      page,
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final photo = widget.photos[_currentPage];
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final headerBackground = isDark
-        ? colorScheme.surface
-        : const Color(0xFFF3E9DC).withValues(alpha: 0.96);
-    final headerForeground =
-        isDark ? colorScheme.onSurface : AppTheme.mediumBrown;
-
-    return Dialog.fullscreen(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      child: SafeArea(
-        child: Stack(
-          children: [
-            PageView.builder(
-              controller: _controller,
-              itemCount: widget.photos.length,
-              onPageChanged: (index) => setState(() => _currentPage = index),
-              itemBuilder: (context, index) {
-                final url = widget.photos[index].imageUrl;
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 72, 16, 110),
-                  child: InteractiveViewer(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: AppTheme.surface,
-                        ),
-                        child: Image.network(
-                          url,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => Center(
-                            child: Icon(
-                              Icons.broken_image_outlined,
-                              color: AppTheme.mediumBrown,
-                              size: 64,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            if (widget.photos.length > 1) ...[
-              Positioned(
-                left: 4,
-                top: 0,
-                bottom: 72,
-                child: Center(
-                  child: Opacity(
-                    opacity: _currentPage > 0 ? 1 : 0.35,
-                    child: IconButton.filledTonal(
-                      onPressed: _currentPage > 0
-                          ? () => _moveTo(_currentPage - 1)
-                          : null,
-                      style: IconButton.styleFrom(
-                        backgroundColor: isDark
-                            ? colorScheme.surfaceContainerHighest
-                            : const Color(0xFFF3E9DC).withValues(alpha: 0.92),
-                        foregroundColor:
-                            isDark ? colorScheme.onSurface : AppTheme.mediumBrown,
-                      ),
-                      icon: const Icon(Icons.chevron_left_rounded, size: 32),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 4,
-                top: 0,
-                bottom: 72,
-                child: Center(
-                  child: Opacity(
-                    opacity: _currentPage < widget.photos.length - 1 ? 1 : 0.35,
-                    child: IconButton.filledTonal(
-                      onPressed: _currentPage < widget.photos.length - 1
-                          ? () => _moveTo(_currentPage + 1)
-                          : null,
-                      style: IconButton.styleFrom(
-                        backgroundColor: isDark
-                            ? colorScheme.surfaceContainerHighest
-                            : const Color(0xFFF3E9DC).withValues(alpha: 0.92),
-                        foregroundColor:
-                            isDark ? colorScheme.onSurface : AppTheme.mediumBrown,
-                      ),
-                      icon: const Icon(Icons.chevron_right_rounded, size: 32),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-            Positioned(
-              top: 0,
-              left: 8,
-              right: 8,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: headerBackground,
-                  border: Border(
-                    bottom: BorderSide(color: colorScheme.outlineVariant),
-                  ),
-                ),
-                child: Row(children: [
-                  IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(Icons.close, color: headerForeground)),
-                  const Spacer(),
-                  Text(widget.title,
-                      style: TextStyle(
-                          color: headerForeground,
-                          fontFamily: 'serif',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700)),
-                  const SizedBox(width: 48),
-                ]),
-              ),
-            ),
-            Positioned(
-              bottom: 28,
-              left: 16,
-              right: 16,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (photo.caption.isNotEmpty)
-                    Text(
-                      photo.caption,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      widget.photos.length,
-                      (index) => Container(
-                        width: _currentPage == index ? 18 : 7,
-                        height: 7,
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        decoration: BoxDecoration(
-                          color: _currentPage == index
-                              ? AppTheme.mediumBrown
-                              : AppTheme.surfaceLight,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

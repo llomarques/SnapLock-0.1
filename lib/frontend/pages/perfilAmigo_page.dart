@@ -8,6 +8,7 @@ import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/models/user_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'post_page.dart';
+import 'package:snaplock/frontend/utils/image_viewer.dart';
 
 class PerfilAmigoPage extends StatefulWidget {
   const PerfilAmigoPage({super.key, required this.amigo});
@@ -104,9 +105,16 @@ class _PerfilAmigoPageState extends State<PerfilAmigoPage> {
                 border: Border.all(color: colorScheme.primary, width: 2),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: ClipRRect(
+              child: InkWell(
                 borderRadius: BorderRadius.circular(14),
-                child: avatar,
+                onTap: () => mostrarImagemPerfilMaximizada(
+                  context,
+                  imageUrl: widget.amigo.avatarUrl,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: avatar,
+                ),
               ),
             ),
             Expanded(

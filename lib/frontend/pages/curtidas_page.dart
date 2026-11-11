@@ -5,6 +5,7 @@ import 'package:snaplock/frontend/pages/post_page.dart';
 import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/theme/app_theme.dart';
+import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
 
 class CurtidasPage extends StatefulWidget {
   const CurtidasPage({super.key});

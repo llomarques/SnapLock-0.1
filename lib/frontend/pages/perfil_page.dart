@@ -5,6 +5,7 @@ import 'editarPerfil_page.dart';
 import 'amigos_page.dart';
 import 'post_page.dart';
 import '../../controller/controller.login.dart';
+import 'package:snaplock/frontend/utils/image_viewer.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -194,15 +195,22 @@ class _PerfilPage extends State<PerfilPage> {
                         ),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: ClipRRect(
+                      child: InkWell(
                         borderRadius: BorderRadius.circular(14),
-                        child: Image(
-                          image: imagemPerfil,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Image.asset(
-                            'assets/images/monalisaPerfil.png',
+                        onTap: () => mostrarImagemPerfilMaximizada(
+                          context,
+                          imageUrl: fotoPerfilUrl,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Image(
+                            image: imagemPerfil,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Image.asset(
+                              'assets/images/monalisaPerfil.png',
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),

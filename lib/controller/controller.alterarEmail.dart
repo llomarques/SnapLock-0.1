@@ -18,7 +18,7 @@ class AlterarEmailController {
     required String novoEmail,
     required String senhaAtual,
   }) async {
-    final token = LoginController.tokenAtual;
+    final token = _resolvedToken();
     if (token == null || token.isEmpty) {
       throw const LoginException(
         'Faça login novamente para alterar o e-mail.',
@@ -29,7 +29,7 @@ class AlterarEmailController {
       Uri.parse('${LoginController.apiBaseUrl}/api/profile/email/request'),
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'Authorization': '******',
+        'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
         'email': novoEmail.trim(),
@@ -41,10 +41,11 @@ class AlterarEmailController {
     if (response.statusCode < 200 ||
         response.statusCode >= 300 ||
         data['success'] != true) {
+      final mensagem = data['message']?.toString() ??
+          data['erro']?.toString() ??
+          'Não foi possível enviar o código.';
       throw LoginException(
-        data['message']?.toString() ??
-            data['erro']?.toString() ??
-            'Não foi possível enviar o código.',
+        _mensagemSessaoExpirada(mensagem),
       );
     }
   }
@@ -53,7 +54,7 @@ class AlterarEmailController {
     required String novoEmail,
     required String codigo,
   }) async {
-    final token = LoginController.tokenAtual;
+    final token = _resolvedToken();
     if (token == null || token.isEmpty) {
       throw const LoginException(
         'Faça login novamente para confirmar o e-mail.',
@@ -64,7 +65,7 @@ class AlterarEmailController {
       Uri.parse('${LoginController.apiBaseUrl}/api/profile/email/confirm'),
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'Authorization': '******',
+        'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
         'email': novoEmail.trim(),
@@ -76,15 +77,34 @@ class AlterarEmailController {
     if (response.statusCode < 200 ||
         response.statusCode >= 300 ||
         data['success'] != true) {
+      final mensagem = data['message']?.toString() ??
+          data['erro']?.toString() ??
+          'Não foi possível confirmar o e-mail.';
       throw LoginException(
-        data['message']?.toString() ??
-            data['erro']?.toString() ??
-            'Não foi possível confirmar o e-mail.',
+        _mensagemSessaoExpirada(mensagem),
       );
     }
 
     await ApiService.updateCurrentEmail(novoEmail.trim().toLowerCase());
     LoginController.atualizarEmailAtual(novoEmail.trim().toLowerCase());
+  }
+
+  String? _resolvedToken() {
+    final apiToken = ApiService.token?.trim();
+    if (apiToken != null && apiToken.isNotEmpty) return apiToken;
+    final loginToken = LoginController.tokenAtual?.trim();
+    return loginToken?.isNotEmpty == true ? loginToken : null;
+  }
+
+  String _mensagemSessaoExpirada(String mensagem) {
+    final normalized = mensagem.toLowerCase();
+    if (normalized.contains('sessão inválida') ||
+        normalized.contains('sessao invalida') ||
+        normalized.contains('token') ||
+        normalized.contains('não autorizado')) {
+      return 'Sua sessão expirou. Faça login novamente e tente alterar o e-mail.';
+    }
+    return mensagem;
   }
 
   Map<String, dynamic> _decodeResponse(http.Response response) {

@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS `foto` (
   `legenda` text DEFAULT NULL,
   `filtro_aplicado` varchar(50) DEFAULT NULL,
   `proporcao` double DEFAULT NULL,
+  `ativa` tinyint(1) NOT NULL DEFAULT 1,
   `data_postagem` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_foto`),
   KEY `idx_foto_usuario_data` (`id_usuario`,`data_postagem`),
@@ -65,7 +66,8 @@ CREATE TABLE IF NOT EXISTS `foto` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 ALTER TABLE `foto`
-  ADD COLUMN IF NOT EXISTS `proporcao` double DEFAULT NULL;
+  ADD COLUMN IF NOT EXISTS `proporcao` double DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `ativa` tinyint(1) NOT NULL DEFAULT 1;
 
 -- Copiando dados para a tabela snaplock_db.foto: ~0 rows (aproximadamente)
 
@@ -149,6 +151,29 @@ CREATE TABLE IF NOT EXISTS `alteracao_email_token` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Copiando dados para a tabela snaplock_db.usuario: ~0 rows (aproximadamente)
+
+CREATE TABLE IF NOT EXISTS `denuncia` (
+  `id_foto` int(11) NOT NULL,
+  `quantidade_denuncias` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id_foto`),
+  CONSTRAINT `fk_denuncia_foto`
+    FOREIGN KEY (`id_foto`) REFERENCES `foto` (`id_foto`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `denuncia_detalhe` (
+  `id_denuncia` int(11) NOT NULL AUTO_INCREMENT,
+  `id_foto` int(11) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `motivo` text NOT NULL,
+  `data_denuncia` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_denuncia`),
+  UNIQUE KEY `uq_denuncia_detalhe_foto_usuario` (`id_foto`, `id_usuario`),
+  KEY `idx_denuncia_detalhe_usuario` (`id_usuario`),
+  CONSTRAINT `fk_denuncia_detalhe_foto`
+    FOREIGN KEY (`id_foto`) REFERENCES `foto` (`id_foto`),
+  CONSTRAINT `fk_denuncia_detalhe_usuario`
+    FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;

@@ -18,6 +18,7 @@ import 'configuracoes_page.dart';
 import 'pesquisa_page.dart';
 import 'post_page.dart';
 import 'ajudaESuporte_page.dart';
+import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
 
 class FeedPage extends StatefulWidget {
   final int initialIndex;
@@ -381,20 +382,30 @@ class _FeedConteudoPageState extends State<FeedConteudoPage> {
                                         ],
                                       ),
                                     ),
-                                    child: Text(
-                                      '@${_posts[index].authorUsername ?? 'usuário'}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black54,
-                                            blurRadius: 3,
-                                          ),
-                                        ],
+                                    child: InkWell(
+                                      onTap: () => abrirPerfilUsuario(
+                                        context,
+                                        username:
+                                            _posts[index].authorUsername ?? '',
+                                        userId: _posts[index].userId,
+                                        name: _posts[index].authorName,
+                                        avatarUrl: _posts[index].authorAvatar,
+                                      ),
+                                      child: Text(
+                                        '@${_posts[index].authorUsername ?? 'usuario'}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black54,
+                                              blurRadius: 3,
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),

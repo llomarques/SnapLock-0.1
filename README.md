@@ -47,6 +47,8 @@ ALTER TABLE usuario
 ADD UNIQUE KEY uq_usuario_username (username);
 ```
 
+A API cria automaticamente a coluna `foto.ativa` em bancos existentes quando é iniciada.
+
 ## Iniciar a API no CMD
 
 Abra o CMD e execute os comandos na ordem, na mesma janela:
@@ -73,6 +75,8 @@ dart run bin\server.dart
 Para Gmail, `SMTP_USER` é o e-mail que enviará as mensagens. `SMTP_PASSWORD` deve ser uma senha de aplicativo de 16 caracteres, não a senha normal da conta. Crie-a em <https://myaccount.google.com/apppasswords> com a verificação em duas etapas ativada.
 
 Se aparecer `Authentication Failed (535)`, confira essas credenciais e reinicie a API no mesmo CMD. Não compartilhe nem comite a senha de aplicativo.
+
+Quando uma publicação recebe quatro denúncias ou mais, ela é desativada e o autor é notificado por e-mail. A notificação depende da configuração SMTP acima.
 
 Quando funcionar, a API exibirá:
 

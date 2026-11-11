@@ -7,6 +7,8 @@ import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/frontend/widgets/botoes_widget.dart';
 import 'package:snaplock/models/post_model.dart';
+import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
+import 'package:snaplock/frontend/utils/image_viewer.dart';
 
 class NotificacoesPage extends StatefulWidget {
   const NotificacoesPage({super.key});
@@ -126,6 +128,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
     Widget? acoes,
     Widget? trailing,
     VoidCallback? aoTocar,
+    VoidCallback? aoTocarNome,
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 5),
@@ -138,19 +141,31 @@ class _NotificacoesPage extends State<NotificacoesPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AvatarSquareWidget(imageUrl: avatarUrl, size: 36),
+              AvatarSquareWidget(
+                imageUrl: avatarUrl,
+                size: 36,
+                onTap: () => mostrarImagemPerfilMaximizada(
+                  context,
+                  imageUrl: avatarUrl,
+                ),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '@$username',
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                    InkWell(
+                      onTap: aoTocarNome,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Text(
+                        '@$username',
+                        style: const TextStyle(
+                          color: Color(0xFF3E3A36),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          
+                        ),
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -232,6 +247,13 @@ class _NotificacoesPage extends State<NotificacoesPage> {
         avatarUrl: aviso['avatarUrl']?.toString() ?? '',
         mensagem: aviso['message']?.toString() ?? '',
         lida: lido,
+        aoTocarNome: () => abrirPerfilUsuario(
+          context,
+          username: username,
+          userId: aviso['userId']?.toString() ??
+              aviso['friendId']?.toString(),
+          avatarUrl: aviso['avatarUrl']?.toString(),
+        ),
         trailing: lido
             ? Icon(
                 Icons.check,
@@ -281,6 +303,13 @@ class _NotificacoesPage extends State<NotificacoesPage> {
         avatarUrl: aviso['avatarUrl']?.toString() ?? '',
         mensagem: aviso['message']?.toString() ?? 'curtiu sua publicação.',
         lida: lido,
+        aoTocarNome: () => abrirPerfilUsuario(
+          context,
+          username: aviso['username']?.toString() ?? '',
+          userId: aviso['userId']?.toString() ??
+              aviso['friendId']?.toString(),
+          avatarUrl: aviso['avatarUrl']?.toString(),
+        ),
         trailing: lido
             ? Icon(
                 Icons.check,
@@ -516,6 +545,11 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                                         AvatarSquareWidget(
                                           imageUrl: avatarUrl,
                                           size: 33,
+                                          onTap: () =>
+                                              mostrarImagemPerfilMaximizada(
+                                            context,
+                                            imageUrl: avatarUrl,
+                                          ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
@@ -537,12 +571,24 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                                                 crossAxisAlignment:
                                                     CrossAxisAlignment.start,
                                                 children: [
-                                                  Text(
-                                                    '@$username quer ser seu amigo(a).',
-                                                    style: TextStyle(
-                                                      color:
-                                                          AppTheme.textPrimary,
-                                                      fontSize: 14,
+                                                  InkWell(
+                                                    onTap: () =>
+                                                        abrirPerfilUsuario(
+                                                      context,
+                                                      username: username,
+                                                      userId: solicitacao[
+                                                              'requesterId']
+                                                          ?.toString(),
+                                                      avatarUrl: avatarUrl,
+                                                    ),
+                                                    child: Text(
+                                                      '@$username quer ser seu amigo(a).',
+                                                      style: const TextStyle(
+                                                        color:
+                                                            Color(0xFF3E3A36),
+                                                        fontSize: 14,
+                                                      
+                                                      ),
                                                     ),
                                                   ),
                                                   const SizedBox(height: 8),
