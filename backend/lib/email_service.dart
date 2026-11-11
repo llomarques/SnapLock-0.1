@@ -99,8 +99,8 @@ Future<void> sendEmailChangeToken(
 Future<void> sendPostDeactivationNotice(
   String email,
   String userName,
+  String postDate,
   int postId,
-  int reportCount,
 ) async {
   final host = env['SMTP_HOST'];
   final username = env['SMTP_USER'];
@@ -126,7 +126,7 @@ Future<void> sendPostDeactivationNotice(
     ..text = '''
 Olá, $userName,
 
-Sua publicação #$postId foi desativada no SnapLock após receber $reportCount denúncias.
+Sua publicação de ID $postId, postada em $postDate, foi desativada no SnapLock após receber denúncias.
 
 Ela não está mais visível na plataforma. Se você acredita que houve um engano,
 entre em contato com a equipe do SnapLock.
@@ -155,12 +155,13 @@ Esta mensagem é um aviso automático. Não responda a este e-mail.
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:24px 0;background-color:#F3E9DC;border:1px solid #D8C7B2;border-radius:14px;">
                   <tr>
                     <td style="padding:18px 20px;">
-                      <div style="color:#6E6760;font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;">Resumo</div>
-                      <div style="margin-top:10px;color:#3E3A36;font-size:14px;line-height:1.8;"><strong>Publicação:</strong> #$postId<br><strong>Denúncias recebidas:</strong> $reportCount</div>
+                      <div style="margin-top:10px;color:#3E3A36;font-size:14px;line-height:1.8;"><strong>ID da publicação:</strong> $postId<br>
+                        <strong>Data da publicação:</strong> $postDate
+                      </div>
                     </td>
                   </tr>
                 </table>
-                <p style="margin:0;color:#3E3A36;font-size:14px;line-height:1.7;">A publicação não está mais visível na plataforma. Se você acredita que houve um engano, entre em contato com a equipe do SnapLock para solicitar uma análise.</p>
+                <p style="margin:0;color:#3E3A36;font-size:14px;line-height:1.7;">A publicação não está mais visível. Se você acredita que houve um engano, entre em contato com a equipe do SnapLock informando o ID da publicação para solicitar uma análise.</p>
                 <p style="margin:24px 0 0;color:#6E6760;font-size:13px;line-height:1.6;">Esta é uma notificação automática. Por favor, não responda a este e-mail.</p>
               </td>
             </tr>

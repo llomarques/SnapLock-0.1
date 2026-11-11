@@ -102,25 +102,52 @@ Future<void> main() async {
        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
   );
 
+  await connection.execute(
+    '''CREATE TABLE IF NOT EXISTS denuncia_detalhe (
+       id_denuncia INT NOT NULL AUTO_INCREMENT,
+       id_foto INT NOT NULL,
+       id_usuario INT NOT NULL,
+       motivo TEXT NOT NULL,
+       data_denuncia DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       PRIMARY KEY (id_denuncia),
+       UNIQUE KEY uq_denuncia_detalhe_foto_usuario (id_foto, id_usuario),
+       KEY idx_denuncia_detalhe_usuario (id_usuario),
+       CONSTRAINT fk_denuncia_detalhe_foto FOREIGN KEY (id_foto) REFERENCES foto (id_foto),
+       CONSTRAINT fk_denuncia_detalhe_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
+     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
+  );
+
   final denunciaTable = await connection.execute(
     "SHOW TABLES LIKE 'denuncia'",
   );
-  if (denunciaTable.rows.isEmpty) {
-    await connection.execute(
-      '''CREATE TABLE denuncia (
-         id_denuncia INT NOT NULL AUTO_INCREMENT,
-         id_foto INT NOT NULL,
-         id_usuario INT NOT NULL,
-         motivo TEXT NOT NULL,
-         data_denuncia DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-         PRIMARY KEY (id_denuncia),
-         KEY idx_denuncia_foto (id_foto),
-         KEY idx_denuncia_usuario (id_usuario),
-         CONSTRAINT fk_denuncia_foto FOREIGN KEY (id_foto) REFERENCES foto (id_foto),
-         CONSTRAINT fk_denuncia_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
-       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
-    );
+  if (denunciaTable.rows.isNotEmpty) {
+    final legacyDenunciaColumns = await connection
+        .execute("SHOW COLUMNS FROM denuncia LIKE 'id_usuario'");
+    if (legacyDenunciaColumns.rows.isNotEmpty) {
+      await connection.execute(
+        '''INSERT IGNORE INTO denuncia_detalhe
+             (id_foto, id_usuario, motivo, data_denuncia)
+           SELECT id_foto, id_usuario, motivo, data_denuncia
+           FROM denuncia
+           ORDER BY id_denuncia''',
+      );
+      await connection.execute('DROP TABLE denuncia');
+    }
   }
+
+  await connection.execute(
+    '''CREATE TABLE IF NOT EXISTS denuncia (
+       id_foto INT NOT NULL,
+       quantidade_denuncias INT NOT NULL DEFAULT 0,
+       PRIMARY KEY (id_foto),
+       CONSTRAINT fk_denuncia_foto FOREIGN KEY (id_foto) REFERENCES foto (id_foto)
+     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
+  );
+  await connection.execute(
+    '''INSERT INTO denuncia (id_foto, quantidade_denuncias)
+       SELECT id_foto, COUNT(*) FROM denuncia_detalhe GROUP BY id_foto
+       ON DUPLICATE KEY UPDATE quantidade_denuncias = VALUES(quantidade_denuncias)''',
+  );
 
   final curtidaDataColumn =
       await connection.execute("SHOW COLUMNS FROM curtida LIKE 'data_curtida'");
@@ -216,6 +243,9 @@ Future<void> main() async {
         await connection.execute('DELETE FROM curtida WHERE id_foto = :id_foto',
             {'id_foto': idFoto});
         await connection.execute(
+            'DELETE FROM denuncia_detalhe WHERE id_foto = :id_foto',
+            {'id_foto': idFoto});
+        await connection.execute(
             'DELETE FROM denuncia WHERE id_foto = :id_foto',
             {'id_foto': idFoto});
 
@@ -246,7 +276,8 @@ Future<void> main() async {
 
       try {
         final publicacao = await connection.execute(
-          '''SELECT f.id_foto, u.email, u.nome
+          '''SELECT DATE_FORMAT(f.data_postagem, '%d/%m/%Y') AS data_postagem,
+                    u.email, u.nome
              FROM foto f
              JOIN usuario u ON u.id_usuario = f.id_usuario
              WHERE f.id_foto = :id_foto AND f.ativa = 1
@@ -257,25 +288,49 @@ Future<void> main() async {
           return _json(404, {'message': 'Publicação não encontrada.'});
         }
 
-        await connection.execute(
-          '''INSERT INTO denuncia (id_foto, id_usuario, motivo, data_denuncia)
-             VALUES (:id_foto, :id_usuario, :motivo, NOW())''',
-          {'id_foto': idFoto, 'id_usuario': idUsuario, 'motivo': motivo},
-        );
+        await connection.execute('START TRANSACTION');
+        try {
+          final novaDenuncia = await connection.execute(
+            '''INSERT IGNORE INTO denuncia_detalhe
+                 (id_foto, id_usuario, motivo, data_denuncia)
+               VALUES (:id_foto, :id_usuario, :motivo, NOW())''',
+            {'id_foto': idFoto, 'id_usuario': idUsuario, 'motivo': motivo},
+          );
+          if (novaDenuncia.affectedRows == BigInt.zero) {
+            await connection.execute('ROLLBACK');
+            return _json(
+                409, {'message': 'Você já denunciou esta publicação.'});
+          }
+
+          await connection.execute(
+            '''INSERT INTO denuncia (id_foto, quantidade_denuncias)
+               VALUES (:id_foto, 1)
+               ON DUPLICATE KEY UPDATE
+                 quantidade_denuncias = quantidade_denuncias + 1''',
+            {'id_foto': idFoto},
+          );
+          await connection.execute('COMMIT');
+        } catch (error, stackTrace) {
+          await connection.execute('ROLLBACK');
+          Error.throwWithStackTrace(error, stackTrace);
+        }
 
         final totalDenuncias = await connection.execute(
-          'SELECT COUNT(*) AS total FROM denuncia WHERE id_foto = :id_foto',
+          'SELECT quantidade_denuncias FROM denuncia WHERE id_foto = :id_foto',
           {'id_foto': idFoto},
         );
         final total = int.parse(
-          totalDenuncias.rows.first.assoc()['total']?.toString() ?? '0',
+          totalDenuncias.rows.first
+                  .assoc()['quantidade_denuncias']
+                  ?.toString() ??
+              '0',
         );
         var desativada = false;
         if (total >= 4) {
           final atualizacao = await connection.execute(
             '''UPDATE foto f SET ativa = 0
                WHERE f.id_foto = :id_foto AND f.ativa = 1
-                 AND (SELECT COUNT(*) FROM denuncia d
+                 AND (SELECT d.quantidade_denuncias FROM denuncia d
                       WHERE d.id_foto = f.id_foto) >= 4''',
             {'id_foto': idFoto},
           );
@@ -287,8 +342,8 @@ Future<void> main() async {
               await sendPostDeactivationNotice(
                 dadosAutor['email'] ?? '',
                 dadosAutor['nome'] ?? '',
+                dadosAutor['data_postagem']?.toString() ?? '',
                 idFoto,
-                total,
               );
             } catch (error, stackTrace) {
               print(
@@ -311,8 +366,6 @@ Future<void> main() async {
         });
       } catch (error, stackTrace) {
         print('Erro ao reportar post: $error\n$stackTrace');
-        // Caso a tabela ainda não exista no MySQL, crie com:
-        // CREATE TABLE denuncia (id_denuncia INT AUTO_INCREMENT PRIMARY KEY, id_foto INT, id_usuario INT, motivo TEXT, data_denuncia DATETIME);
         return _json(500, {'message': 'Erro ao salvar denúncia no servidor.'});
       }
     })

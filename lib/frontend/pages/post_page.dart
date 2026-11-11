@@ -897,17 +897,6 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                _caption.isEmpty ? 'Legenda/Título' : _caption,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: _caption.isEmpty
-                                      ? Colors.black45
-                                      : const Color(0xFF5E3023),
-                                  fontSize: 15,
-                                ),
-                              ),
                               if (formattedDate.isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Text(
