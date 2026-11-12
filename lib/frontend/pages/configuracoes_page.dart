@@ -84,7 +84,7 @@ class _ConfiguracoesPageState extends State<ConfiguracoesPage> {
               final isDark = AppThemeController.instance.isDark;
               final theme = Theme.of(context);
               return ListTile(
-                leading: const Icon(Icons.palette_outlined),
+                leading: const Icon(Icons.palette),
                 title: const Text('Tema'),
                 trailing: PopupMenuButton<bool>(
                   enabled: !alterandoTema,
