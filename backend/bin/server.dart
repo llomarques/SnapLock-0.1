@@ -74,6 +74,34 @@ Future<void> main() async {
      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
   );
 
+  await connection.execute(
+    '''CREATE TABLE IF NOT EXISTS cadastro_email_verificacao (
+       id_verificacao INT NOT NULL AUTO_INCREMENT,
+       nome VARCHAR(100) NOT NULL,
+       username VARCHAR(30) NOT NULL,
+       email VARCHAR(150) NOT NULL,
+       senha_hash VARCHAR(255) NOT NULL,
+       data_nascimento DATE NOT NULL,
+       token_hash CHAR(64) NOT NULL,
+       expira_em DATETIME NOT NULL,
+       tentativas INT NOT NULL DEFAULT 0,
+       criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       verificado_em DATETIME DEFAULT NULL,
+       PRIMARY KEY (id_verificacao),
+       KEY idx_cadastro_verificacao_email (email),
+       KEY idx_cadastro_verificacao_token (token_hash)
+     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
+  );
+
+  final signupAttemptsColumn = await connection.execute(
+    "SHOW COLUMNS FROM cadastro_email_verificacao LIKE 'tentativas'",
+  );
+  if (signupAttemptsColumn.rows.isEmpty) {
+    await connection.execute(
+      'ALTER TABLE cadastro_email_verificacao ADD COLUMN tentativas INT NOT NULL DEFAULT 0 AFTER expira_em',
+    );
+  }
+
   final ratioColumn =
       await connection.execute("SHOW COLUMNS FROM foto LIKE 'proporcao'");
   if (ratioColumn.rows.isEmpty) {
@@ -399,7 +427,7 @@ Future<void> main() async {
         return _json(401, {'erro': 'E-mail/usuário ou senha incorretos.'});
       }
 
-      final token = _gerarTokenSessao();
+      final token = _gerarToken();
       sessoes[token] = int.parse(usuario['id_usuario']!);
       return _json(200, {
         'success': true,
@@ -855,6 +883,14 @@ Future<void> main() async {
       }
 
       try {
+        final emailExistente = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE email = :email AND ativo = 1 LIMIT 1',
+          {'email': email},
+        );
+        if (emailExistente.rows.isNotEmpty) {
+          return _json(409, {'erro': 'Este e-mail já está cadastrado.'});
+        }
+
         final usernameExistente = await connection.execute(
           'SELECT id_usuario FROM usuario WHERE username = :username LIMIT 1',
           {'username': username},
@@ -863,18 +899,60 @@ Future<void> main() async {
           return _json(409, {'erro': 'Este username já está em uso.'});
         }
 
-        final result = await connection.execute(
-          'INSERT INTO usuario (nome, username, email, senha_hash, data_nascimento) VALUES (:nome, :username, :email, :senha_hash, :data_nascimento)',
+        final solicitacaoRecente = await connection.execute(
+          '''SELECT id_verificacao FROM cadastro_email_verificacao
+             WHERE email = :email
+               AND criado_em > DATE_SUB(NOW(), INTERVAL 30 SECOND)
+             ORDER BY id_verificacao DESC LIMIT 1''',
+          {'email': email},
+        );
+        if (solicitacaoRecente.rows.isNotEmpty) {
+          return _json(429, {
+            'erro': 'Aguarde 30 segundos antes de solicitar outro e-mail.',
+          });
+        }
+
+        final token = _gerarToken();
+        await connection.execute(
+          'DELETE FROM cadastro_email_verificacao WHERE email = :email',
+          {'email': email},
+        );
+        final solicitacao = await connection.execute(
+          '''INSERT INTO cadastro_email_verificacao
+               (nome, username, email, senha_hash, data_nascimento,
+                token_hash, expira_em)
+             VALUES (:nome, :username, :email, :senha_hash, :data_nascimento,
+                    :token_hash, DATE_ADD(NOW(), INTERVAL 15 MINUTE))''',
           {
             'nome': nome,
             'username': username,
             'email': email,
             'senha_hash': BCrypt.hashpw(senha, BCrypt.gensalt()),
             'data_nascimento': dataNascimento,
+            'token_hash': _hashToken(token),
           },
         );
-        return _json(
-            201, {'id_usuario': int.parse(result.lastInsertID.toString())});
+
+        try {
+          await sendSignupVerificationEmail(email, nome, token);
+        } catch (error, stackTrace) {
+          await connection.execute(
+            '''DELETE FROM cadastro_email_verificacao
+               WHERE id_verificacao = :id_verificacao''',
+            {'id_verificacao': solicitacao.lastInsertID},
+          );
+          print('Erro ao enviar e-mail de verificação do cadastro: $error');
+          print(stackTrace);
+          return _json(502, {
+            'erro':
+                'Não foi possível enviar o e-mail. Confira as configurações SMTP.',
+          });
+        }
+
+        return _json(202, {
+          'mensagem':
+              'Enviamos um código de verificação. Informe-o para confirmar seu e-mail e criar a conta.',
+        });
       } catch (error, stackTrace) {
         final mensagem = error.toString();
         print('Erro ao cadastrar usuário: $mensagem');
@@ -887,6 +965,107 @@ Future<void> main() async {
           return _json(409, {'erro': 'Este e-mail já está cadastrado.'});
         }
         return _json(500, {'erro': 'Erro interno ao salvar o usuário.'});
+      }
+    })
+    ..post('/api/usuarios/verificar-email', (Request request) async {
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
+      final email = (dados['email'] ?? '').toString().trim().toLowerCase();
+      final token = (dados['token'] ?? '').toString().trim();
+      if (!_emailValido(email) || !RegExp(r'^\d{6}$').hasMatch(token)) {
+        return _json(422, {'erro': 'Informe um e-mail e código válidos.'});
+      }
+      try {
+        final verificacoes = await connection.execute(
+          '''SELECT id_verificacao, nome, username, email, senha_hash,
+                    data_nascimento, token_hash, tentativas
+             FROM cadastro_email_verificacao
+             WHERE email = :email AND verificado_em IS NULL
+               AND senha_hash <> '' AND expira_em > NOW()
+             ORDER BY id_verificacao DESC LIMIT 1''',
+          {'email': email},
+        );
+        if (verificacoes.rows.isEmpty) {
+          return _json(422, {
+            'erro': 'Código inválido ou expirado. Solicite um novo cadastro.',
+          });
+        }
+
+        final verificacao = verificacoes.rows.first.assoc();
+        final idVerificacao = verificacao['id_verificacao'];
+        final tentativas = int.tryParse(verificacao['tentativas'] ?? '') ?? 0;
+        if (tentativas >= 5) {
+          return _json(429, {
+            'erro':
+                'O limite de tentativas foi atingido. Inicie novamente o cadastro para receber outro código.',
+          });
+        }
+        if (_hashToken(token) != verificacao['token_hash']) {
+          await connection.execute(
+            '''UPDATE cadastro_email_verificacao
+               SET tentativas = tentativas + 1
+               WHERE id_verificacao = :id_verificacao''',
+            {'id_verificacao': idVerificacao},
+          );
+          return _json(422, {
+            'erro': 'Código incorreto. Confira o e-mail e tente novamente.',
+          });
+        }
+
+        final emailExistente = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE email = :email AND ativo = 1 LIMIT 1',
+          {'email': verificacao['email']},
+        );
+        if (emailExistente.rows.isNotEmpty) {
+          return _json(409, {'erro': 'Este e-mail já está cadastrado.'});
+        }
+
+        final usernameExistente = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE username = :username LIMIT 1',
+          {'username': verificacao['username']},
+        );
+        if (usernameExistente.rows.isNotEmpty) {
+          return _json(409, {
+            'erro':
+                'Este username foi usado por outra conta. Inicie o cadastro novamente com outro username.',
+          });
+        }
+
+        await connection.execute(
+          '''INSERT INTO usuario
+               (nome, username, email, senha_hash, data_nascimento)
+             VALUES (:nome, :username, :email, :senha_hash, :data_nascimento)''',
+          {
+            'nome': verificacao['nome'],
+            'username': verificacao['username'],
+            'email': verificacao['email'],
+            'senha_hash': verificacao['senha_hash'],
+            'data_nascimento': verificacao['data_nascimento'],
+          },
+        );
+        await connection.execute(
+          '''UPDATE cadastro_email_verificacao
+             SET verificado_em = NOW(), senha_hash = ''
+             WHERE id_verificacao = :id_verificacao
+               AND verificado_em IS NULL''',
+          {'id_verificacao': idVerificacao},
+        );
+
+        return _json(201, {
+          'mensagem': 'E-mail confirmado. Sua conta foi criada com sucesso.',
+        });
+      } catch (error, stackTrace) {
+        final mensagem = error.toString().toLowerCase();
+        if (mensagem.contains('duplicate') || mensagem.contains('1062')) {
+          return _json(409, {
+            'erro':
+                'O e-mail ou username já está sendo usado. Inicie o cadastro novamente com outros dados.',
+          });
+        }
+        print('Erro ao verificar e-mail do cadastro: $error');
+        print(stackTrace);
+        return _json(
+            500, {'erro': 'Não foi possível criar a conta. Tente novamente.'});
       }
     })
     ..post('/api/recuperacao/solicitar', (Request request) async {
@@ -1918,8 +2097,6 @@ bool _senhaValida(String senha) => validPassword(senha);
 String _gerarToken() => generateRecoveryToken();
 
 String _hashToken(String token) => hashToken(token);
-
-String _gerarTokenSessao() => generateSessionToken();
 
 int? _idUsuarioAutenticado(Request request, Map<String, int> sessoes) =>
     authenticatedUserId(request, sessoes);

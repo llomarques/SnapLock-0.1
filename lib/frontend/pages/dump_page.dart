@@ -506,7 +506,7 @@ class _DumpPage extends State<DumpPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppTheme.surface,
+                      color: AppTheme.darkThemeSurface,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: const [
                         BoxShadow(
@@ -524,14 +524,14 @@ class _DumpPage extends State<DumpPage> {
                         SizedBox(height: 5),
                         Text('O que é um Dump?',
                             style: TextStyle(
-                                color: AppTheme.mediumBrown,
+                                color: AppTheme.darkThemeMediumBrown,
                                 fontSize: 20,
                                 height: 1.2)),
                         SizedBox(height: 10),
                         Text(
                           'O Dump é um álbum criado com as fotos que você publicou. Ele ajuda você a guardar e revisitar suas memórias de forma organizada. Toque em um dump para ver suas memórias do mês.',
                           style: TextStyle(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.darkThemeTextSecondary,
                               fontSize: 16,
                               height: 1.15),
                         ),
@@ -544,21 +544,21 @@ class _DumpPage extends State<DumpPage> {
                       padding: EdgeInsets.only(top: 40),
                       child: Center(
                           child: CircularProgressIndicator(
-                              color: AppTheme.mediumBrown)))
+                              color: AppTheme.darkThemeMediumBrown)))
                 else if (_error != null)
                   Padding(
                       padding: const EdgeInsets.only(top: 32),
                       child: Center(
                           child: Text(_error!,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppTheme.textSecondary))))
+                              style: TextStyle(color: AppTheme.darkThemeTextSecondary))))
                 else if (_monthlyAlbums.isEmpty)
                   Padding(
                       padding: EdgeInsets.only(top: 32),
                       child: Center(
                           child: Text('Você ainda não publicou fotos.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppTheme.textSecondary))))
+                              style: TextStyle(color: AppTheme.darkThemeTextSecondary))))
                 else
                   GridView.builder(
                     shrinkWrap: true,

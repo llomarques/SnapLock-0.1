@@ -912,6 +912,21 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                       ),
                     ),
                   ),
+                  if (_caption.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _caption,
+                          style: GoogleFonts.poppins(
+                            color: captionColor,
+                            fontSize: 14,
+                            height: 1.45,
+                          ),
+                        ),
+                      ),
+                    ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

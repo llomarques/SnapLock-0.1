@@ -74,6 +74,8 @@ dart run bin\server.dart
 
 Para Gmail, `SMTP_USER` é o e-mail que enviará as mensagens. `SMTP_PASSWORD` deve ser uma senha de aplicativo de 16 caracteres, não a senha normal da conta. Crie-a em <https://myaccount.google.com/apppasswords> com a verificação em duas etapas ativada.
 
+A tabela de verificações pendentes é criada automaticamente quando a API inicia. Após passar pelas validações do cadastro, o usuário recebe um código de seis dígitos por e-mail e é direcionado à página de confirmação no aplicativo para digitá-lo e criar a conta. O código expira em 15 minutos e permite até cinco tentativas.
+
 Se aparecer `Authentication Failed (535)`, confira essas credenciais e reinicie a API no mesmo CMD. Não compartilhe nem comite a senha de aplicativo.
 
 Quando uma publicação recebe quatro denúncias ou mais, ela é desativada e o autor é notificado por e-mail. A notificação depende da configuração SMTP acima.

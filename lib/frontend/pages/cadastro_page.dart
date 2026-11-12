@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:snaplock/theme/app_theme.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
-import 'package:snaplock/frontend/pages/personalizarPerfil_page.dart';
 import 'package:snaplock/frontend/pages/login_page.dart';
 import 'package:snaplock/frontend/utils/mensagem_utils.dart';
+import 'package:snaplock/screens/auth/confirm_signup_email_screen.dart';
 import '../../controller/controller.cadastrar.dart';
-import '../../controller/controller.login.dart';
 import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
 import 'package:snaplock/frontend/widgets/input_widget.dart';
 
@@ -27,6 +26,7 @@ class _CadastroPageState extends State<CadastroPage> {
   bool esconderSenha = true;
   bool esconderAfirmacao = true;
   bool carregando = false;
+  bool emailEnviado = false;
   DateTime? dataNascimento;
 
   Future<void> cadastrar() async {
@@ -70,15 +70,11 @@ class _CadastroPageState extends State<CadastroPage> {
         confirmacaoSenha: confirmaSenha,
         dataNascimento: dataNascimento!,
       );
-      await LoginController().entrar(login: email, senha: senha);
       if (mounted) {
-        mostrarMensagem(context, 'Usuário cadastrado com sucesso.');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const personalizarPerfilPage(),
-          ),
-        );
+        senhaController.clear();
+        confirmaSenhaController.clear();
+        setState(() => emailEnviado = true);
+        await abrirPaginaCodigo();
       }
     } catch (error) {
       if (mounted) mostrarMensagem(context, error.toString());
@@ -111,6 +107,22 @@ class _CadastroPageState extends State<CadastroPage> {
       },
     );
     if (escolhida != null) setState(() => dataNascimento = escolhida);
+  }
+
+  Future<void> abrirPaginaCodigo() async {
+    final contaCriada = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            ConfirmSignupEmailScreen(email: emailController.text.trim()),
+      ),
+    );
+    if (contaCriada == true && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+    }
   }
 
   @override
@@ -203,20 +215,42 @@ class _CadastroPageState extends State<CadastroPage> {
               texto: 'Confirme sua senha',
             ),
             const SizedBox(height: 25),
-            ElevatedButton.icon(
-              onPressed: carregando ? null : cadastrar,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.mediumBrown,
-                foregroundColor: Colors.white,
+            if (emailEnviado)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Enviamos um código de seis dígitos para '
+                    '${emailController.text.trim()}. Confirme seu e-mail para criar sua conta.',
+                    style: TextStyle(color: AppTheme.textPrimary, height: 1.5),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: carregando ? null : abrirPaginaCodigo,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.mediumBrown,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Inserir código de confirmação'),
+                  ),
+                ],
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: carregando ? null : cadastrar,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.mediumBrown,
+                  foregroundColor: Colors.white,
+                ),
+                label: carregando
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Text('Cadastrar', style: TextStyle(fontSize: 14)),
               ),
-              label: carregando
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : const Text('Cadastrar', style: TextStyle(fontSize: 14)),
-            ),
             const SizedBox(height: 10),
             GestureDetector(
                 onTap: () => abrirLogin(context),

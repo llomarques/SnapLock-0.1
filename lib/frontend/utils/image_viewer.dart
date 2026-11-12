@@ -70,7 +70,7 @@ Future<Uint8List?> abrirEditorFotoPerfil(
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppTheme.cardBorder),
+          side: const BorderSide(color: AppTheme.darkThemeCardBorder),
         ),
         title: Row(
           children: [
@@ -78,12 +78,12 @@ Future<Uint8List?> abrirEditorFotoPerfil(
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppTheme.mediumBrown.withValues(alpha: 0.12),
+                color: AppTheme.darkThemeMediumBrown.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.crop_rotate_rounded,
-                color: AppTheme.mediumBrown,
+                color: AppTheme.darkThemeMediumBrown,
                 size: 22,
               ),
             ),
@@ -113,7 +113,7 @@ Future<Uint8List?> abrirEditorFotoPerfil(
               baseColor: AppTheme.darkBrown,
               maskColor: Colors.black.withValues(alpha: 0.62),
               progressIndicator: const CircularProgressIndicator(
-                color: AppTheme.lightBrown,
+                color: AppTheme.darkThemeLightBrown,
               ),
               onStatusChanged: (status) {
                 if (!dialogContext.mounted) return;
