@@ -84,6 +84,15 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios, size: 20),
+                color: Theme.of(context).colorScheme.onSurface,
+                tooltip: 'Voltar para o login',
+              ),
+            ),
             const LogoSobreNosWidget(
               assetPath: 'assets/images/logo.png',
               width: 130,
@@ -91,7 +100,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
             ),
             const SizedBox(height: 37),
             Text(
-              'Digite seu e-mail para receber o link de recuperação',
+              'Digite seu e-mail para receber o token de recuperação',
               textAlign: TextAlign.center,
               style: AppFonts.poppinsRegular.copyWith(
                 fontSize: 12.5,
@@ -156,18 +165,19 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
               ),
             ],
             const SizedBox(height: 10),
-            GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                },
+            if (tokenEnviado)
+              GestureDetector(
+                onTap: carregando ? null : solicitarToken,
                 child: Text(
-                  'Voltar para o login',
+                  'Reenviar token',
                   style: TextStyle(
                     color: AppTheme.mediumBrown,
-                    fontWeight: FontWeight.bold, // Opcional: sublinha a palavra
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.underline,
                   ),
                   textAlign: TextAlign.center,
-                )),
+                ),
+              ),
           ],
         ),
       ),
