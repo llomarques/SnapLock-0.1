@@ -217,6 +217,7 @@ class _PerfilPage extends State<PerfilPage> {
             Column(
               children: [
                 TextField(
+                  hintLocales: const [Locale('pt', 'BR')],
                   controller: biografiaController,
                   readOnly: true,
                   showCursor: false,

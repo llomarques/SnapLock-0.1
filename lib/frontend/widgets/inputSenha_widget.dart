@@ -22,6 +22,7 @@ class _InputsenhaWidgetState extends State<InputsenhaWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return TextField(
+      hintLocales: const [Locale('pt', 'BR')],
       controller: widget.controller,
       obscureText: esconderSenha,
       decoration: InputDecoration(

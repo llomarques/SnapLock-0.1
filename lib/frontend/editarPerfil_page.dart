@@ -174,6 +174,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             ),
             const SizedBox(height: 20),
             TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               controller: nomeController,
               decoration: InputDecoration(
                 filled: true,
@@ -195,6 +196,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             ),
             const SizedBox(height: 20),
             TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               controller: usernameController,
               decoration: InputDecoration(
                 filled: true,
@@ -216,6 +218,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
             ),
             const SizedBox(height: 20),
             TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               controller: biografiaController,
               decoration: InputDecoration(
                 filled: true,

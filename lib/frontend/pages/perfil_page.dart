@@ -274,6 +274,7 @@ class _PerfilPage extends State<PerfilPage> {
             SizedBox(
               width: double.infinity,
               child: TextField(
+                hintLocales: const [Locale('pt', 'BR')],
                 controller: biografiaController,
                 readOnly: true,
                 showCursor: false,

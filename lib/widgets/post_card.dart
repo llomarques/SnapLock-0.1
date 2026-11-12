@@ -263,6 +263,7 @@ abstract class _PostCardStateBase extends State<PostCard> {
         title: Text('Editar legenda',
             style: GoogleFonts.cormorantGaramond(fontWeight: FontWeight.bold)),
         content: TextField(
+          hintLocales: const [Locale('pt', 'BR')],
           controller: controller,
           maxLines: 4,
           decoration: const InputDecoration(
@@ -368,6 +369,7 @@ abstract class _PostCardStateBase extends State<PostCard> {
                 style: GoogleFonts.poppins(fontSize: 13)),
             const SizedBox(height: 12),
             TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               controller: reasonController,
               decoration: const InputDecoration(
                 hintText: 'Ex: Conteúdo impróprio ou ofensivo',

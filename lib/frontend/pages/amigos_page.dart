@@ -307,6 +307,7 @@ class _AmigosPage extends State<AmigosPage> {
           Padding(
             padding: const EdgeInsets.all(24),
             child: TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               controller: pesquisaController,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(

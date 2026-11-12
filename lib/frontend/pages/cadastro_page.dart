@@ -161,6 +161,7 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 15),
             TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               readOnly: true,
               showCursor: false,
               onTap: carregando ? null : selecionarData,

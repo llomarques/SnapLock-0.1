@@ -149,6 +149,7 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 40),
             TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               controller: nomeController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
@@ -172,6 +173,7 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 15),
             TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               controller: usernameController,
               decoration: InputDecoration(
                 filled: true,
@@ -191,6 +193,7 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 15),
             TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               readOnly: true,
               showCursor: false,
               onTap: carregando ? null : selecionarData,
@@ -216,6 +219,7 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 15),
             TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
@@ -238,6 +242,7 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 15),
             TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               controller: senhaController,
               obscureText: esconderSenha,
               decoration: InputDecoration(
@@ -270,6 +275,7 @@ class _CadastroPageState extends State<CadastroPage> {
             ),
             const SizedBox(height: 15),
             TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               controller: confirmaSenhaController,
               obscureText: esconderAfirmacao,
               decoration: InputDecoration(

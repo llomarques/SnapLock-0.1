@@ -666,6 +666,7 @@ class _PostarPageState extends State<PostarPage> {
                     children: [
                       Expanded(
                         child: TextFormField(
+                          hintLocales: const [Locale('pt', 'BR')],
                           controller: legendaController,
                           focusNode: legendaFocusNode,
                           onTap: () {

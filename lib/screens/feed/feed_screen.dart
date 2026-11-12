@@ -91,6 +91,7 @@ class _FeedScreenState extends State<FeedScreen> {
                   ),
                 const SizedBox(height: 12),
                 TextField(
+                  hintLocales: const [Locale('pt', 'BR')],
                   controller: captionController,
                   maxLines: 3,
                   style: GoogleFonts.poppins(fontSize: 13),

@@ -136,6 +136,7 @@ class _esqueceuSenhaPage extends State<esqueceuSenhaPage> {
               ),
               const SizedBox(height: 12),
               TextField(
+                hintLocales: const [Locale('pt', 'BR')],
                 controller: tokenController,
                 keyboardType: TextInputType.number,
                 maxLength: 6,
