@@ -150,6 +150,23 @@ CREATE TABLE IF NOT EXISTS `alteracao_email_token` (
     FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+CREATE TABLE IF NOT EXISTS `cadastro_email_verificacao` (
+  `id_verificacao` int(11) NOT NULL AUTO_INCREMENT,
+  `nome` varchar(100) NOT NULL,
+  `username` varchar(30) NOT NULL,
+  `email` varchar(150) NOT NULL,
+  `senha_hash` varchar(255) NOT NULL,
+  `data_nascimento` date NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expira_em` datetime NOT NULL,
+  `tentativas` int(11) NOT NULL DEFAULT 0,
+  `criado_em` datetime NOT NULL DEFAULT current_timestamp(),
+  `verificado_em` datetime DEFAULT NULL,
+  PRIMARY KEY (`id_verificacao`),
+  KEY `idx_cadastro_verificacao_email` (`email`),
+  KEY `idx_cadastro_verificacao_token` (`token_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
 -- Copiando dados para a tabela snaplock_db.usuario: ~0 rows (aproximadamente)
 
 CREATE TABLE IF NOT EXISTS `denuncia` (
