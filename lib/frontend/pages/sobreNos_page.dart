@@ -254,7 +254,7 @@ class SobreNosPage extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         Text(
-          'Versão 1.4.0  ·  Feito com carinho pela equipe CyberSisters',
+          'Versão 2.0.0  ·  Feito com carinho pela equipe CyberSisters',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: theme.colorScheme.onSurfaceVariant,

@@ -110,7 +110,7 @@ Future<Uint8List?> abrirEditorFotoPerfil(
               controller: controller,
               aspectRatio: 1,
               interactive: true,
-              baseColor: AppTheme.darkBrown,
+              baseColor: AppTheme.darkThemeMediumBrown,
               maskColor: Colors.black.withValues(alpha: 0.62),
               progressIndicator: const CircularProgressIndicator(
                 color: AppTheme.darkThemeLightBrown,

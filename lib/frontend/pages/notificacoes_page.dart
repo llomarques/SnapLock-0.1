@@ -130,6 +130,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
     VoidCallback? aoTocar,
     VoidCallback? aoTocarNome,
   }) {
+    final textColor = Theme.of(context).colorScheme.onSurface;
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 5),
       color: lida ? AppTheme.surfaceLight : AppTheme.surfaceLight,
@@ -160,11 +161,10 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                       borderRadius: BorderRadius.circular(6),
                       child: Text(
                         '@$username',
-                        style: const TextStyle(
-                          color: Color(0xFF3E3A36),
+                        style: TextStyle(
+                          color: textColor,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          
                         ),
                       ),
                     ),
@@ -250,8 +250,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
         aoTocarNome: () => abrirPerfilUsuario(
           context,
           username: username,
-          userId: aviso['userId']?.toString() ??
-              aviso['friendId']?.toString(),
+          userId: aviso['userId']?.toString() ?? aviso['friendId']?.toString(),
           avatarUrl: aviso['avatarUrl']?.toString(),
         ),
         trailing: lido
@@ -306,8 +305,7 @@ class _NotificacoesPage extends State<NotificacoesPage> {
         aoTocarNome: () => abrirPerfilUsuario(
           context,
           username: aviso['username']?.toString() ?? '',
-          userId: aviso['userId']?.toString() ??
-              aviso['friendId']?.toString(),
+          userId: aviso['userId']?.toString() ?? aviso['friendId']?.toString(),
           avatarUrl: aviso['avatarUrl']?.toString(),
         ),
         trailing: lido
@@ -583,11 +581,11 @@ class _NotificacoesPage extends State<NotificacoesPage> {
                                                     ),
                                                     child: Text(
                                                       '@$username quer ser seu amigo(a).',
-                                                      style: const TextStyle(
-                                                        color:
-                                                            Color(0xFF3E3A36),
+                                                      style: TextStyle(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurface,
                                                         fontSize: 14,
-                                                      
                                                       ),
                                                     ),
                                                   ),

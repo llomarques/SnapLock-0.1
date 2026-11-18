@@ -20,7 +20,14 @@ class AvatarSquareWidget extends StatelessWidget {
   });
 
   Widget _placeholder(BuildContext context) => fallbackAsset != null
-      ? Image.asset(fallbackAsset!, fit: BoxFit.cover)
+      ? Image.asset(
+          fallbackAsset!,
+          fit: BoxFit.cover,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white
+              : null,
+          colorBlendMode: BlendMode.srcIn,
+        )
       : ColoredBox(
           color: backgroundColor ?? Theme.of(context).colorScheme.surface,
           child: Icon(

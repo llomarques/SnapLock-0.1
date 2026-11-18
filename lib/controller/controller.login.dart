@@ -135,6 +135,45 @@ class LoginController {
     return novaUrl;
   }
 
+  static Future<void> removerFotoPerfil() async {
+    if (tokenAtual == null || tokenAtual!.isEmpty) {
+      throw const LoginException('Faça login novamente para editar o perfil.');
+    }
+
+    final response = await http.delete(
+      Uri.parse('$apiBaseUrl/api/profile/foto'),
+      headers: {'Authorization': 'Bearer $tokenAtual'},
+    );
+
+    Map<String, dynamic>? data;
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) data = decoded;
+    } on FormatException {
+      if (response.statusCode == 404) {
+        throw const LoginException(
+          'A API ainda não reconhece a remoção da foto. Reinicie o backend e tente novamente.',
+        );
+      }
+      throw LoginException(
+        'A API retornou uma resposta inválida ao remover a foto '
+        '(HTTP ${response.statusCode}).',
+      );
+    }
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data?['success'] != true) {
+      throw LoginException(
+        data?['message']?.toString() ?? 'Erro ao remover a foto de perfil.',
+      );
+    }
+
+    if (usuarioAtual != null) {
+      _atualizarUsuario({...usuarioAtual!, 'avatarUrl': ''});
+    }
+  }
+
   static Future<Map<String, dynamic>> atualizarPerfil({
     required String nome,
     required String username,

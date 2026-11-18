@@ -45,6 +45,7 @@ class CustomTextField extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         TextFormField(
+          hintLocales: const [Locale('pt', 'BR')],
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
