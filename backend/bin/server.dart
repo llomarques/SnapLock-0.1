@@ -1735,6 +1735,24 @@ Future<void> main() async {
 
       return _json(200, {'success': true, 'foto_perfil': url});
     })
+    ..delete('/api/profile/foto', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      try {
+        await connection.execute(
+          'UPDATE usuario SET foto_perfil = NULL WHERE id_usuario = :id_usuario AND ativo = 1',
+          {'id_usuario': idUsuario},
+        );
+        return _json(200, {'success': true, 'foto_perfil': null});
+      } catch (error, stackTrace) {
+        print('Erro ao remover a foto de perfil: $error');
+        print(stackTrace);
+        return _json(500, {
+          'message': 'Não foi possível remover a foto de perfil.',
+        });
+      }
+    })
     ..put('/api/profile/password', (Request request) async {
       final idUsuario = _idUsuarioAutenticado(request, sessoes);
       if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
