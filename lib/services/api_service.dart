@@ -137,6 +137,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> register({
     required String name,
+    required String username,
     required String email,
     required String password,
     required String confirmPassword,
@@ -149,6 +150,7 @@ class ApiService {
       headers: _headers,
       body: jsonEncode({
         'nome': name,
+        'username': username,
         'email': email,
         'senha': password,
         'confirmacao_senha': confirmPassword,
@@ -157,7 +159,7 @@ class ApiService {
     );
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode == 201) {
+    if (response.statusCode == 202) {
       return data;
     } else {
       throw Exception(data['erro'] ?? 'Erro no cadastro.');
