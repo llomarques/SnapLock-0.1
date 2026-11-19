@@ -9,16 +9,46 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   http: ^1.2.0
-  image_picker: ^1.0.7
+  image_picker: ^1.2.3
   shared_preferences: ^2.2.2
-  intl: ^0.19.0
+  intl: ^0.20.2
   google_fonts: ^6.1.0
-
+  carousel_slider: ^5.1.2
+  lottie: ^3.1.2
+  crop_your_image: ^2.0.1
+  url_launcher: ^6.3.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/images/logo.png
+    - assets/images/logo_black.png
+    - assets/images/logo_white.png
+    - assets/images/logo_oficial_white.png
+    - assets/images/logo_color.png
+    - assets/images/monalisaPerfil.png
+    - assets/images/dump.png
+    - assets/images/efeitos.png
+    - assets/images/proporcao.png
+    - assets/images/efeitos_white.png.png
+    - assets/images/proporcao_white.png.png
+
+flutter_launcher_icons:
+  android: true
+  image_path: assets/images/Icone_app.png
+  adaptive_icon_background: "#F3E9DC"
+  adaptive_icon_foreground: assets/images/Icone_app.png
+  adaptive_icon_foreground_inset: 16
+  windows:
+    generate: true
+    image_path: assets/images/Icone_app.png
+    icon_size: 100

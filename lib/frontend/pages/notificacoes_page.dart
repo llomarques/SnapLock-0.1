@@ -1,0 +1,814 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
+import 'package:snaplock/frontend/pages/post_page.dart';
+import 'package:snaplock/frontend/widgets/avatar_square_widget.dart';
+import 'package:snaplock/services/api_service.dart';
+import 'package:snaplock/frontend/widgets/botoes_widget.dart';
+import 'package:snaplock/models/post_model.dart';
+import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
+import 'package:snaplock/frontend/utils/image_viewer.dart';
+
+class NotificacoesPage extends StatefulWidget {
+  const NotificacoesPage({super.key});
+
+  @override
+  State<NotificacoesPage> createState() => _NotificacoesPage();
+}
+
+class _NotificacoesPage extends State<NotificacoesPage> {
+  List<Map<String, dynamic>> solicitacoes = [];
+  List<Map<String, dynamic>> avisosAceite = [];
+  List<Map<String, dynamic>> avisosCurtidas = [];
+  bool carregando = true;
+  String? erro;
+  Timer? _timerAtualizacao;
+
+  @override
+  void initState() {
+    super.initState();
+    carregarSolicitacoes();
+    _timerAtualizacao = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => carregarSolicitacoes(silencioso: true),
+    );
+  }
+
+  @override
+  void dispose() {
+    _timerAtualizacao?.cancel();
+    super.dispose();
+  }
+
+  Future<void> carregarSolicitacoes({bool silencioso = false}) async {
+    if (!silencioso) {
+      setState(() {
+        carregando = true;
+        erro = null;
+      });
+    }
+    try {
+      final resultados = await Future.wait<List<Map<String, dynamic>>>([
+        ApiService.getPendingRequests(),
+        ApiService.getAcceptedFriendNotifications(),
+        ApiService.getLikeNotifications(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        solicitacoes =
+            resultados[0].where((item) => item['dismissed'] != true).toList();
+        avisosAceite =
+            resultados[1].where((item) => item['dismissed'] != true).toList();
+        avisosCurtidas =
+            resultados[2].where((item) => item['dismissed'] != true).toList();
+        erro = null;
+        carregando = false;
+      });
+
+      await ApiService.markAllNotificationsRead(
+        friendRequests: solicitacoes,
+        acceptedFriendNotifications: avisosAceite,
+        likeNotifications: avisosCurtidas,
+      );
+      if (!mounted) return;
+      setState(() {
+        solicitacoes =
+            solicitacoes.map((item) => {...item, 'read': true}).toList();
+        avisosAceite =
+            avisosAceite.map((item) => {...item, 'read': true}).toList();
+        avisosCurtidas =
+            avisosCurtidas.map((item) => {...item, 'read': true}).toList();
+      });
+    } catch (error) {
+      if (!mounted) return;
+      if (!silencioso) {
+        setState(() {
+          erro = error.toString().replaceFirst('Exception: ', '');
+          carregando = false;
+        });
+      }
+    }
+  }
+
+  Future<void> responderSolicitacao(
+    Map<String, dynamic> solicitacao, {
+    required bool aceitar,
+  }) async {
+    final requestId = solicitacao['requestId']?.toString() ?? '';
+    try {
+      if (aceitar) {
+        await ApiService.acceptFriendRequest(requestId);
+        await carregarSolicitacoes();
+        return;
+      } else {
+        await ApiService.declineFriendRequest(requestId);
+      }
+      if (!mounted) return;
+      setState(() {
+        solicitacoes.removeWhere(
+          (item) => item['requestId']?.toString() == requestId,
+        );
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    }
+  }
+
+  Widget _construirCartaoNotificacao({
+    required String username,
+    required String avatarUrl,
+    required String mensagem,
+    required bool lida,
+    Widget? acoes,
+    Widget? trailing,
+    VoidCallback? aoTocar,
+    VoidCallback? aoTocarNome,
+  }) {
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 5),
+      color: lida ? AppTheme.surfaceLight : AppTheme.surfaceLight,
+      child: InkWell(
+        onTap: aoTocar,
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AvatarSquareWidget(
+                imageUrl: avatarUrl,
+                size: 36,
+                onTap: () => mostrarImagemPerfilMaximizada(
+                  context,
+                  imageUrl: avatarUrl,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: aoTocarNome,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Text(
+                        '@$username',
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      mensagem,
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 13,
+                        fontWeight: lida ? FontWeight.normal : FontWeight.w600,
+                      ),
+                    ),
+                    if (acoes != null) ...[
+                      const SizedBox(height: 8),
+                      acoes,
+                    ],
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 6),
+                trailing,
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _abrirPublicacaoCurtida(Map<String, dynamic> aviso) async {
+    final dadosPublicacao = aviso['post'];
+    if (dadosPublicacao is! Map) return;
+
+    final post = PostModel.fromJson(
+      Map<String, dynamic>.from(dadosPublicacao),
+    );
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostMaximizadoPage(post: post),
+      ),
+    );
+    if (mounted) await carregarSolicitacoes(silencioso: true);
+  }
+
+  Widget _construirAvisoAceite(Map<String, dynamic> aviso) {
+    final lido = aviso['read'] == true;
+    final username = aviso['username']?.toString() ?? '';
+    final notificationId = aviso['notificationId']?.toString() ?? '';
+
+    return Dismissible(
+      key: ValueKey('accepted-$notificationId'),
+      direction: DismissDirection.endToStart,
+      background: _fundoDescarte(),
+      confirmDismiss: (_) async {
+        try {
+          await ApiService.dismissAcceptedFriendNotification(notificationId);
+          return true;
+        } catch (error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(error.toString().replaceFirst('Exception: ', '')),
+              ),
+            );
+          }
+          return false;
+        }
+      },
+      onDismissed: (_) {
+        setState(() {
+          avisosAceite.removeWhere(
+            (item) => item['notificationId']?.toString() == notificationId,
+          );
+        });
+      },
+      child: _construirCartaoNotificacao(
+        username: username,
+        avatarUrl: aviso['avatarUrl']?.toString() ?? '',
+        mensagem: aviso['message']?.toString() ?? '',
+        lida: lido,
+        aoTocarNome: () => abrirPerfilUsuario(
+          context,
+          username: username,
+          userId: aviso['userId']?.toString() ?? aviso['friendId']?.toString(),
+          avatarUrl: aviso['avatarUrl']?.toString(),
+        ),
+        trailing: lido
+            ? Icon(
+                Icons.check,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkThemeTextPrimary
+                    : Colors.black38,
+                size: 18,
+              )
+            : Icon(Icons.fiber_manual_record,
+                color: AppTheme.lightBrown, size: 12),
+      ),
+    );
+  }
+
+  Widget _construirAvisoCurtida(Map<String, dynamic> aviso) {
+    final lido = aviso['read'] == true;
+    final notificationId = aviso['notificationId']?.toString() ?? '';
+
+    return Dismissible(
+      key: ValueKey('like-$notificationId'),
+      direction: DismissDirection.endToStart,
+      background: _fundoDescarte(),
+      confirmDismiss: (_) async {
+        try {
+          await ApiService.dismissLikeNotification(notificationId);
+          return true;
+        } catch (error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(error.toString().replaceFirst('Exception: ', '')),
+              ),
+            );
+          }
+          return false;
+        }
+      },
+      onDismissed: (_) {
+        setState(() {
+          avisosCurtidas.removeWhere(
+            (item) => item['notificationId']?.toString() == notificationId,
+          );
+        });
+      },
+      child: _construirCartaoNotificacao(
+        username: aviso['username']?.toString() ?? '',
+        avatarUrl: aviso['avatarUrl']?.toString() ?? '',
+        mensagem: aviso['message']?.toString() ?? 'curtiu sua publicação.',
+        lida: lido,
+        aoTocarNome: () => abrirPerfilUsuario(
+          context,
+          username: aviso['username']?.toString() ?? '',
+          userId: aviso['userId']?.toString() ?? aviso['friendId']?.toString(),
+          avatarUrl: aviso['avatarUrl']?.toString(),
+        ),
+        trailing: lido
+            ? Icon(
+                Icons.check,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkThemeTextPrimary
+                    : Colors.black38,
+                size: 18,
+              )
+            : Icon(Icons.favorite, color: AppTheme.lightBrown, size: 16),
+        aoTocar: () => _abrirPublicacaoCurtida(aviso),
+      ),
+    );
+  }
+
+  Widget _fundoDescarte() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.only(right: 18),
+      decoration: BoxDecoration(
+        color: AppTheme.mediumBrown,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      alignment: Alignment.centerRight,
+      child: const Icon(Icons.delete_outline, color: Colors.white),
+    );
+  }
+
+  DateTime? parseDataBackend(dynamic valor) {
+    final texto = valor?.toString().trim() ?? '';
+    if (texto.isEmpty) return null;
+
+    final isoString = texto.replaceFirst(' ', 'T');
+    return DateTime.tryParse(isoString)?.toLocal();
+  }
+
+  /// Converte a data do item em um rótulo de agrupamento por dia/período
+  String obterCategoriaData(dynamic valor) {
+    final data = parseDataBackend(valor);
+    if (data == null) return 'Mais antigas';
+
+    final agora = DateTime.now();
+    final hoje = DateTime(agora.year, agora.month, agora.day);
+    final dataSemHora = DateTime(data.year, data.month, data.day);
+
+    final diferencaDias = hoje.difference(dataSemHora).inDays;
+
+    if (diferencaDias <= 0) {
+      return 'Hoje';
+    } else if (diferencaDias == 1) {
+      return 'Ontem';
+    } else if (diferencaDias < 7) {
+      return 'Essa semana';
+    } else {
+      return 'Mais antigas';
+    }
+  }
+
+  /// Agrupa as notificações em um Map separado por Categoria ("Hoje", "Ontem", etc.)
+  Map<String, List<Map<String, dynamic>>> agruparNotificacoes() {
+    final Map<String, List<Map<String, dynamic>>> grupos = {};
+
+    for (var item in solicitacoes) {
+      final dataSolicitacao =
+          item['dataSolicitacao'] ?? item['data_solicitacao'];
+      final categoria = obterCategoriaData(dataSolicitacao);
+      if (!grupos.containsKey(categoria)) {
+        grupos[categoria] = [];
+      }
+      grupos[categoria]!.add(item);
+    }
+
+    return grupos;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final quantidadeNotificacoes =
+        solicitacoes.where((item) => item['read'] != true).length +
+            avisosAceite.where((item) => item['read'] != true).length +
+            avisosCurtidas.where((item) => item['read'] != true).length;
+    final notificacoesAgrupadas = agruparNotificacoes();
+    final temConteudo = solicitacoes.isNotEmpty ||
+        avisosAceite.isNotEmpty ||
+        avisosCurtidas.isNotEmpty;
+    final secoesFixas =
+        (avisosAceite.isEmpty ? 0 : 1) + (avisosCurtidas.isEmpty ? 0 : 1);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!carregando && erro == null && temConteudo)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Notificações',
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (quantidadeNotificacoes > 0)
+                  Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.lightBrown,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      quantidadeNotificacoes > 99
+                          ? '99+'
+                          : '$quantidadeNotificacoes',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: carregando
+              ? const Center(child: CircularProgressIndicator())
+              : erro != null
+                  ? Center(child: Text(erro!))
+                  : !temConteudo
+                      ? const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Cri Cri Cri...'),
+                              SizedBox(height: 12),
+                              _GriloPulando(),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          itemCount:
+                              notificacoesAgrupadas.keys.length + secoesFixas,
+                          itemBuilder: (context, indexGrupo) {
+                            if (avisosAceite.isNotEmpty && indexGrupo == 0) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Text(
+                                      'Atualizações de amizade',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  ...avisosAceite.map(_construirAvisoAceite),
+                                ],
+                              );
+                            }
+
+                            final indiceCurtidas = avisosAceite.isEmpty ? 0 : 1;
+                            if (avisosCurtidas.isNotEmpty &&
+                                indexGrupo == indiceCurtidas) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      top: avisosAceite.isEmpty ? 0 : 16,
+                                      bottom: 8,
+                                    ),
+                                    child: Text(
+                                      'Curtidas nas suas publicações',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  ...avisosCurtidas.map(_construirAvisoCurtida),
+                                ],
+                              );
+                            }
+
+                            final indiceSolicitacao = indexGrupo - secoesFixas;
+                            final categoria = notificacoesAgrupadas.keys
+                                .elementAt(indiceSolicitacao);
+                            final itensDoGrupo =
+                                notificacoesAgrupadas[categoria]!;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                    top: indexGrupo == 0 ? 0 : 16,
+                                    bottom: 8,
+                                  ),
+                                  child: Text(
+                                    categoria,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                ...itensDoGrupo.map((solicitacao) {
+                                  final username =
+                                      solicitacao['username']?.toString() ?? '';
+                                  final avatarUrl =
+                                      solicitacao['avatarUrl']?.toString() ??
+                                          '';
+
+                                  return Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 6),
+                                    child: Row(
+                                      children: [
+                                        AvatarSquareWidget(
+                                          imageUrl: avatarUrl,
+                                          size: 33,
+                                          onTap: () =>
+                                              mostrarImagemPerfilMaximizada(
+                                            context,
+                                            imageUrl: avatarUrl,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 8,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.surfaceLight,
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  InkWell(
+                                                    onTap: () =>
+                                                        abrirPerfilUsuario(
+                                                      context,
+                                                      username: username,
+                                                      userId: solicitacao[
+                                                              'requesterId']
+                                                          ?.toString(),
+                                                      avatarUrl: avatarUrl,
+                                                    ),
+                                                    child: Text(
+                                                      '@$username quer ser seu amigo(a).',
+                                                      style: TextStyle(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurface,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Wrap(
+                                                    spacing: 4,
+                                                    children: [
+                                                      BotoesWidget(
+                                                        texto: 'Aceitar',
+                                                        compacto: true,
+                                                        aoTocar: () =>
+                                                            responderSolicitacao(
+                                                          solicitacao,
+                                                          aceitar: true,
+                                                        ),
+                                                      ),
+                                                      BotoesWidget(
+                                                        texto: 'Recusar',
+                                                        compacto: true,
+                                                        aoTocar: () =>
+                                                            responderSolicitacao(
+                                                          solicitacao,
+                                                          aceitar: false,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          tooltip: 'Excluir solicitação',
+                                          onPressed: () => responderSolicitacao(
+                                            solicitacao,
+                                            aceitar: false,
+                                          ),
+                                          icon: const Icon(
+                                            Icons.close,
+                                            size: 16,
+                                          ),
+                                          color: Colors.black54,
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(
+                                            minWidth: 36,
+                                            minHeight: 36,
+                                          ),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                              ],
+                            );
+                          },
+                        ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GriloPulando extends StatefulWidget {
+  const _GriloPulando();
+
+  @override
+  State<_GriloPulando> createState() => _GriloPulandoState();
+}
+
+class _GriloPulandoState extends State<_GriloPulando>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animacao;
+  late final Animation<double> _salto;
+
+  @override
+  void initState() {
+    super.initState();
+    _animacao = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+    _salto = TweenSequence<double>([
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: 0.0, end: -16.0).chain(
+          CurveTween(curve: Curves.easeOut),
+        ),
+        weight: 24,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: -16.0, end: 0.0).chain(
+          CurveTween(curve: Curves.bounceOut),
+        ),
+        weight: 26,
+      ),
+      TweenSequenceItem<double>(
+        tween: ConstantTween<double>(0.0),
+        weight: 50,
+      ),
+    ]).animate(_animacao);
+  }
+
+  @override
+  void dispose() {
+    _animacao.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 100,
+      height: 92,
+      child: AnimatedBuilder(
+        animation: _salto,
+        child: const CustomPaint(painter: _GriloPainter()),
+        builder: (context, child) => Transform.translate(
+          offset: Offset(0, _salto.value),
+          child: Transform.scale(
+            scale: 0.72,
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GriloPainter extends CustomPainter {
+  const _GriloPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cinza = Paint()..color = const Color(0xFF777B7E);
+    final cinzaClaro = Paint()..color = const Color(0xFFAEB2B4);
+    final contorno = Paint()
+      ..color = const Color(0xFF626669)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: const Offset(43, 47),
+        width: 42,
+        height: 18,
+      ),
+      cinza,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: const Offset(46, 43),
+        width: 31,
+        height: 10,
+      ),
+      cinzaClaro,
+    );
+    canvas.drawLine(const Offset(34, 40), const Offset(55, 46), contorno);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: const Offset(65, 43),
+        width: 13,
+        height: 14,
+      ),
+      cinza,
+    );
+    canvas.drawCircle(const Offset(76, 36), 8, cinza);
+    canvas.drawCircle(
+      const Offset(79, 34),
+      1.5,
+      Paint()..color = const Color(0xFF333638),
+    );
+
+    final antena = Path()
+      ..moveTo(72, 30)
+      ..quadraticBezierTo(65, 15, 57, 11)
+      ..moveTo(77, 29)
+      ..quadraticBezierTo(84, 13, 92, 12);
+    canvas.drawPath(antena, contorno);
+
+    _desenharPerna(canvas, contorno, const [
+      Offset(38, 50),
+      Offset(22, 27),
+      Offset(29, 66),
+      Offset(20, 71),
+    ]);
+    _desenharPerna(canvas, contorno, const [
+      Offset(45, 51),
+      Offset(37, 27),
+      Offset(43, 65),
+      Offset(38, 71),
+    ]);
+    _desenharPerna(canvas, contorno, const [
+      Offset(61, 49),
+      Offset(56, 63),
+      Offset(51, 69),
+    ]);
+    _desenharPerna(canvas, contorno, const [
+      Offset(66, 48),
+      Offset(72, 62),
+      Offset(80, 66),
+    ]);
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: const Offset(50, 77),
+        width: 32,
+        height: 5,
+      ),
+      Paint()..color = const Color(0x33777B7E),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GriloPainter oldDelegate) => false;
+
+  void _desenharPerna(Canvas canvas, Paint tinta, List<Offset> pontos) {
+    final caminho = Path()..moveTo(pontos.first.dx, pontos.first.dy);
+    for (final ponto in pontos.skip(1)) {
+      caminho.lineTo(ponto.dx, ponto.dy);
+    }
+    canvas.drawPath(caminho, tinta);
+  }
+}

@@ -1,0 +1,1005 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../config/api_config.dart';
+import '../controller/controller.login.dart';
+import '../models/post_model.dart';
+import '../models/user_model.dart';
+
+class ApiService {
+  static const String _tokenKey = 'snaplock_jwt_token';
+  static const String _userKey = 'snaplock_user_json';
+  static const String _reportedPostsKeyPrefix = 'snaplock_reported_posts_';
+
+  static String? _currentToken;
+  static UserModel? _currentUser;
+
+  static UserModel? get currentUser => _currentUser;
+  static String? get token => _currentToken;
+
+  static String? get _authToken {
+    final loginToken = LoginController.tokenAtual?.trim();
+    final currentToken = _currentToken?.trim();
+    return currentToken?.isNotEmpty == true
+        ? currentToken
+        : (loginToken?.isNotEmpty == true ? loginToken : null);
+  }
+
+  static String get _reportedPostsKey {
+    final userId = (_currentUser?.id ?? LoginController.usuarioAtual?['id'])
+        ?.toString()
+        .trim();
+    return '$_reportedPostsKeyPrefix${userId?.isNotEmpty == true ? userId : 'anonymous'}';
+  }
+
+  static Future<List<PostModel>> _filterReportedPosts(
+    Iterable<PostModel> posts,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final reportedIds =
+        prefs.getStringList(_reportedPostsKey)?.toSet() ?? <String>{};
+    return posts.where((post) => !reportedIds.contains(post.id)).toList();
+  }
+
+  static Future<void> hideReportedPostLocally(String postId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final reportedIds =
+        prefs.getStringList(_reportedPostsKey)?.toSet() ?? <String>{};
+    reportedIds.add(postId);
+    await prefs.setStringList(_reportedPostsKey, reportedIds.toList());
+  }
+
+  static Map<String, String> get _actionHeaders {
+    final headers = _headers;
+    final loginToken = LoginController.tokenAtual;
+
+    if (loginToken != null && loginToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $loginToken';
+    }
+
+    return headers;
+  }
+
+  /// Inicializa sessão salva no SharedPreferences
+  static Future<bool> initSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    _currentToken = prefs.getString(_tokenKey);
+    final userJson = prefs.getString(_userKey);
+
+    if (_currentToken != null && userJson != null) {
+      try {
+        _currentUser = UserModel.fromJson(jsonDecode(userJson));
+        return true;
+      } catch (_) {
+        await logout();
+        return false;
+      }
+    }
+    return false;
+  }
+
+  static Future<void> _saveSession(
+      String token, Map<String, dynamic> userMap) async {
+    _currentToken = token;
+    _currentUser = UserModel.fromJson(userMap);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
+    await prefs.setString(_userKey, jsonEncode(userMap));
+  }
+
+  static Future<void> logout() async {
+    _currentToken = null;
+    _currentUser = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_userKey);
+  }
+
+  static Future<void> updateCurrentEmail(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    final user = _currentUser;
+    final userMap = user?.toJson() ??
+        (prefs.getString(_userKey) == null
+            ? null
+            : Map<String, dynamic>.from(
+                jsonDecode(prefs.getString(_userKey)!) as Map,
+              ));
+    if (userMap == null) return;
+
+    userMap['email'] = email;
+    await prefs.setString(_userKey, jsonEncode(userMap));
+    if (user != null) {
+      _currentUser = UserModel.fromJson(userMap);
+    }
+  }
+
+  static Map<String, String> get _headers {
+    final headers = {'Content-Type': 'application/json; charset=utf-8'};
+    if (_currentToken != null) {
+      headers['Authorization'] = 'Bearer $_currentToken';
+    }
+    return headers;
+  }
+
+  static Map<String, String> get _friendHeaders {
+    final headers = _headers;
+    final loginToken = LoginController.tokenAtual;
+    if (loginToken != null && loginToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $loginToken';
+    }
+    return headers;
+  }
+
+  // --- AUTENTICAÇÃO ---
+
+  static Future<Map<String, dynamic>> register({
+    required String name,
+    required String username,
+    required String email,
+    required String password,
+    required String confirmPassword,
+    required String birthdate,
+    String bio = '',
+    String gender = '',
+  }) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/usuarios'),
+      headers: _headers,
+      body: jsonEncode({
+        'nome': name,
+        'username': username,
+        'email': email,
+        'senha': password,
+        'confirmacao_senha': confirmPassword,
+        'data_nascimento': birthdate,
+      }),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 202) {
+      return data;
+    } else {
+      throw Exception(data['erro'] ?? 'Erro no cadastro.');
+    }
+  }
+
+  static Future<Map<String, dynamic>> login(
+      String email, String password) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/auth/login'),
+      headers: _headers,
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200 && data['success'] == true) {
+      final token = data['token'] as String;
+      final userMap = data['user'] as Map<String, dynamic>;
+      await _saveSession(token, userMap);
+      return data;
+    } else {
+      throw Exception(data['message'] ?? 'E-mail ou senha incorretos.');
+    }
+  }
+
+  static Future<Map<String, dynamic>> forgotPassword(String email) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/recuperacao/solicitar'),
+      headers: _headers,
+      body: jsonEncode({'email': email}),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return data;
+    } else {
+      throw Exception(data['erro'] ?? 'Erro ao solicitar token.');
+    }
+  }
+
+  static Future<void> resetPassword(
+      String email, String token, String newPassword) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/recuperacao/redefinir'),
+      headers: _headers,
+      body: jsonEncode({
+        'email': email,
+        'token': token,
+        'nova_senha': newPassword,
+        'confirmacao_senha': newPassword
+      }),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(data['erro'] ?? 'Erro ao redefinir senha.');
+    }
+  }
+
+  // --- PERFIL ---
+
+  static Future<UserModel> updateProfile({
+    required String name,
+    required String bio,
+    required String gender,
+    String? avatarUrl,
+  }) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/profile'),
+      headers: _headers,
+      body: jsonEncode({
+        'name': name,
+        'bio': bio,
+        'gender': gender,
+        if (avatarUrl != null) 'avatarUrl': avatarUrl,
+      }),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] == true) {
+      final userMap = data['user'] as Map<String, dynamic>;
+      _currentUser = UserModel.fromJson(userMap);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userKey, jsonEncode(userMap));
+      return _currentUser!;
+    } else {
+      throw Exception(data['message'] ?? 'Erro ao atualizar perfil.');
+    }
+  }
+
+  static Future<void> changePassword(
+    String currentPassword,
+    String newPassword, {
+    String? confirmPassword,
+  }) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/profile/password'),
+      headers: _headers,
+      body: jsonEncode({
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword ?? newPassword,
+      }),
+    );
+
+    Map<String, dynamic> data = {};
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        data = decoded;
+      } else if (decoded is Map) {
+        data = Map<String, dynamic>.from(decoded);
+      }
+    } on FormatException {
+      throw Exception(
+          'Resposta inválida da API. Verifique o backend e o token de sessão.');
+    }
+
+    if (data['success'] != true) {
+      throw Exception(
+          data['message'] ?? data['erro'] ?? 'Erro ao alterar senha.');
+    }
+  }
+
+  static Future<void> deleteAccount() async {
+    final response = await http.delete(
+      Uri.parse('${ApiConfig.baseUrl}/profile'),
+      headers: _actionHeaders,
+    );
+
+    Map<String, dynamic> data;
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        data = decoded;
+      } else if (decoded is Map) {
+        data = Map<String, dynamic>.from(decoded);
+      } else {
+        throw const FormatException();
+      }
+    } on FormatException {
+      throw Exception(
+          'A API retornou uma resposta inválida ao excluir a conta.');
+    }
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao excluir conta.');
+    }
+
+    await logout();
+    LoginController.limparSessao();
+  }
+
+  // --- FEED & POSTAGENS ---
+
+  static Future<List<PostModel>> getFeed() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/feed'),
+      headers: _friendHeaders,
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] == true) {
+      final list = data['posts'] as List;
+      return _filterReportedPosts(
+        list.map((item) => PostModel.fromJson(item as Map<String, dynamic>)),
+      );
+    } else {
+      throw Exception(data['message'] ?? 'Erro ao carregar o feed.');
+    }
+  }
+
+  static Future<List<PostModel>> getMyGallery() async {
+    final url = '${ApiConfig.baseUrl}/fotos/minhas';
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: _friendHeaders,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Erro HTTP ${response.statusCode}: ${response.body}',
+      );
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (data['success'] == true) {
+      final list = data['fotos'] as List;
+
+      final posts = list.map((item) {
+        final foto = item as Map<String, dynamic>;
+
+        return PostModel(
+          id: foto['id_foto'].toString(),
+          userId: foto['id_usuario'].toString(),
+          imageUrl: foto['midia_url']?.toString() ?? '',
+          caption: foto['legenda']?.toString() ?? '',
+          createdAt: foto['data_postagem']?.toString() ?? '',
+          aspectRatio: double.tryParse(foto['proporcao']?.toString() ?? ''),
+          reactionCount:
+              int.tryParse(foto['reaction_count']?.toString() ?? '0') ?? 0,
+          userReaction: foto['user_liked'] == true ||
+                  foto['user_liked']?.toString() == '1'
+              ? 'HEART'
+              : null,
+        );
+      }).toList();
+      return _filterReportedPosts(posts);
+    }
+
+    throw Exception(
+      data['message']?.toString() ?? 'Erro ao carregar galeria.',
+    );
+  }
+
+  static Future<List<PostModel>> getFriendGallery(String friendId) async {
+    final response = await http.get(
+      Uri.parse(
+        '${ApiConfig.baseUrl}/friends/${Uri.encodeComponent(friendId)}/fotos',
+      ),
+      headers: _friendHeaders,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Erro HTTP ${response.statusCode}: ${response.body}',
+      );
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao carregar fotos do amigo.');
+    }
+
+    final fotos = data['fotos'] as List;
+    final posts = fotos.map((item) {
+      final foto = item as Map<String, dynamic>;
+      return PostModel(
+        id: foto['id_foto']?.toString() ?? '',
+        userId: foto['id_usuario']?.toString() ?? '',
+        imageUrl: foto['midia_url']?.toString() ?? '',
+        caption: foto['legenda']?.toString() ?? '',
+        createdAt: foto['data_postagem']?.toString() ?? '',
+        aspectRatio: double.tryParse(foto['proporcao']?.toString() ?? ''),
+        authorName: foto['nome']?.toString(),
+        authorAvatar: foto['foto_perfil']?.toString(),
+        reactionCount:
+            int.tryParse(foto['reaction_count']?.toString() ?? '0') ?? 0,
+        userReaction:
+            foto['user_liked'] == true || foto['user_liked']?.toString() == '1'
+                ? 'HEART'
+                : null,
+      );
+    }).toList();
+    return _filterReportedPosts(posts);
+  }
+
+  static Future<Map<String, dynamic>> createPost(
+    String imageBase64,
+    String caption,
+    String fileName,
+  ) {
+    return createPostFromBytes(
+      base64Decode(imageBase64),
+      caption,
+      fileName: fileName,
+    );
+  }
+
+  static Future<Map<String, dynamic>> createPostFromBytes(
+    Uint8List imageBytes,
+    String caption, {
+    String? filtroAplicado,
+    String fileName = 'postagem.jpg',
+    double? aspectRatio,
+  }) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.baseUrl}/fotos'),
+    )
+      ..fields['legenda'] = caption
+      ..fields['filtro_aplicado'] = filtroAplicado ?? ''
+      ..fields['proporcao'] = aspectRatio?.toString() ?? ''
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'midia',
+          imageBytes,
+          filename: fileName,
+        ),
+      );
+
+    final loginToken = LoginController.tokenAtual;
+    final token = loginToken != null && loginToken.isNotEmpty
+        ? loginToken
+        : _currentToken;
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    Map<String, dynamic> data = {};
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) data = decoded;
+    } on FormatException {
+      throw Exception(
+        'Erro HTTP ${response.statusCode}: ${response.body.trim()}',
+      );
+    }
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao publicar a memória.');
+    }
+    return data;
+  }
+
+  static Future<void> deletePost(String postId) async {
+    final response = await http.delete(
+      Uri.parse(
+          '${ApiConfig.baseUrl}/fotos/$postId'), // Se no backend for /fotos/$postId, troque aqui para /fotos/$postId
+      headers: _actionHeaders,
+    );
+
+    Map<String, dynamic> body = {};
+    try {
+      body = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      if (response.statusCode == 404) {
+        throw Exception('Rota de exclusão não encontrada no servidor (404).');
+      }
+      throw Exception(
+          'Erro de comunicação com o servidor (${response.statusCode}).');
+    }
+
+    if (response.statusCode != 200 || body['success'] != true) {
+      throw Exception(
+          body['message'] ?? body['erro'] ?? 'Erro ao excluir a publicação.');
+    }
+  }
+
+  static Future<Map<String, dynamic>> updatePost({
+    required String postId,
+    required String caption,
+    Uint8List? imageBytes,
+    String fileName = 'publicacao.jpg',
+  }) async {
+    final request = http.MultipartRequest(
+      'PUT',
+      Uri.parse('${ApiConfig.baseUrl}/posts/$postId'),
+    )..fields['legenda'] = caption;
+
+    if (imageBytes != null) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'midia',
+          imageBytes,
+          filename: fileName,
+        ),
+      );
+    }
+
+    final loginToken = LoginController.tokenAtual;
+    final token = loginToken != null && loginToken.isNotEmpty
+        ? loginToken
+        : _currentToken;
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    Map<String, dynamic> data = {};
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) data = decoded;
+    } on FormatException {
+      throw Exception(
+        'Erro HTTP ${response.statusCode}: ${response.body.trim()}',
+      );
+    }
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao editar publicação.');
+    }
+    return data;
+  }
+
+  static Future<void> reactToPost(String postId, String type) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/posts/$postId/reactions'),
+      headers: _actionHeaders,
+      body: jsonEncode({'type': type}),
+    );
+
+    if (response.statusCode != 200) {
+      final body = jsonDecode(response.body);
+      throw Exception(body['message'] ?? 'Erro ao curtir a publicação.');
+    }
+  }
+
+  static Future<void> removeReaction(String postId) async {
+    final response = await http.delete(
+      Uri.parse('${ApiConfig.baseUrl}/posts/$postId/reactions'),
+      headers: _actionHeaders,
+    );
+
+    if (response.statusCode != 200) {
+      final body = jsonDecode(response.body);
+      throw Exception(body['message'] ?? 'Erro ao remover a curtida.');
+    }
+  }
+
+  // --- AMIZADES ---
+
+  static Future<List<UserModel>> searchUsers(String query) async {
+    final response = await http.get(
+      Uri.parse(
+          '${ApiConfig.baseUrl}/friends/search?q=${Uri.encodeComponent(query)}'),
+      headers: _friendHeaders,
+    );
+
+    final decoded = jsonDecode(response.body);
+    final data =
+        decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
+    if (data['success'] == true) {
+      final list = data['users'] as List;
+      return list
+          .map((item) => UserModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception(
+          data['message'] ?? data['erro'] ?? 'Erro ao buscar usuários.');
+    }
+  }
+
+  static Future<void> sendFriendRequest(String friendId) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/friends/request'),
+      headers: _friendHeaders,
+      body: jsonEncode({'friendId': friendId}),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao enviar solicitação.');
+    }
+  }
+
+  static Future<void> acceptFriendRequest(String requestId) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/friends/accept'),
+      headers: _friendHeaders,
+      body: jsonEncode({'requestId': requestId}),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao aceitar solicitação.');
+    }
+  }
+
+  static Future<void> declineFriendRequest(String requestId) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/friends/decline'),
+      headers: _friendHeaders,
+      body: jsonEncode({'requestId': requestId}),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao recusar solicitação.');
+    }
+  }
+
+  static Future<void> removeFriend(String friendId) async {
+    final response = await http.delete(
+      Uri.parse('${ApiConfig.baseUrl}/friends/$friendId'),
+      headers: _friendHeaders,
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao remover amigo.');
+    }
+  }
+
+  static Future<List<UserModel>> getFriends() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/friends'),
+      headers: _friendHeaders,
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] == true) {
+      final list = data['friends'] as List;
+      return list
+          .map((item) => UserModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception(data['message'] ?? 'Erro ao carregar lista de amigos.');
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getPendingRequests() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/friends/pending'),
+      headers: _friendHeaders,
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] == true) {
+      final list = data['pending'] as List;
+      final prefs = await SharedPreferences.getInstance();
+      final descartadas =
+          prefs.getStringList(_dismissedFriendRequestsKey)?.toSet() ??
+              <String>{};
+      final lidas =
+          prefs.getStringList(_pendingFriendRequestsReadKey)?.toSet() ??
+              <String>{};
+      return list.map((item) {
+        final request = Map<String, dynamic>.from(item as Map);
+        final requestId = request['requestId']?.toString() ?? '';
+        request['dismissed'] = descartadas.contains(requestId);
+        request['read'] = lidas.contains(requestId);
+        return request;
+      }).toList();
+    } else {
+      throw Exception(
+          data['message'] ?? 'Erro ao carregar solicitações pendentes.');
+    }
+  }
+
+  static String get _notificationUserId =>
+      _currentUser?.id ??
+      LoginController.usuarioAtual?['id']?.toString() ??
+      LoginController.usuarioAtual?['id_usuario']?.toString() ??
+      'current';
+
+  static String get _acceptedFriendNotificationsReadKey {
+    return 'snaplock_read_friend_notifications_$_notificationUserId';
+  }
+
+  static String get _dismissedFriendRequestsKey =>
+      'snaplock_dismissed_friend_requests_$_notificationUserId';
+
+  static String get _pendingFriendRequestsReadKey =>
+      'snaplock_read_friend_requests_$_notificationUserId';
+
+  static String get _dismissedAcceptedFriendNotificationsKey =>
+      'snaplock_dismissed_accepted_friend_notifications_$_notificationUserId';
+
+  static String get _likeNotificationsReadKey =>
+      'snaplock_read_like_notifications_$_notificationUserId';
+
+  static String get _dismissedLikeNotificationsKey =>
+      'snaplock_dismissed_like_notifications_$_notificationUserId';
+
+  static Future<List<Map<String, dynamic>>>
+      getAcceptedFriendNotifications() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/friends/accepted-notifications'),
+      headers: _friendHeaders,
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao carregar notificações.');
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final lidas =
+        prefs.getStringList(_acceptedFriendNotificationsReadKey)?.toSet() ??
+            <String>{};
+    final descartadas = prefs
+            .getStringList(_dismissedAcceptedFriendNotificationsKey)
+            ?.toSet() ??
+        <String>{};
+    final items = data['notifications'] as List;
+    return items.map((item) {
+      final notification = Map<String, dynamic>.from(item as Map);
+      final id = notification['notificationId']?.toString() ?? '';
+      notification['read'] = lidas.contains(id);
+      notification['dismissed'] = descartadas.contains(id);
+      return notification;
+    }).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getLikeNotifications() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/notifications/likes'),
+      headers: _friendHeaders,
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao carregar curtidas.');
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final lidas =
+        prefs.getStringList(_likeNotificationsReadKey)?.toSet() ?? <String>{};
+    final descartadas =
+        prefs.getStringList(_dismissedLikeNotificationsKey)?.toSet() ??
+            <String>{};
+    final items = data['notifications'] as List;
+    return items.map((item) {
+      final notification = Map<String, dynamic>.from(item as Map);
+      final id = notification['notificationId']?.toString() ?? '';
+      notification['read'] = lidas.contains(id);
+      notification['dismissed'] = descartadas.contains(id);
+      return notification;
+    }).toList();
+  }
+
+  static Future<void> dismissLikeNotification(String notificationId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_dismissedLikeNotificationsKey)?.toSet() ??
+        <String>{};
+    ids.add(notificationId);
+    await prefs.setStringList(_dismissedLikeNotificationsKey, ids.toList());
+  }
+
+  static Future<void> markLikeNotificationsRead(
+    Iterable<Map<String, dynamic>> notifications,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids =
+        prefs.getStringList(_likeNotificationsReadKey)?.toSet() ?? <String>{};
+    ids.addAll(
+      notifications
+          .map((item) => item['notificationId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty),
+    );
+    await prefs.setStringList(_likeNotificationsReadKey, ids.toList());
+  }
+
+  static Future<void> markPendingFriendRequestsRead(
+    Iterable<Map<String, dynamic>> requests,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_pendingFriendRequestsReadKey)?.toSet() ??
+        <String>{};
+    ids.addAll(
+      requests
+          .map((item) => item['requestId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty),
+    );
+    await prefs.setStringList(_pendingFriendRequestsReadKey, ids.toList());
+  }
+
+  static Future<void> markAllNotificationsRead({
+    required Iterable<Map<String, dynamic>> friendRequests,
+    required Iterable<Map<String, dynamic>> acceptedFriendNotifications,
+    required Iterable<Map<String, dynamic>> likeNotifications,
+  }) async {
+    await Future.wait([
+      markPendingFriendRequestsRead(friendRequests),
+      markAcceptedFriendNotificationsRead(acceptedFriendNotifications),
+      markLikeNotificationsRead(likeNotifications),
+    ]);
+  }
+
+  static Future<void> dismissFriendRequestNotification(String requestId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids =
+        prefs.getStringList(_dismissedFriendRequestsKey)?.toSet() ?? <String>{};
+    ids.add(requestId);
+    await prefs.setStringList(_dismissedFriendRequestsKey, ids.toList());
+  }
+
+  static Future<void> dismissAcceptedFriendNotification(
+    String notificationId,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs
+            .getStringList(_dismissedAcceptedFriendNotificationsKey)
+            ?.toSet() ??
+        <String>{};
+    ids.add(notificationId);
+    await prefs.setStringList(
+      _dismissedAcceptedFriendNotificationsKey,
+      ids.toList(),
+    );
+  }
+
+  static Future<void> markAcceptedFriendNotificationsRead(
+    Iterable<Map<String, dynamic>> notifications,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids =
+        prefs.getStringList(_acceptedFriendNotificationsReadKey)?.toSet() ??
+            <String>{};
+    ids.addAll(
+      notifications
+          .map((item) => item['notificationId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty),
+    );
+    await prefs.setStringList(
+        _acceptedFriendNotificationsReadKey, ids.toList());
+  }
+
+  // --- DENÚNCIAS & DUMPS ---
+
+  static Future<void> reportPost(String postId, String reason) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/posts/$postId/report'),
+      headers: _actionHeaders,
+      body: jsonEncode({'reason': reason}),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      Map<String, dynamic> body = {};
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          body = decoded;
+        }
+      } catch (_) {}
+      throw Exception(
+          body['message'] ?? body['erro'] ?? 'Erro ao enviar a denúncia.');
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getMonthlyDumps() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/dumps/monthly'),
+      headers: _headers,
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] == true) {
+      final list = data['dumps'] as List;
+      return list.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception(data['message'] ?? 'Erro ao carregar retrospectivas.');
+    }
+  }
+
+  static Future<void> setDumpVisibility({
+    required int year,
+    required int month,
+    required bool visible,
+    String? coverUrl,
+  }) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/dumps/$year/$month'),
+      headers: _actionHeaders,
+      body: jsonEncode({'visible': visible, 'coverUrl': coverUrl}),
+    );
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
+      throw Exception(
+          data['message'] ?? 'Erro ao salvar configurações do dump.');
+    }
+  }
+
+  static Future<String> uploadDumpCover({
+    required int year,
+    required int month,
+    required Uint8List imageBytes,
+    String fileName = 'capa_dump.jpg',
+  }) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.baseUrl}/dumps/$year/$month/cover'),
+    )..files.add(
+        http.MultipartFile.fromBytes('capa', imageBytes, filename: fileName));
+    var token = _authToken;
+    if (token == null) {
+      final prefs = await SharedPreferences.getInstance();
+      token = prefs.getString(_tokenKey)?.trim();
+    }
+    if (token == null || token.isEmpty) {
+      throw Exception('Sessão inválida. Faça login novamente.');
+    }
+    request.headers['Authorization'] = 'Bearer $token';
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        data['success'] != true) {
+      throw Exception(data['message'] ?? 'Erro ao enviar capa do dump.');
+    }
+    return data['coverUrl']?.toString() ?? '';
+  }
+
+  static Future<List<Map<String, dynamic>>> getMyDumpSettings() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/dumps/settings'),
+      headers: _actionHeaders,
+    );
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300 &&
+        data['success'] == true) {
+      return (data['settings'] as List).cast<Map<String, dynamic>>();
+    }
+    throw Exception(
+        data['message'] ?? 'Erro ao carregar configurações dos dumps.');
+  }
+
+  static Future<List<Map<String, dynamic>>> getFriendDumps() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/dumps/friends'),
+      headers: _friendHeaders,
+    );
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300 &&
+        data['success'] == true) {
+      return (data['dumps'] as List).cast<Map<String, dynamic>>();
+    }
+    throw Exception(data['message'] ?? 'Erro ao carregar dumps dos amigos.');
+  }
+
+  static Future<Map<String, dynamic>> generateMonthlyDump() async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/dumps/generate'),
+      headers: _headers,
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['success'] == true) {
+      return data['dump'] as Map<String, dynamic>;
+    } else {
+      throw Exception(data['message'] ?? 'Erro ao gerar dump.');
+    }
+  }
+
+  static Future<List<PostModel>> getFotos() => getMyGallery();
+}

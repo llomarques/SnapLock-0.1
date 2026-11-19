@@ -1,0 +1,274 @@
+import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
+import 'package:snaplock/frontend/pages/login_page.dart';
+import 'package:snaplock/frontend/utils/mensagem_utils.dart';
+import 'package:snaplock/screens/auth/confirm_signup_email_screen.dart';
+import '../../controller/controller.cadastrar.dart';
+import 'package:snaplock/frontend/widgets/inputSenha_widget.dart';
+import 'package:snaplock/frontend/widgets/input_widget.dart';
+
+class CadastroPage extends StatefulWidget {
+  const CadastroPage({super.key});
+
+  @override
+  State<CadastroPage> createState() => _CadastroPageState();
+}
+
+class _CadastroPageState extends State<CadastroPage> {
+  final TextEditingController nomeController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController senhaController = TextEditingController();
+  final TextEditingController confirmaSenhaController = TextEditingController();
+  final CadastroController cadastroController = CadastroController();
+
+  bool esconderSenha = true;
+  bool esconderAfirmacao = true;
+  bool carregando = false;
+  bool emailEnviado = false;
+  DateTime? dataNascimento;
+
+  Future<void> cadastrar() async {
+    String nome = nomeController.text.trim();
+    String username = usernameController.text.trim();
+    String email = emailController.text.trim();
+    String senha = senhaController.text;
+    String confirmaSenha = confirmaSenhaController.text;
+
+    if (nome.isEmpty ||
+        username.isEmpty ||
+        email.isEmpty ||
+        senha.isEmpty ||
+        confirmaSenha.isEmpty) {
+      mostrarMensagem(context, 'Preencha todos os campos');
+      return;
+    }
+
+    if (!email.contains('@')) {
+      mostrarMensagem(context, 'Digite um e-mail válido.');
+      return;
+    }
+
+    if (dataNascimento == null) {
+      mostrarMensagem(context, 'Selecione sua data de nascimento');
+      return;
+    }
+
+    if (senha != confirmaSenha) {
+      mostrarMensagem(context, 'As senhas não coincidem.');
+      return;
+    }
+
+    setState(() => carregando = true);
+    try {
+      await cadastroController.cadastrarUsuario(
+        nome: nome,
+        username: username,
+        email: email,
+        senha: senha,
+        confirmacaoSenha: confirmaSenha,
+        dataNascimento: dataNascimento!,
+      );
+      if (mounted) {
+        setState(() => emailEnviado = true);
+        await abrirPaginaCodigo();
+      }
+    } catch (error) {
+      if (mounted) mostrarMensagem(context, error.toString());
+    } finally {
+      if (mounted) setState(() => carregando = false);
+    }
+  }
+
+  Future<void> selecionarData() async {
+    final hoje = DateTime.now();
+    final escolhida = await showDatePicker(
+      context: context,
+      initialDate:
+          dataNascimento ?? DateTime(hoje.year - 16, hoje.month, hoje.day),
+      firstDate: DateTime(1900),
+      lastDate: hoje,
+      locale: const Locale('pt', 'BR'),
+      initialEntryMode: DatePickerEntryMode.input,
+      helpText: 'Data de nascimento',
+      fieldHintText: 'dd/mm/aaaa',
+      fieldLabelText: 'Data de nascimento',
+      cancelText: 'Cancelar',
+      confirmText: 'Selecionar',
+      errorFormatText: 'Digite no formato dia/mês/ano.',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context),
+          child: child!,
+        );
+      },
+    );
+    if (escolhida != null) setState(() => dataNascimento = escolhida);
+  }
+
+  Future<void> abrirPaginaCodigo() async {
+    final contaCriada = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ConfirmSignupEmailScreen(
+          email: emailController.text.trim(),
+          password: senhaController.text,
+        ),
+      ),
+    );
+    if (contaCriada == true && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    nomeController.dispose();
+    usernameController.dispose();
+    emailController.dispose();
+    senhaController.dispose();
+    confirmaSenhaController.dispose();
+    super.dispose();
+  }
+
+  void abrirLogin(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 20),
+            const LogoSobreNosWidget(
+              assetPath: 'assets/images/logo.png',
+              width: 130,
+              height: 130,
+            ),
+            const SizedBox(height: 40),
+            InputWidget(
+              controller: nomeController,
+              texto: 'Digite seu nome',
+              icon: Icons.person,
+              maximoCaracteresSemContador: 20,
+            ),
+            const SizedBox(height: 15),
+            InputWidget(
+              controller: usernameController,
+              texto: 'Digite o usuário',
+              icon: Icons.alternate_email,
+              maximoCaracteresSemContador: 20,
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              hintLocales: const [Locale('pt', 'BR')],
+              readOnly: true,
+              showCursor: false,
+              onTap: carregando ? null : selecionarData,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                hintText: dataNascimento == null
+                    ? 'Digite sua data de nascimento'
+                    : '${dataNascimento!.day.toString().padLeft(2, '0')}/${dataNascimento!.month.toString().padLeft(2, '0')}/${dataNascimento!.year}',
+                prefixIcon: Icon(
+                  Icons.cake,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
+            InputWidget(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              texto: 'Digite seu e-mail',
+              icon: Icons.email,
+            ),
+            const SizedBox(height: 15),
+            InputsenhaWidget(
+              controller: senhaController,
+              texto: 'Digite sua senha',
+            ),
+            const SizedBox(height: 15),
+            InputsenhaWidget(
+              controller: confirmaSenhaController,
+              texto: 'Confirme sua senha',
+            ),
+            const SizedBox(height: 25),
+            if (emailEnviado)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Enviamos um código de seis dígitos para '
+                    '${emailController.text.trim()}. Confirme seu e-mail para criar sua conta.',
+                    style: TextStyle(color: AppTheme.textPrimary, height: 1.5),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: carregando ? null : abrirPaginaCodigo,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.mediumBrown,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Inserir código de confirmação'),
+                  ),
+                ],
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: carregando ? null : cadastrar,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.mediumBrown,
+                  foregroundColor: Colors.white,
+                ),
+                label: carregando
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Text('Cadastrar', style: TextStyle(fontSize: 14)),
+              ),
+            const SizedBox(height: 10),
+            GestureDetector(
+                onTap: () => abrirLogin(context),
+                child: Text(
+                  'Já tenho uma conta',
+                  style: TextStyle(
+                    color: AppTheme.mediumBrown,
+                    fontWeight: FontWeight.bold, // Opcional: sublinha a palavra
+                  ),
+                  textAlign: TextAlign.center,
+                )),
+            const SizedBox(
+              height: 25,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

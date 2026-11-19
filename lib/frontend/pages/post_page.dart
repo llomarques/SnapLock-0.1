@@ -1,0 +1,1012 @@
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:snaplock/controller/controller.login.dart';
+import 'package:snaplock/frontend/pages/feed_page.dart';
+import 'package:snaplock/frontend/pages/inicio_page.dart';
+import 'package:snaplock/models/post_model.dart';
+import 'package:snaplock/services/api_service.dart';
+import 'package:snaplock/theme/app_theme.dart';
+import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
+import 'ajudaESuporte_page.dart';
+import 'configuracoes_page.dart';
+
+class PostMaximizadoPage extends StatefulWidget {
+  const PostMaximizadoPage({
+    super.key,
+    required this.post,
+    this.abertaPelasCurtidas = false,
+  });
+
+  final PostModel post;
+  final bool abertaPelasCurtidas;
+
+  @override
+  State<PostMaximizadoPage> createState() => _PostMaximizadoPageState();
+}
+
+class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
+  final TextEditingController _reportReasonController = TextEditingController();
+  late String? _reaction;
+  late int _reactionCount;
+  late String _caption;
+  late String _imageUrl;
+  bool _reacting = false;
+  bool _deleting = false;
+  bool _editing = false;
+  bool _reporting = false;
+  bool _postUpdated = false;
+
+  @override
+  void dispose() {
+    _reportReasonController.dispose();
+    super.dispose();
+  }
+
+  bool get _isAuthor {
+    final currentUserId =
+        (ApiService.currentUser?.id ?? LoginController.usuarioAtual?['id'])
+            ?.toString()
+            .trim();
+    return currentUserId != null &&
+        currentUserId.isNotEmpty &&
+        widget.post.userId.trim() == currentUserId;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _reaction = widget.post.userReaction;
+    _reactionCount = widget.post.reactionCount;
+    _caption = widget.post.caption;
+    _imageUrl = widget.post.imageUrl;
+  }
+
+  void _navigateToTab(int index) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => FeedPage(initialIndex: index)),
+    );
+  }
+
+  Widget _buildDrawer() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Drawer(
+      backgroundColor: isDark ? colorScheme.surface : AppTheme.lightBrown,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 60, bottom: 12),
+            child: LogoSobreNosWidget(
+              assetPath: 'assets/images/logo.png',
+              height: 80,
+              fit: BoxFit.contain,
+            ),
+          ),
+          _drawerItem(
+            icon: Icons.person,
+            title: 'Perfil',
+            onTap: () => _navigateToTab(4),
+          ),
+          _drawerDivider(),
+          _drawerItem(
+            icon: Icons.notifications,
+            title: 'Notificações',
+            onTap: () => _navigateToTab(1),
+          ),
+          _drawerDivider(),
+          _drawerItem(
+            icon: Icons.settings,
+            title: 'Configurações',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ConfiguracoesPage(),
+              ),
+            ),
+          ),
+          _drawerDivider(),
+          _drawerItem(
+            icon: Icons.call,
+            title: 'Ajuda e suporte',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AjudaESuportePage(),
+              ),
+            ),
+          ),
+          _drawerDivider(),
+          _drawerItem(
+            icon: Icons.logout,
+            title: 'Sair',
+            onTap: _confirmarSaida,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _drawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    return ListTile(
+      leading: Icon(icon),
+      iconColor: isDark ? colorScheme.onSurfaceVariant : null,
+      title: Text(
+        title,
+        style: isDark ? TextStyle(color: colorScheme.onSurface) : null,
+      ),
+      hoverColor: isDark
+          ? colorScheme.surfaceContainerHighest
+          : AppTheme.surface.withValues(alpha: 0.35),
+      onTap: onTap,
+    );
+  }
+
+  Widget _drawerDivider() {
+    final theme = Theme.of(context);
+    final color = theme.brightness == Brightness.dark
+        ? theme.colorScheme.outlineVariant
+        : AppTheme.darkBrown.withValues(alpha: 0.3);
+
+    return Divider(
+      height: 1,
+      indent: 16,
+      endIndent: 16,
+      color: color,
+    );
+  }
+
+  Future<void> _confirmarSaida() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: AppTheme.cardBorder),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.mediumBrown.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.logout,
+                color: AppTheme.mediumBrown,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Sair da conta?',
+                style: GoogleFonts.cormorantGaramond(
+                  color: AppTheme.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Tem certeza que deseja sair?',
+          style: GoogleFonts.poppins(
+            color: AppTheme.textSecondary,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.textSecondary,
+              textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+            ),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.mediumBrown,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            ),
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text('Sair'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true || !mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const InicioPage()),
+    );
+  }
+
+  Future<void> _toggleReaction(String type) async {
+    if (_reacting) return;
+    setState(() => _reacting = true);
+
+    final reactionBefore = _reaction;
+    try {
+      if (reactionBefore == type) {
+        await ApiService.removeReaction(widget.post.id);
+        if (!mounted) return;
+        setState(() {
+          _reaction = null;
+          if (_reactionCount > 0) _reactionCount--;
+          _postUpdated = true;
+        });
+      } else {
+        await ApiService.reactToPost(widget.post.id, type);
+        if (!mounted) return;
+        setState(() {
+          _reaction = type;
+          if (reactionBefore == null) _reactionCount++;
+          _postUpdated = true;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppTheme.mediumBrown,
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _reacting = false);
+    }
+  }
+
+  Future<void> _deletePost() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: AppTheme.cardBorder),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.mediumBrown.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.delete_outline,
+                color: AppTheme.mediumBrown,
+                size: 23,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Excluir publicação?',
+                style: GoogleFonts.cormorantGaramond(
+                  color: AppTheme.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Essa ação não pode ser desfeita.',
+          style: GoogleFonts.poppins(
+            color: AppTheme.textSecondary,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.textSecondary,
+              textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+            ),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.mediumBrown,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            ),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            label: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deleting = true);
+    try {
+      await ApiService.deletePost(widget.post.id);
+      if (mounted) Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.mediumBrown,
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    }
+  }
+
+  Future<void> _editPost() async {
+    if (_editing) return;
+    final captionController = TextEditingController(text: _caption);
+    XFile? selectedImage;
+    final ImagePicker picker = ImagePicker();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: AppTheme.cardBorder),
+          ),
+          title: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.mediumBrown.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.edit_outlined,
+                  color: AppTheme.mediumBrown,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Editar publicação',
+                  style: GoogleFonts.cormorantGaramond(
+                    color: AppTheme.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextButton.icon(
+                onPressed: () async {
+                  final image = await picker.pickImage(
+                    source: ImageSource.gallery,
+                    imageQuality: 85,
+                  );
+                  if (image != null) {
+                    setDialogState(() => selectedImage = image);
+                  }
+                },
+                icon: const Icon(Icons.image_outlined),
+                label: Text(
+                  selectedImage == null ? 'Adicionar imagem' : 'Trocar imagem',
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.mediumBrown,
+                  textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                hintLocales: const [Locale('pt', 'BR')],
+                controller: captionController,
+                maxLines: 4,
+                style: GoogleFonts.poppins(
+                  color: AppTheme.textPrimary,
+                  fontSize: 14,
+                ),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: AppTheme.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: AppTheme.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: AppTheme.mediumBrown),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.textSecondary,
+                textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+              ),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.mediumBrown,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              ),
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('Salvar'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !mounted) {
+      captionController.dispose();
+      return;
+    }
+
+    setState(() => _editing = true);
+    try {
+      Uint8List? imageBytes;
+      if (selectedImage != null) {
+        imageBytes = await selectedImage!.readAsBytes();
+      }
+
+      final response = await ApiService.updatePost(
+        postId: widget.post.id,
+        caption: captionController.text.trim(),
+        imageBytes: imageBytes,
+        fileName: selectedImage?.name ?? 'publicacao.jpg',
+      );
+      if (!mounted) return;
+      setState(() {
+        _caption = response['caption']?.toString() ?? captionController.text;
+        _imageUrl = response['imageUrl']?.toString() ?? _imageUrl;
+        _postUpdated = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.mediumBrown,
+          content: const Text('Publicação atualizada.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.mediumBrown,
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      captionController.dispose();
+      if (mounted) setState(() => _editing = false);
+    }
+  }
+
+  Future<void> _reportPost() async {
+    if (!mounted || _reporting) return;
+    setState(() => _reporting = true);
+
+    try {
+      _reportReasonController.clear();
+      final selectedReasons = <String>{};
+      const reasonOptions = [
+        'Inapropriado',
+        'Ofensivo',
+        'Indesejado',
+        'Violência',
+        'Spam',
+        'Outro',
+      ];
+      final reason = await showDialog<String>(
+        context: context,
+        useRootNavigator: true,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            Widget reasonOption(String value) {
+              return SizedBox(
+                height: 32,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 30,
+                      child: Checkbox(
+                        value: selectedReasons.contains(value),
+                        activeColor: AppTheme.mediumBrown,
+                        checkColor: Colors.white,
+                        side: BorderSide(color: AppTheme.mediumBrown),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onChanged: (selected) {
+                          setDialogState(() {
+                            if (selected == true) {
+                              selectedReasons.add(value);
+                            } else {
+                              selectedReasons.remove(value);
+                            }
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        value,
+                        style: GoogleFonts.poppins(
+                          color: AppTheme.textPrimary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final canSubmit = selectedReasons.isNotEmpty ||
+                _reportReasonController.text.trim().isNotEmpty;
+
+            return AlertDialog(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: AppTheme.cardBorder),
+              ),
+              title: Text(
+                'Por que deseja reportar esse post?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cormorantGaramond(
+                  color: AppTheme.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 340),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: reasonOptions
+                                .take(3)
+                                .map(reasonOption)
+                                .toList(),
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: reasonOptions
+                                .skip(3)
+                                .map(reasonOption)
+                                .toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            hintLocales: const [Locale('pt', 'BR')],
+                            controller: _reportReasonController,
+                            autofocus: true,
+                            minLines: 3,
+                            maxLines: 3,
+                            onChanged: (_) => setDialogState(() {}),
+                            style: GoogleFonts.poppins(
+                              color: AppTheme.textPrimary,
+                              fontSize: 13,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Escreva aqui o motivo...',
+                              hintStyle: GoogleFonts.poppins(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12,
+                              ),
+                              filled: true,
+                              fillColor: AppTheme.surface,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: AppTheme.cardBorder,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: AppTheme.mediumBrown,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: 'Enviar denúncia',
+                          onPressed: canSubmit
+                              ? () {
+                                  final details =
+                                      _reportReasonController.text.trim();
+                                  final selected = reasonOptions
+                                      .where(selectedReasons.contains)
+                                      .join(', ');
+                                  final combinedReason = [
+                                    selected,
+                                    if (details.isNotEmpty) details,
+                                  ].join(': ');
+                                  Navigator.pop(dialogContext, combinedReason);
+                                }
+                              : null,
+                          color: AppTheme.mediumBrown,
+                          icon: const Icon(Icons.send, size: 28),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.textSecondary,
+                    textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                  ),
+                  child: const Text('Cancelar'),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+
+      if (reason == null || reason.isEmpty || !mounted) return;
+
+      try {
+        await ApiService.reportPost(widget.post.id, reason);
+        await ApiService.hideReportedPostLocally(widget.post.id);
+        if (!mounted) return;
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.pop(context, true);
+        messenger.showSnackBar(
+          SnackBar(
+            backgroundColor: AppTheme.mediumBrown,
+            content: const Text('Denúncia enviada para análise da administração.'),
+          ),
+        );
+      } catch (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppTheme.mediumBrown,
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _reporting = false);
+    }
+  }
+
+  Widget _reactionButton({
+    required String type,
+    required IconData icon,
+    required String tooltip,
+  }) {
+    final selected = _reaction == type;
+    final colorScheme = Theme.of(context).colorScheme;
+    return IconButton(
+      onPressed: _reacting ? null : () => _toggleReaction(type),
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      icon: Icon(
+        icon,
+        size: 25,
+        color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final captionColor = colorScheme.onSurface;
+    final post = widget.post;
+    final username = post.authorUsername;
+    final savedAspectRatio = post.aspectRatio;
+    final imageAspectRatio = savedAspectRatio != null &&
+            savedAspectRatio.isFinite &&
+            savedAspectRatio > 0
+        ? savedAspectRatio
+        : 4 / 5;
+    final menuTextStyle = TextStyle(
+      color: isDark ? colorScheme.onSurface : const Color(0xFFF3E9DC),
+    );
+    var formattedDate = post.createdAt;
+    try {
+      formattedDate = DateFormat(
+        'dd/MM/yyyy',
+      ).format(DateTime.parse(post.createdAt));
+    } on FormatException {
+      // Keep the original value when the server returns an unexpected date.
+    }
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      drawerEnableOpenDragGesture: !widget.abertaPelasCurtidas,
+      drawer: _buildDrawer(),
+      body: Column(
+        children: [
+          Builder(
+            builder: (context) => FeedHeader(
+              onMenuPressed: () => Scaffold.of(context).openDrawer(),
+              mostrarAcoes: !widget.abertaPelasCurtidas,
+              mostrarVoltar: false,
+              mostrarPesquisa: !widget.abertaPelasCurtidas,
+            ),
+          ),
+          SizedBox(
+            height: 58,
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: () => Navigator.pop(context, _postUpdated),
+                  icon: const Icon(
+                    Icons.arrow_back_ios,
+                    size: 20,
+                  ),
+                  color: colorScheme.onSurface,
+                ),
+                const Spacer(),
+                if (_isAuthor)
+                  PopupMenuButton<String>(
+                    enabled: !_deleting && !_editing,
+                    color: isDark ? colorScheme.surface : AppTheme.textPrimary,
+                    surfaceTintColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    onSelected: (value) {
+                      if (value == 'edit') _editPost();
+                      if (value == 'delete') _deletePost();
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Text('Editar', style: menuTextStyle),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        enabled: !_deleting,
+                        child: Text(
+                          _deleting ? 'Excluindo...' : 'Excluir',
+                          style: menuTextStyle,
+                        ),
+                      ),
+                    ],
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: AppTheme.textPrimary,
+                      size: 26,
+                    ),
+                  )
+                else
+                  const SizedBox(width: 12),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 0, 16, 16),
+              child: Column(
+                children: [
+                  AspectRatio(
+                    aspectRatio: imageAspectRatio,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(27),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          InteractiveViewer(
+                            minScale: 1,
+                            maxScale: 4,
+                            child: Image.network(
+                              _imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  ColoredBox(
+                                color: AppTheme.surfaceLight,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 50,
+                                    color: AppTheme.mediumBrown,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (username?.isNotEmpty ?? false)
+                            Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  28,
+                                  16,
+                                  16,
+                                ),
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Color(0xB3000000),
+                                    ],
+                                  ),
+                                ),
+                                child: InkWell(
+                                  onTap: () => abrirPerfilUsuario(
+                                    context,
+                                    username: username ?? '',
+                                    userId: post.userId,
+                                    name: post.authorName,
+                                    avatarUrl: post.authorAvatar,
+                                  ),
+                                  child: Text(
+                                    '@$username',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black54,
+                                          blurRadius: 3,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_caption.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _caption,
+                          style: GoogleFonts.poppins(
+                            color: captionColor,
+                            fontSize: 14,
+                            height: 1.45,
+                          ),
+                        ),
+                      ),
+                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8, top: 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (formattedDate.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  formattedDate,
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary.withValues(
+                                      alpha: 0.7,
+                                    ),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                      _reactionButton(
+                        type: 'HEART',
+                        icon: _reaction == 'HEART'
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        tooltip: 'Curtir',
+                      ),
+                      if (!_isAuthor)
+                        IconButton(
+                          onPressed: _reporting ? null : _reportPost,
+                          tooltip: 'Denunciar publicação',
+                          visualDensity: VisualDensity.compact,
+                          icon: Icon(
+                            Icons.report_gmailerrorred_outlined,
+                            size: 25,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

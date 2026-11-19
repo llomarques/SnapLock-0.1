@@ -1,0 +1,2131 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:bcrypt/bcrypt.dart';
+import 'package:mysql_client/mysql_client.dart';
+import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf_io.dart' as shelf_io;
+import 'package:shelf_multipart/form_data.dart';
+import 'package:shelf_multipart/multipart.dart';
+import 'package:shelf_router/shelf_router.dart';
+import 'package:cloudinary_api/uploader/cloudinary_uploader.dart';
+import 'package:cloudinary_api/src/request/model/uploader_params.dart';
+
+import '../lib/backend_config.dart';
+import '../lib/backend_utils.dart';
+import '../lib/email_service.dart';
+
+Future<void> main() async {
+  cloudinary.config.urlConfig.secure = true;
+  // await upload();
+  // transform();
+
+  final sessoes = <String, int>{};
+  final connection = await MySQLConnection.createConnection(
+    host: env['DB_HOST'] ?? '127.0.0.1',
+    port: int.tryParse(env['DB_PORT'] ?? '3306') ?? 3306,
+    userName: env['DB_USER'] ?? 'root',
+    password: env['DB_PASSWORD'] ?? 'senai2026',
+    databaseName: env['DB_NAME'] ?? 'snaplock_db',
+  );
+  await connection.connect();
+
+  final emailAtivoColumn = await connection.execute(
+    "SHOW COLUMNS FROM usuario LIKE 'email_ativo'",
+  );
+  if (emailAtivoColumn.rows.isEmpty) {
+    await connection.execute(
+      '''ALTER TABLE usuario
+         ADD COLUMN email_ativo VARCHAR(150)
+         GENERATED ALWAYS AS (
+           CASE WHEN ativo = 1 THEN email ELSE NULL END
+         ) PERSISTENT''',
+    );
+  }
+
+  final emailUniqueIndex = await connection
+      .execute("SHOW INDEX FROM usuario WHERE Key_name = 'email'");
+  if (emailUniqueIndex.rows.isNotEmpty) {
+    await connection.execute('ALTER TABLE usuario DROP INDEX email');
+  }
+
+  final activeEmailUniqueIndex = await connection.execute(
+    "SHOW INDEX FROM usuario WHERE Key_name = 'uq_usuario_email_ativo'",
+  );
+  if (activeEmailUniqueIndex.rows.isEmpty) {
+    await connection.execute(
+      'ALTER TABLE usuario ADD UNIQUE KEY uq_usuario_email_ativo (email_ativo)',
+    );
+  }
+
+  await connection.execute(
+    '''CREATE TABLE IF NOT EXISTS alteracao_email_token (
+       id_alteracao INT NOT NULL AUTO_INCREMENT,
+       id_usuario INT NOT NULL,
+       novo_email VARCHAR(150) NOT NULL,
+       token_hash CHAR(64) NOT NULL,
+       expira_em DATETIME NOT NULL,
+       enviado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       usado_em DATETIME DEFAULT NULL,
+       PRIMARY KEY (id_alteracao),
+       KEY idx_alteracao_email_usuario (id_usuario),
+       KEY idx_alteracao_email_token (token_hash),
+       CONSTRAINT fk_alteracao_email_usuario
+         FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
+     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
+  );
+
+  await connection.execute(
+    '''CREATE TABLE IF NOT EXISTS cadastro_email_verificacao (
+       id_verificacao INT NOT NULL AUTO_INCREMENT,
+       nome VARCHAR(100) NOT NULL,
+       username VARCHAR(30) NOT NULL,
+       email VARCHAR(150) NOT NULL,
+       senha_hash VARCHAR(255) NOT NULL,
+       data_nascimento DATE NOT NULL,
+       token_hash CHAR(64) NOT NULL,
+       expira_em DATETIME NOT NULL,
+       tentativas INT NOT NULL DEFAULT 0,
+       criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       verificado_em DATETIME DEFAULT NULL,
+       PRIMARY KEY (id_verificacao),
+       KEY idx_cadastro_verificacao_email (email),
+       KEY idx_cadastro_verificacao_token (token_hash)
+     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
+  );
+
+  final signupAttemptsColumn = await connection.execute(
+    "SHOW COLUMNS FROM cadastro_email_verificacao LIKE 'tentativas'",
+  );
+  if (signupAttemptsColumn.rows.isEmpty) {
+    await connection.execute(
+      'ALTER TABLE cadastro_email_verificacao ADD COLUMN tentativas INT NOT NULL DEFAULT 0 AFTER expira_em',
+    );
+  }
+
+  final ratioColumn =
+      await connection.execute("SHOW COLUMNS FROM foto LIKE 'proporcao'");
+  if (ratioColumn.rows.isEmpty) {
+    await connection.execute(
+      'ALTER TABLE foto ADD COLUMN proporcao DOUBLE NULL',
+    );
+  }
+
+  final photoActiveColumn =
+      await connection.execute("SHOW COLUMNS FROM foto LIKE 'ativa'");
+  if (photoActiveColumn.rows.isEmpty) {
+    await connection.execute(
+      'ALTER TABLE foto ADD COLUMN ativa TINYINT(1) NOT NULL DEFAULT 1',
+    );
+  }
+
+  await connection.execute(
+    '''CREATE TABLE IF NOT EXISTS dump_visibilidade (
+         id_usuario INT NOT NULL,
+         ano INT NOT NULL,
+         mes INT NOT NULL,
+         visivel BOOLEAN NOT NULL DEFAULT FALSE,
+         capa_url VARCHAR(500) NULL,
+         PRIMARY KEY (id_usuario, ano, mes),
+         CONSTRAINT fk_dump_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
+       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
+  );
+
+  await connection.execute(
+    '''CREATE TABLE IF NOT EXISTS denuncia_detalhe (
+       id_denuncia INT NOT NULL AUTO_INCREMENT,
+       id_foto INT NOT NULL,
+       id_usuario INT NOT NULL,
+       motivo TEXT NOT NULL,
+       data_denuncia DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       PRIMARY KEY (id_denuncia),
+       UNIQUE KEY uq_denuncia_detalhe_foto_usuario (id_foto, id_usuario),
+       KEY idx_denuncia_detalhe_usuario (id_usuario),
+       CONSTRAINT fk_denuncia_detalhe_foto FOREIGN KEY (id_foto) REFERENCES foto (id_foto),
+       CONSTRAINT fk_denuncia_detalhe_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
+     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
+  );
+
+  final denunciaTable = await connection.execute(
+    "SHOW TABLES LIKE 'denuncia'",
+  );
+  if (denunciaTable.rows.isNotEmpty) {
+    final legacyDenunciaColumns = await connection
+        .execute("SHOW COLUMNS FROM denuncia LIKE 'id_usuario'");
+    if (legacyDenunciaColumns.rows.isNotEmpty) {
+      await connection.execute(
+        '''INSERT IGNORE INTO denuncia_detalhe
+             (id_foto, id_usuario, motivo, data_denuncia)
+           SELECT id_foto, id_usuario, motivo, data_denuncia
+           FROM denuncia
+           ORDER BY id_denuncia''',
+      );
+      await connection.execute('DROP TABLE denuncia');
+    }
+  }
+
+  await connection.execute(
+    '''CREATE TABLE IF NOT EXISTS denuncia (
+       id_foto INT NOT NULL,
+       quantidade_denuncias INT NOT NULL DEFAULT 0,
+       PRIMARY KEY (id_foto),
+       CONSTRAINT fk_denuncia_foto FOREIGN KEY (id_foto) REFERENCES foto (id_foto)
+     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4''',
+  );
+  await connection.execute(
+    '''INSERT INTO denuncia (id_foto, quantidade_denuncias)
+       SELECT id_foto, COUNT(*) FROM denuncia_detalhe GROUP BY id_foto
+       ON DUPLICATE KEY UPDATE quantidade_denuncias = VALUES(quantidade_denuncias)''',
+  );
+
+  final curtidaDataColumn =
+      await connection.execute("SHOW COLUMNS FROM curtida LIKE 'data_curtida'");
+  if (curtidaDataColumn.rows.isEmpty) {
+    final curtidaDataHora =
+        await connection.execute("SHOW COLUMNS FROM curtida LIKE 'data_hora'");
+    if (curtidaDataHora.rows.isNotEmpty) {
+      await connection.execute(
+        'ALTER TABLE curtida ADD COLUMN data_curtida DATETIME NULL AFTER id_foto',
+      );
+      await connection.execute(
+        'UPDATE curtida SET data_curtida = data_hora WHERE data_curtida IS NULL',
+      );
+    } else {
+      await connection.execute(
+        'ALTER TABLE curtida ADD COLUMN data_curtida DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER id_foto',
+      );
+    }
+  }
+
+  final router = Router()
+    ..post('/api/posts/<postId>/reactions',
+        (Request request, String postId) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idFoto = int.tryParse(postId);
+      if (idFoto == null) return _json(422, {'message': 'Post inválido.'});
+
+      try {
+        final post = await connection.execute(
+          'SELECT id_foto FROM foto WHERE id_foto = :id_foto AND ativa = 1 LIMIT 1',
+          {'id_foto': idFoto},
+        );
+        if (post.rows.isEmpty) {
+          return _json(404, {'message': 'Publicação não encontrada.'});
+        }
+
+        // A chave única usuário/publicação impede curtidas duplicadas.
+        await connection.execute(
+          '''INSERT INTO curtida (id_foto, id_usuario, data_curtida)
+             VALUES (:id_foto, :id_usuario, NOW())
+             ON DUPLICATE KEY UPDATE data_curtida = NOW()''',
+          {'id_foto': idFoto, 'id_usuario': idUsuario},
+        );
+
+        return _json(200, {'success': true});
+      } catch (error, stackTrace) {
+        print('Erro ao reagir ao post: $error\n$stackTrace');
+        return _json(500, {'message': 'Erro ao registrar reação.'});
+      }
+    })
+    ..delete('/api/posts/<postId>/reactions',
+        (Request request, String postId) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idFoto = int.tryParse(postId);
+      if (idFoto == null) return _json(422, {'message': 'Post inválido.'});
+
+      try {
+        await connection.execute(
+          'DELETE FROM curtida WHERE id_foto = :id_foto AND id_usuario = :id_usuario',
+          {'id_foto': idFoto, 'id_usuario': idUsuario},
+        );
+
+        return _json(200, {'success': true});
+      } catch (error, stackTrace) {
+        print('Erro ao remover reação: $error\n$stackTrace');
+        return _json(500, {'message': 'Erro ao remover reação.'});
+      }
+    })
+    ..delete('/api/fotos/<postId>', (Request request, String postId) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idFoto = int.tryParse(postId);
+      if (idFoto == null) return _json(422, {'message': 'Foto inválida.'});
+
+      try {
+        // Verifica se a foto pertence ao usuário logado
+        final foto = await connection.execute(
+          'SELECT id_foto FROM foto WHERE id_foto = :id_foto AND id_usuario = :id_usuario LIMIT 1',
+          {'id_foto': idFoto, 'id_usuario': idUsuario},
+        );
+
+        if (foto.rows.isEmpty) {
+          return _json(
+              403, {'message': 'Sem permissão para excluir esta foto.'});
+        }
+
+        // Deleta as dependências de curtida e denúncia antes da foto
+        await connection.execute('DELETE FROM curtida WHERE id_foto = :id_foto',
+            {'id_foto': idFoto});
+        await connection.execute(
+            'DELETE FROM denuncia_detalhe WHERE id_foto = :id_foto',
+            {'id_foto': idFoto});
+        await connection.execute(
+            'DELETE FROM denuncia WHERE id_foto = :id_foto',
+            {'id_foto': idFoto});
+
+        // Exclui o registro da tabela foto
+        await connection.execute(
+            'DELETE FROM foto WHERE id_foto = :id_foto', {'id_foto': idFoto});
+
+        return _json(
+            200, {'success': true, 'message': 'Foto excluída com sucesso.'});
+      } catch (error) {
+        return _json(500, {'message': 'Erro ao excluir no banco de dados.'});
+      }
+    })
+    ..post('/api/posts/<postId>/report',
+        (Request request, String postId) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idFoto = int.tryParse(postId);
+      if (idFoto == null) return _json(422, {'message': 'Post inválido.'});
+
+      final dados = await _lerJson(request);
+      final motivo = (dados?['reason'] ?? '').toString().trim();
+
+      if (motivo.isEmpty) {
+        return _json(422, {'message': 'Informe o motivo da denúncia.'});
+      }
+
+      try {
+        final publicacao = await connection.execute(
+          '''SELECT DATE_FORMAT(f.data_postagem, '%d/%m/%Y') AS data_postagem,
+                    u.email, u.nome
+             FROM foto f
+             JOIN usuario u ON u.id_usuario = f.id_usuario
+             WHERE f.id_foto = :id_foto AND f.ativa = 1
+             LIMIT 1''',
+          {'id_foto': idFoto},
+        );
+        if (publicacao.rows.isEmpty) {
+          return _json(404, {'message': 'Publicação não encontrada.'});
+        }
+
+        await connection.execute('START TRANSACTION');
+        try {
+          final novaDenuncia = await connection.execute(
+            '''INSERT IGNORE INTO denuncia_detalhe
+                 (id_foto, id_usuario, motivo, data_denuncia)
+               VALUES (:id_foto, :id_usuario, :motivo, NOW())''',
+            {'id_foto': idFoto, 'id_usuario': idUsuario, 'motivo': motivo},
+          );
+          if (novaDenuncia.affectedRows == BigInt.zero) {
+            await connection.execute('ROLLBACK');
+            return _json(
+                409, {'message': 'Você já denunciou esta publicação.'});
+          }
+
+          await connection.execute(
+            '''INSERT INTO denuncia (id_foto, quantidade_denuncias)
+               VALUES (:id_foto, 1)
+               ON DUPLICATE KEY UPDATE
+                 quantidade_denuncias = quantidade_denuncias + 1''',
+            {'id_foto': idFoto},
+          );
+          await connection.execute('COMMIT');
+        } catch (error, stackTrace) {
+          await connection.execute('ROLLBACK');
+          Error.throwWithStackTrace(error, stackTrace);
+        }
+
+        final totalDenuncias = await connection.execute(
+          'SELECT quantidade_denuncias FROM denuncia WHERE id_foto = :id_foto',
+          {'id_foto': idFoto},
+        );
+        final total = int.parse(
+          totalDenuncias.rows.first
+                  .assoc()['quantidade_denuncias']
+                  ?.toString() ??
+              '0',
+        );
+        var desativada = false;
+        if (total >= 4) {
+          final atualizacao = await connection.execute(
+            '''UPDATE foto f SET ativa = 0
+               WHERE f.id_foto = :id_foto AND f.ativa = 1
+                 AND (SELECT d.quantidade_denuncias FROM denuncia d
+                      WHERE d.id_foto = f.id_foto) >= 4''',
+            {'id_foto': idFoto},
+          );
+          desativada = atualizacao.affectedRows > BigInt.zero;
+
+          if (desativada) {
+            final dadosAutor = publicacao.rows.first.assoc();
+            try {
+              await sendPostDeactivationNotice(
+                dadosAutor['email'] ?? '',
+                dadosAutor['nome'] ?? '',
+                dadosAutor['data_postagem']?.toString() ?? '',
+                idFoto,
+              );
+            } catch (error, stackTrace) {
+              print(
+                  'Erro ao notificar autor sobre publicação desativada: $error');
+              print(stackTrace);
+              return _json(500, {
+                'message':
+                    'A publicação foi desativada, mas não foi possível notificar o autor por e-mail.',
+              });
+            }
+          }
+        }
+
+        return _json(201, {
+          'success': true,
+          'publicationDeactivated': desativada,
+          'message': desativada
+              ? 'Denúncia registrada. A publicação foi desativada e o autor foi notificado por e-mail.'
+              : 'Denúncia registrada com sucesso.',
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao reportar post: $error\n$stackTrace');
+        return _json(500, {'message': 'Erro ao salvar denúncia no servidor.'});
+      }
+    })
+    ..post('/api/login', (Request request) async {
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
+
+      final login =
+          (dados['login'] ?? dados['email'] ?? dados['username'] ?? '')
+              .toString()
+              .trim()
+              .toLowerCase();
+      final senha = dados['senha'] as String? ?? '';
+      if (login.isEmpty || senha.isEmpty) {
+        return _json(422, {'erro': 'Informe o e-mail ou username e a senha.'});
+      }
+
+      final usuarios = await connection.execute(
+        '''SELECT id_usuario, nome, username, email, senha_hash, biografia, foto_perfil
+           FROM usuario
+           WHERE (email = :email OR username = :username) AND ativo = 1
+           LIMIT 1''',
+        {'email': login, 'username': login},
+      );
+      if (usuarios.rows.isEmpty) {
+        return _json(401, {'erro': 'E-mail/usuário ou senha incorretos.'});
+      }
+
+      final usuario = usuarios.rows.first.assoc();
+      if (!BCrypt.checkpw(senha, usuario['senha_hash']!)) {
+        return _json(401, {'erro': 'E-mail/usuário ou senha incorretos.'});
+      }
+
+      final token = _gerarToken();
+      sessoes[token] = int.parse(usuario['id_usuario']!);
+      return _json(200, {
+        'success': true,
+        'token': token,
+        'user': _usuarioPublico(usuario),
+        'id_usuario': int.parse(usuario['id_usuario']!),
+        'nome': usuario['nome'],
+        'username': usuario['username'],
+        'email': usuario['email'],
+      });
+    })
+    ..get('/api/friends/search', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final query = (request.url.queryParameters['q'] ?? '').trim();
+      if (query.isEmpty) {
+        return _json(200, {'success': true, 'users': <Map<String, Object?>>[]});
+      }
+
+      final resultados = await connection.execute(
+        '''SELECT u.id_usuario, u.nome, u.username,
+            u.biografia, u.foto_perfil, u.ativo, a.status AS amizade_status,
+            (SELECT COUNT(*) FROM amizade a2
+             JOIN usuario amigo ON amigo.id_usuario = CASE
+               WHEN a2.id_usuario_1 = u.id_usuario THEN a2.id_usuario_2
+               ELSE a2.id_usuario_1
+             END AND amigo.ativo = 1
+             WHERE a2.status = 'aceito'
+               AND (a2.id_usuario_1 = u.id_usuario
+                    OR a2.id_usuario_2 = u.id_usuario)) AS friends_count
+           FROM usuario u
+           LEFT JOIN amizade a
+             ON ((a.id_usuario_1 = :id_usuario AND a.id_usuario_2 = u.id_usuario)
+              OR (a.id_usuario_1 = u.id_usuario AND a.id_usuario_2 = :id_usuario))
+           WHERE u.ativo = 1 AND u.id_usuario <> :id_usuario
+             AND (u.nome LIKE :query OR u.username LIKE :query)
+           ORDER BY u.username
+           LIMIT 20''',
+        {'id_usuario': idUsuario, 'query': '%$query%'},
+      );
+
+      final usuarios = resultados.rows.map((row) {
+        final usuario = row.assoc();
+        return <String, Object?>{
+          'id': usuario['id_usuario'] ?? '',
+          'name': usuario['nome'] ?? '',
+          'username': usuario['username'] ?? '',
+          'email': '',
+          'birthdate': '',
+          'bio': usuario['biografia'] ?? '',
+          'gender': '',
+          'avatarUrl': usuario['foto_perfil'] ?? '',
+          'isActive': usuario['ativo'] == '1',
+          'friendshipStatus': usuario['amizade_status'] ?? '',
+          'friendsCount': usuario['friends_count'] ?? '0',
+        };
+      }).toList();
+
+      return _json(200, {'success': true, 'users': usuarios});
+    })
+    ..post('/api/friends/request', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      final friendId = int.tryParse((dados?['friendId'] ?? '').toString());
+      if (friendId == null || friendId == idUsuario) {
+        return _json(422, {'message': 'Usuário inválido.'});
+      }
+
+      final destinatario = await connection.execute(
+        'SELECT id_usuario FROM usuario WHERE id_usuario = :id_usuario AND ativo = 1 LIMIT 1',
+        {'id_usuario': friendId},
+      );
+      if (destinatario.rows.isEmpty) {
+        return _json(404, {'message': 'Usuário não encontrado.'});
+      }
+
+      final existente = await connection.execute(
+        '''SELECT id_amizade, id_usuario_1, status FROM amizade
+           WHERE (id_usuario_1 = :origem AND id_usuario_2 = :destino)
+              OR (id_usuario_1 = :destino AND id_usuario_2 = :origem)
+           LIMIT 1''',
+        {'origem': idUsuario, 'destino': friendId},
+      );
+      if (existente.rows.isNotEmpty) {
+        final relacao = existente.rows.first.assoc();
+        final status = relacao['status'];
+        if (status == 'aceito') {
+          return _json(409, {'message': 'Vocês já são amigos.'});
+        }
+        if (status == 'pendente') {
+          if (relacao['id_usuario_1'] == idUsuario.toString()) {
+            return _json(200, {'success': true, 'status': 'pendente'});
+          }
+          return _json(
+              409, {'message': 'Este usuário já enviou uma solicitação.'});
+        }
+
+        await connection.execute(
+          'DELETE FROM amizade WHERE id_amizade = :id_amizade',
+          {'id_amizade': relacao['id_amizade']},
+        );
+      }
+
+      final insercao = await connection.execute(
+        '''INSERT INTO amizade (id_usuario_1, id_usuario_2, status)
+           VALUES (:origem, :destino, 'pendente')''',
+        {'origem': idUsuario, 'destino': friendId},
+      );
+      return _json(201, {
+        'success': true,
+        'status': 'pendente',
+        'requestId': insercao.lastInsertID.toString(),
+      });
+    })
+    ..get('/api/friends/pending', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final resultados = await connection.execute(
+        '''SELECT a.id_amizade, a.data_solicitacao,
+            u.id_usuario, u.nome, u.username, u.foto_perfil
+           FROM amizade a
+           JOIN usuario u ON u.id_usuario = a.id_usuario_1
+           WHERE a.id_usuario_2 = :id_usuario
+             AND a.status = 'pendente' AND u.ativo = 1
+           ORDER BY a.data_solicitacao DESC''',
+        {'id_usuario': idUsuario},
+      );
+      final pendentes = resultados.rows.map((row) {
+        final usuario = row.assoc();
+        return <String, Object?>{
+          'requestId': usuario['id_amizade'] ?? '',
+          'id': usuario['id_usuario'] ?? '',
+          'name': usuario['nome'] ?? '',
+          'username': usuario['username'] ?? '',
+          'avatarUrl': usuario['foto_perfil'] ?? '',
+          'dataSolicitacao': usuario['data_solicitacao'] ?? '',
+        };
+      }).toList();
+      return _json(200, {'success': true, 'pending': pendentes});
+    })
+    ..post('/api/friends/accept', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      final requestId = int.tryParse((dados?['requestId'] ?? '').toString());
+      if (requestId == null) {
+        return _json(422, {'message': 'Solicitação inválida.'});
+      }
+
+      final atualizada = await connection.execute(
+        '''UPDATE amizade SET status = 'aceito', data_resposta = NOW()
+           WHERE id_amizade = :id_amizade
+             AND id_usuario_2 = :id_usuario AND status = 'pendente' ''',
+        {'id_amizade': requestId, 'id_usuario': idUsuario},
+      );
+      if (atualizada.affectedRows == 0) {
+        return _json(404, {'message': 'Solicitação pendente não encontrada.'});
+      }
+      return _json(200, {'success': true});
+    })
+    ..post('/api/friends/decline', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      final requestId = int.tryParse((dados?['requestId'] ?? '').toString());
+      if (requestId == null) {
+        return _json(422, {'message': 'Solicitação inválida.'});
+      }
+
+      final removida = await connection.execute(
+        '''DELETE FROM amizade
+           WHERE id_amizade = :id_amizade
+             AND id_usuario_2 = :id_usuario AND status = 'pendente' ''',
+        {'id_amizade': requestId, 'id_usuario': idUsuario},
+      );
+      if (removida.affectedRows == 0) {
+        return _json(404, {'message': 'Solicitação pendente não encontrada.'});
+      }
+      return _json(200, {'success': true});
+    })
+    ..get('/api/friends', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final resultados = await connection.execute(
+        '''SELECT u.id_usuario, u.nome, u.username,
+            u.biografia, u.foto_perfil, u.ativo, a.status AS amizade_status,
+            (SELECT COUNT(*) FROM amizade a2
+             JOIN usuario amigo ON amigo.id_usuario = CASE
+               WHEN a2.id_usuario_1 = u.id_usuario THEN a2.id_usuario_2
+               ELSE a2.id_usuario_1
+             END AND amigo.ativo = 1
+             WHERE a2.status = 'aceito'
+               AND (a2.id_usuario_1 = u.id_usuario
+                    OR a2.id_usuario_2 = u.id_usuario)) AS friends_count
+           FROM amizade a
+           JOIN usuario u
+             ON u.id_usuario = CASE
+               WHEN a.id_usuario_1 = :id_usuario THEN a.id_usuario_2
+               ELSE a.id_usuario_1
+             END
+           WHERE (a.id_usuario_1 = :id_usuario OR a.id_usuario_2 = :id_usuario)
+             AND a.status = 'aceito' AND u.ativo = 1
+           ORDER BY u.username''',
+        {'id_usuario': idUsuario},
+      );
+
+      final amigos = resultados.rows.map((row) {
+        final usuario = row.assoc();
+        return <String, Object?>{
+          'id': usuario['id_usuario'] ?? '',
+          'name': usuario['nome'] ?? '',
+          'username': usuario['username'] ?? '',
+          'email': '',
+          'birthdate': '',
+          'bio': usuario['biografia'] ?? '',
+          'gender': '',
+          'avatarUrl': usuario['foto_perfil'] ?? '',
+          'friendshipStatus': usuario['amizade_status'] ?? '',
+          'isActive': usuario['ativo'] == '1',
+          'friendsCount': usuario['friends_count'] ?? '0',
+        };
+      }).toList();
+      return _json(200, {'success': true, 'friends': amigos});
+    })
+    ..get('/api/friends/accepted-notifications', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final resultados = await connection.execute(
+        '''SELECT a.id_amizade, a.id_usuario_1, a.id_usuario_2,
+                  COALESCE(a.data_resposta, a.data_solicitacao) AS data_evento,
+                  u1.nome AS nome_usuario_1,
+                  u1.username AS username_usuario_1,
+                  u1.foto_perfil AS avatar_usuario_1,
+                  u2.nome AS nome_usuario_2,
+                  u2.username AS username_usuario_2,
+                  u2.foto_perfil AS avatar_usuario_2
+           FROM amizade a
+           JOIN usuario u1 ON u1.id_usuario = a.id_usuario_1
+           JOIN usuario u2 ON u2.id_usuario = a.id_usuario_2
+           WHERE a.status = 'aceito'
+             AND (a.id_usuario_1 = :id_usuario
+               OR a.id_usuario_2 = :id_usuario)
+             AND u1.ativo = 1 AND u2.ativo = 1
+           ORDER BY data_evento DESC, a.id_amizade DESC''',
+        {'id_usuario': idUsuario},
+      );
+
+      final notificacoes = resultados.rows.map((row) {
+        final amizade = row.assoc();
+        final enviouSolicitacao =
+            amizade['id_usuario_1'] == idUsuario.toString();
+        final tipo =
+            enviouSolicitacao ? 'solicitacao_aceita' : 'amizade_criada';
+        final nomeAtor = enviouSolicitacao
+            ? amizade['nome_usuario_2'] ?? 'Seu amigo'
+            : amizade['nome_usuario_1'] ?? 'Seu amigo';
+
+        return <String, Object?>{
+          'notificationId': '${amizade['id_amizade']}_$tipo',
+          'type': tipo,
+          'message': enviouSolicitacao
+              ? '$nomeAtor aceitou sua solicitação de amizade.'
+              : 'Agora vocês são amigos.',
+          'createdAt': amizade['data_evento'] ?? '',
+          'username': enviouSolicitacao
+              ? amizade['username_usuario_2'] ?? ''
+              : amizade['username_usuario_1'] ?? '',
+          'avatarUrl': enviouSolicitacao
+              ? amizade['avatar_usuario_2'] ?? ''
+              : amizade['avatar_usuario_1'] ?? '',
+        };
+      }).toList();
+
+      return _json(200, {'success': true, 'notifications': notificacoes});
+    })
+    ..get('/api/friends/accepted-notifications', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final resultados = await connection.execute(
+        '''SELECT a.id_amizade, a.id_usuario_1, a.id_usuario_2,
+                  COALESCE(a.data_resposta, a.data_solicitacao) AS data_evento,
+                  u1.nome AS nome_usuario_1,
+                  u1.username AS username_usuario_1,
+                  u1.foto_perfil AS avatar_usuario_1,
+                  u2.nome AS nome_usuario_2,
+                  u2.username AS username_usuario_2,
+                  u2.foto_perfil AS avatar_usuario_2
+           FROM amizade a
+           JOIN usuario u1 ON u1.id_usuario = a.id_usuario_1
+           JOIN usuario u2 ON u2.id_usuario = a.id_usuario_2
+           WHERE a.status = 'aceito'
+             AND (a.id_usuario_1 = :id_usuario
+               OR a.id_usuario_2 = :id_usuario)
+             AND u1.ativo = 1 AND u2.ativo = 1
+           ORDER BY data_evento DESC, a.id_amizade DESC''',
+        {'id_usuario': idUsuario},
+      );
+
+      final notificacoes = resultados.rows.map((row) {
+        final amizade = row.assoc();
+        final enviouSolicitacao =
+            amizade['id_usuario_1'] == idUsuario.toString();
+        final tipo =
+            enviouSolicitacao ? 'solicitacao_aceita' : 'amizade_criada';
+        final nomeAtor = enviouSolicitacao
+            ? amizade['nome_usuario_2'] ?? 'Seu amigo'
+            : amizade['nome_usuario_1'] ?? 'Seu amigo';
+
+        return <String, Object?>{
+          'notificationId': '${amizade['id_amizade']}_$tipo',
+          'type': tipo,
+          'message': enviouSolicitacao
+              ? '$nomeAtor aceitou sua solicitação de amizade.'
+              : 'Agora vocês são amigos.',
+          'createdAt': amizade['data_evento'] ?? '',
+          'username': enviouSolicitacao
+              ? amizade['username_usuario_2'] ?? ''
+              : amizade['username_usuario_1'] ?? '',
+          'avatarUrl': enviouSolicitacao
+              ? amizade['avatar_usuario_2'] ?? ''
+              : amizade['avatar_usuario_1'] ?? '',
+        };
+      }).toList();
+
+      return _json(200, {'success': true, 'notifications': notificacoes});
+    })
+    ..get('/api/notifications/likes', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      try {
+        final resultados = await connection.execute(
+          '''SELECT c.id_foto, c.id_usuario, c.data_curtida,
+                f.id_usuario AS id_autor, f.midia_url, f.legenda,
+                f.data_postagem, f.proporcao,
+                u.username, u.foto_perfil,
+                autor.nome AS nome_autor, autor.username AS username_autor,
+                autor.foto_perfil AS avatar_autor,
+                (SELECT COUNT(*) FROM curtida todas
+                     WHERE todas.id_foto = f.id_foto) AS total_curtidas,
+                    EXISTS (SELECT 1 FROM curtida minha
+                            WHERE minha.id_foto = f.id_foto
+                              AND minha.id_usuario = :id_usuario) AS curtiu_publicacao
+             FROM curtida c
+             JOIN foto f ON f.id_foto = c.id_foto
+             JOIN usuario u ON u.id_usuario = c.id_usuario
+               JOIN usuario autor ON autor.id_usuario = f.id_usuario
+             WHERE f.id_usuario = :id_usuario
+                 AND f.ativa = 1
+                 AND c.id_usuario <> :id_usuario
+               AND u.ativo = 1 AND autor.ativo = 1
+             ORDER BY c.data_curtida DESC, c.id_foto DESC
+             LIMIT 100''',
+          {'id_usuario': idUsuario},
+        );
+
+        final notificacoes = resultados.rows.map((row) {
+          final curtida = row.assoc();
+          final idFoto = curtida['id_foto'] ?? '';
+          final idAutor = curtida['id_usuario'] ?? '';
+          final dataCurtida = curtida['data_curtida'] ?? '';
+          return <String, Object?>{
+            'notificationId': 'like_${idFoto}_${idAutor}_$dataCurtida',
+            'type': 'like',
+            'postId': idFoto,
+            'message': 'curtiu sua publicação.',
+            'createdAt': dataCurtida,
+            'username': curtida['username'] ?? '',
+            'avatarUrl': curtida['foto_perfil'] ?? '',
+            'post': {
+              'id': idFoto,
+              'userId': curtida['id_autor'] ?? '',
+              'imageUrl': curtida['midia_url'] ?? '',
+              'caption': curtida['legenda'] ?? '',
+              'createdAt': curtida['data_postagem'] ?? '',
+              'aspectRatio': curtida['proporcao'],
+              'authorName': curtida['nome_autor'] ?? '',
+              'authorUsername': curtida['username_autor'] ?? '',
+              'authorAvatar': curtida['avatar_autor'] ?? '',
+              'reactionCount': curtida['total_curtidas'] ?? '0',
+              'userReaction': curtida['curtiu_publicacao'] == true ||
+                      curtida['curtiu_publicacao']?.toString() == '1'
+                  ? 'HEART'
+                  : null,
+            },
+          };
+        }).toList();
+
+        return _json(200, {'success': true, 'notifications': notificacoes});
+      } catch (error, stackTrace) {
+        print('Erro ao carregar notificações de curtida: $error\n$stackTrace');
+        return _json(
+            500, {'message': 'Erro ao carregar notificações de curtida.'});
+      }
+    })
+    ..delete('/api/friends/<friendId>',
+        (Request request, String friendId) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idAmigo = int.tryParse(friendId);
+      if (idAmigo == null || idAmigo == idUsuario) {
+        return _json(422, {'message': 'Amigo inválido.'});
+      }
+
+      final removida = await connection.execute(
+        '''DELETE FROM amizade
+           WHERE status = 'aceito'
+             AND ((id_usuario_1 = :id_usuario AND id_usuario_2 = :id_amigo)
+               OR (id_usuario_1 = :id_amigo AND id_usuario_2 = :id_usuario))''',
+        {'id_usuario': idUsuario, 'id_amigo': idAmigo},
+      );
+
+      if (removida.affectedRows == 0) {
+        return _json(404, {'message': 'Amizade não encontrada.'});
+      }
+
+      return _json(200, {'success': true});
+    })
+    ..post('/api/usuarios', (Request request) async {
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
+
+      final nome = (dados['nome'] as String? ?? '').trim();
+      final username =
+          (dados['username'] as String? ?? '').trim().toLowerCase();
+      final email = (dados['email'] as String? ?? '').trim().toLowerCase();
+      final senha = dados['senha'] as String? ?? '';
+      final confirmacaoSenha = dados['confirmacao_senha'] as String? ?? '';
+      final dataNascimento = dados['data_nascimento'] as String? ?? '';
+
+      if (nome.isEmpty ||
+          nome.length > 100 ||
+          !_usernameValido(username) ||
+          !_emailValido(email) ||
+          email.length > 150 ||
+          !_senhaValida(senha) ||
+          senha != confirmacaoSenha ||
+          !_dataValida(dataNascimento)) {
+        return _json(422, {'erro': 'Confira os dados informados.'});
+      }
+      if (!_idadeMinimaValida(dataNascimento)) {
+        return _json(422, {'erro': 'O usuário precisa ter 16 anos ou mais.'});
+      }
+
+      try {
+        final emailExistente = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE email = :email AND ativo = 1 LIMIT 1',
+          {'email': email},
+        );
+        if (emailExistente.rows.isNotEmpty) {
+          return _json(409, {'erro': 'Este e-mail já está cadastrado.'});
+        }
+
+        final usernameExistente = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE username = :username LIMIT 1',
+          {'username': username},
+        );
+        if (usernameExistente.rows.isNotEmpty) {
+          return _json(409, {'erro': 'Este username já está em uso.'});
+        }
+
+        final solicitacaoRecente = await connection.execute(
+          '''SELECT id_verificacao FROM cadastro_email_verificacao
+             WHERE email = :email
+               AND criado_em > DATE_SUB(NOW(), INTERVAL 30 SECOND)
+             ORDER BY id_verificacao DESC LIMIT 1''',
+          {'email': email},
+        );
+        if (solicitacaoRecente.rows.isNotEmpty) {
+          return _json(429, {
+            'erro': 'Aguarde 30 segundos antes de solicitar outro e-mail.',
+          });
+        }
+
+        final token = _gerarToken();
+        await connection.execute(
+          'DELETE FROM cadastro_email_verificacao WHERE email = :email',
+          {'email': email},
+        );
+        final solicitacao = await connection.execute(
+          '''INSERT INTO cadastro_email_verificacao
+               (nome, username, email, senha_hash, data_nascimento,
+                token_hash, expira_em)
+             VALUES (:nome, :username, :email, :senha_hash, :data_nascimento,
+                    :token_hash, DATE_ADD(NOW(), INTERVAL 15 MINUTE))''',
+          {
+            'nome': nome,
+            'username': username,
+            'email': email,
+            'senha_hash': BCrypt.hashpw(senha, BCrypt.gensalt()),
+            'data_nascimento': dataNascimento,
+            'token_hash': _hashToken(token),
+          },
+        );
+
+        try {
+          await sendSignupVerificationEmail(email, nome, token);
+        } catch (error, stackTrace) {
+          await connection.execute(
+            '''DELETE FROM cadastro_email_verificacao
+               WHERE id_verificacao = :id_verificacao''',
+            {'id_verificacao': solicitacao.lastInsertID},
+          );
+          print('Erro ao enviar e-mail de verificação do cadastro: $error');
+          print(stackTrace);
+          return _json(502, {
+            'erro':
+                'Não foi possível enviar o e-mail. Confira as configurações SMTP.',
+          });
+        }
+
+        return _json(202, {
+          'mensagem':
+              'Enviamos um código de verificação. Informe-o para confirmar seu e-mail e criar a conta.',
+        });
+      } catch (error, stackTrace) {
+        final mensagem = error.toString();
+        print('Erro ao cadastrar usuário: $mensagem');
+        print(stackTrace);
+        if (mensagem.toLowerCase().contains('duplicate') ||
+            mensagem.toLowerCase().contains('1062')) {
+          if (mensagem.toLowerCase().contains('username')) {
+            return _json(409, {'erro': 'Este username já está em uso.'});
+          }
+          return _json(409, {'erro': 'Este e-mail já está cadastrado.'});
+        }
+        return _json(500, {'erro': 'Erro interno ao salvar o usuário.'});
+      }
+    })
+    ..post('/api/usuarios/verificar-email', (Request request) async {
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'erro': 'JSON inválido.'});
+      final email = (dados['email'] ?? '').toString().trim().toLowerCase();
+      final token = (dados['token'] ?? '').toString().trim();
+      if (!_emailValido(email) || !RegExp(r'^\d{6}$').hasMatch(token)) {
+        return _json(422, {'erro': 'Informe um e-mail e código válidos.'});
+      }
+      try {
+        final verificacoes = await connection.execute(
+          '''SELECT id_verificacao, nome, username, email, senha_hash,
+                    data_nascimento, token_hash, tentativas
+             FROM cadastro_email_verificacao
+             WHERE email = :email AND verificado_em IS NULL
+               AND senha_hash <> '' AND expira_em > NOW()
+             ORDER BY id_verificacao DESC LIMIT 1''',
+          {'email': email},
+        );
+        if (verificacoes.rows.isEmpty) {
+          return _json(422, {
+            'erro': 'Código inválido ou expirado. Solicite um novo cadastro.',
+          });
+        }
+
+        final verificacao = verificacoes.rows.first.assoc();
+        final idVerificacao = verificacao['id_verificacao'];
+        final tentativas = int.tryParse(verificacao['tentativas'] ?? '') ?? 0;
+        if (tentativas >= 5) {
+          return _json(429, {
+            'erro':
+                'O limite de tentativas foi atingido. Inicie novamente o cadastro para receber outro código.',
+          });
+        }
+        if (_hashToken(token) != verificacao['token_hash']) {
+          await connection.execute(
+            '''UPDATE cadastro_email_verificacao
+               SET tentativas = tentativas + 1
+               WHERE id_verificacao = :id_verificacao''',
+            {'id_verificacao': idVerificacao},
+          );
+          return _json(422, {
+            'erro': 'Código incorreto. Confira o e-mail e tente novamente.',
+          });
+        }
+
+        final emailExistente = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE email = :email AND ativo = 1 LIMIT 1',
+          {'email': verificacao['email']},
+        );
+        if (emailExistente.rows.isNotEmpty) {
+          return _json(409, {'erro': 'Este e-mail já está cadastrado.'});
+        }
+
+        final usernameExistente = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE username = :username LIMIT 1',
+          {'username': verificacao['username']},
+        );
+        if (usernameExistente.rows.isNotEmpty) {
+          return _json(409, {
+            'erro':
+                'Este username foi usado por outra conta. Inicie o cadastro novamente com outro username.',
+          });
+        }
+
+        await connection.execute(
+          '''INSERT INTO usuario
+               (nome, username, email, senha_hash, data_nascimento)
+             VALUES (:nome, :username, :email, :senha_hash, :data_nascimento)''',
+          {
+            'nome': verificacao['nome'],
+            'username': verificacao['username'],
+            'email': verificacao['email'],
+            'senha_hash': verificacao['senha_hash'],
+            'data_nascimento': verificacao['data_nascimento'],
+          },
+        );
+        await connection.execute(
+          '''UPDATE cadastro_email_verificacao
+             SET verificado_em = NOW(), senha_hash = ''
+             WHERE id_verificacao = :id_verificacao
+               AND verificado_em IS NULL''',
+          {'id_verificacao': idVerificacao},
+        );
+
+        return _json(201, {
+          'mensagem': 'E-mail confirmado. Sua conta foi criada com sucesso.',
+        });
+      } catch (error, stackTrace) {
+        final mensagem = error.toString().toLowerCase();
+        if (mensagem.contains('duplicate') || mensagem.contains('1062')) {
+          return _json(409, {
+            'erro':
+                'O e-mail ou username já está sendo usado. Inicie o cadastro novamente com outros dados.',
+          });
+        }
+        print('Erro ao verificar e-mail do cadastro: $error');
+        print(stackTrace);
+        return _json(
+            500, {'erro': 'Não foi possível criar a conta. Tente novamente.'});
+      }
+    })
+    ..post('/api/recuperacao/solicitar', (Request request) async {
+      final dados = await _lerJson(request);
+      final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
+      if (!_emailValido(email))
+        return _json(422, {'erro': 'Informe um e-mail válido.'});
+
+      final usuarios = await connection.execute(
+        'SELECT id_usuario, nome FROM usuario WHERE email = :email AND ativo = 1 LIMIT 1',
+        {'email': email},
+      );
+      if (usuarios.rows.isEmpty)
+        return _json(
+            200, {'mensagem': 'Se o e-mail existir, um token será enviado.'});
+
+      final linhaUsuario = usuarios.rows.first.assoc();
+      final idUsuario = int.parse(linhaUsuario['id_usuario']!);
+      final nomeUsuario = linhaUsuario['nome'] ?? 'usuário';
+
+      final recentes = await connection.execute(
+        'SELECT enviado_em FROM recuperacao_senha WHERE id_usuario = :id_usuario AND enviado_em > DATE_SUB(NOW(), INTERVAL 30 SECOND) ORDER BY enviado_em DESC LIMIT 1',
+        {'id_usuario': idUsuario},
+      );
+      if (recentes.rows.isNotEmpty)
+        return _json(
+            429, {'erro': 'Aguarde 30 segundos para solicitar outro token.'});
+
+      final token = _gerarToken();
+      try {
+        await connection.execute(
+          'INSERT INTO recuperacao_senha (id_usuario, token_hash, expira_em) VALUES (:id_usuario, :token_hash, DATE_ADD(NOW(), INTERVAL 15 MINUTE))',
+          {'id_usuario': idUsuario, 'token_hash': _hashToken(token)},
+        );
+        await _enviarToken(email, nomeUsuario, token);
+      } catch (error, stackTrace) {
+        await connection.execute(
+          'DELETE FROM recuperacao_senha WHERE id_usuario = :id_usuario AND token_hash = :token_hash',
+          {'id_usuario': idUsuario, 'token_hash': _hashToken(token)},
+        );
+        print('Erro ao enviar token: $error');
+        print(stackTrace);
+        return _json(502, {
+          'erro':
+              'Não foi possível enviar o e-mail. Confira as configurações SMTP.'
+        });
+      }
+      return _json(
+          200, {'mensagem': 'Se o e-mail existir, um token será enviado.'});
+    })
+    ..post('/api/recuperacao/validar-token', (Request request) async {
+      final dados = await _lerJson(request);
+      final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
+      final token = dados?['token'] as String? ?? '';
+      if (!_emailValido(email) || token.length != 6) {
+        return _json(422, {'erro': 'Token inválido ou expirado.'});
+      }
+
+      final resultados = await connection.execute(
+        '''SELECT r.id_recuperacao
+           FROM recuperacao_senha r JOIN usuario u ON u.id_usuario = r.id_usuario
+           WHERE u.email = :email AND r.token_hash = :token_hash
+             AND r.usado_em IS NULL AND r.expira_em > NOW()
+           ORDER BY r.id_recuperacao DESC LIMIT 1''',
+        {'email': email, 'token_hash': _hashToken(token)},
+      );
+      if (resultados.rows.isEmpty)
+        return _json(422, {'erro': 'Token inválido ou expirado.'});
+      return _json(200, {'mensagem': 'Token válido.'});
+    })
+    ..post('/api/recuperacao/redefinir', (Request request) async {
+      final dados = await _lerJson(request);
+      final email = (dados?['email'] as String? ?? '').trim().toLowerCase();
+      final token = dados?['token'] as String? ?? '';
+      final novaSenha = dados?['nova_senha'] as String? ?? '';
+      final confirmacaoSenha = dados?['confirmacao_senha'] as String? ?? '';
+      if (!_emailValido(email) ||
+          token.isEmpty ||
+          !_senhaValida(novaSenha) ||
+          novaSenha != confirmacaoSenha) {
+        return _json(422, {'erro': 'Confira os dados informados.'});
+      }
+
+      final resultados = await connection.execute(
+        '''SELECT r.id_recuperacao, r.id_usuario
+           FROM recuperacao_senha r JOIN usuario u ON u.id_usuario = r.id_usuario
+           WHERE u.email = :email AND r.token_hash = :token_hash
+             AND r.usado_em IS NULL AND r.expira_em > NOW()
+           ORDER BY r.id_recuperacao DESC LIMIT 1''',
+        {'email': email, 'token_hash': _hashToken(token)},
+      );
+      if (resultados.rows.isEmpty)
+        return _json(422, {'erro': 'Token inválido ou expirado.'});
+
+      final recuperacao = resultados.rows.first.assoc();
+      final idRecuperacao = int.parse(recuperacao['id_recuperacao']!);
+      final idUsuario = int.parse(recuperacao['id_usuario']!);
+      await connection.execute(
+          'UPDATE usuario SET senha_hash = :senha_hash WHERE id_usuario = :id_usuario',
+          {
+            'senha_hash': BCrypt.hashpw(novaSenha, BCrypt.gensalt()),
+            'id_usuario': idUsuario
+          });
+      await connection.execute(
+          'UPDATE recuperacao_senha SET usado_em = NOW() WHERE id_recuperacao = :id_recuperacao',
+          {'id_recuperacao': idRecuperacao});
+      return _json(200, {'mensagem': 'Senha redefinida com sucesso.'});
+    })
+    ..post('/api/profile/email/request', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'message': 'JSON inválido.'});
+
+      final novoEmail = (dados['email'] ?? '').toString().trim().toLowerCase();
+      final senhaAtual = (dados['senha'] ?? '').toString();
+      if (!_emailValido(novoEmail) ||
+          novoEmail.length > 150 ||
+          senhaAtual.isEmpty) {
+        return _json(422, {'message': 'Informe um e-mail válido e sua senha.'});
+      }
+
+      try {
+        final usuarios = await connection.execute(
+          '''SELECT nome, email, senha_hash FROM usuario
+             WHERE id_usuario = :id_usuario AND ativo = 1 LIMIT 1''',
+          {'id_usuario': idUsuario},
+        );
+        if (usuarios.rows.isEmpty) {
+          return _json(404, {'message': 'Usuário não encontrado.'});
+        }
+
+        final usuario = usuarios.rows.first.assoc();
+        if (!BCrypt.checkpw(senhaAtual, usuario['senha_hash'] ?? '')) {
+          return _json(401, {'message': 'A senha atual está incorreta.'});
+        }
+        if (novoEmail == (usuario['email'] ?? '').trim().toLowerCase()) {
+          return _json(409, {'message': 'Este já é o seu e-mail atual.'});
+        }
+
+        final emailEmUso = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE email = :email LIMIT 1',
+          {'email': novoEmail},
+        );
+        if (emailEmUso.rows.isNotEmpty) {
+          return _json(409, {'message': 'Este e-mail já está cadastrado.'});
+        }
+
+        final solicitacaoRecente = await connection.execute(
+          '''SELECT id_alteracao FROM alteracao_email_token
+             WHERE id_usuario = :id_usuario
+               AND enviado_em > DATE_SUB(NOW(), INTERVAL 30 SECOND)
+             ORDER BY id_alteracao DESC LIMIT 1''',
+          {'id_usuario': idUsuario},
+        );
+        if (solicitacaoRecente.rows.isNotEmpty) {
+          return _json(429, {
+            'message': 'Aguarde 30 segundos antes de solicitar outro código.',
+          });
+        }
+
+        final nomeUsuario = usuario['nome'] ?? 'usuário';
+        final codigo = _gerarToken();
+        await connection.execute(
+          '''UPDATE alteracao_email_token SET usado_em = NOW()
+             WHERE id_usuario = :id_usuario AND usado_em IS NULL''',
+          {'id_usuario': idUsuario},
+        );
+        final insercao = await connection.execute(
+          '''INSERT INTO alteracao_email_token
+               (id_usuario, novo_email, token_hash, expira_em)
+             VALUES (:id_usuario, :novo_email, :token_hash,
+                     DATE_ADD(NOW(), INTERVAL 15 MINUTE))''',
+          {
+            'id_usuario': idUsuario,
+            'novo_email': novoEmail,
+            'token_hash': _hashToken(codigo),
+          },
+        );
+        final idAlteracao = insercao.lastInsertID;
+
+        try {
+          await sendEmailChangeToken(novoEmail, nomeUsuario, codigo);
+        } catch (error, stackTrace) {
+          await connection.execute(
+            '''DELETE FROM alteracao_email_token
+               WHERE id_alteracao = :id_alteracao''',
+            {'id_alteracao': idAlteracao},
+          );
+          print('Erro ao enviar token para alteração de e-mail: $error');
+          print(stackTrace);
+          return _json(502, {
+            'message':
+                'Não foi possível enviar o e-mail. Confira as configurações SMTP.',
+          });
+        }
+
+        return _json(200, {
+          'success': true,
+          'message': 'Código enviado para o novo e-mail.',
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao solicitar alteração de e-mail: $error');
+        print(stackTrace);
+        return _json(500, {
+          'message': 'Não foi possível solicitar a alteração de e-mail.',
+        });
+      }
+    })
+    ..post('/api/profile/email/confirm', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'message': 'JSON inválido.'});
+
+      final novoEmail = (dados['email'] ?? '').toString().trim().toLowerCase();
+      final codigo = (dados['token'] ?? '').toString().trim();
+      if (!_emailValido(novoEmail) ||
+          novoEmail.length > 150 ||
+          !RegExp(r'^\d{6}$').hasMatch(codigo)) {
+        return _json(422, {'message': 'Código inválido ou expirado.'});
+      }
+
+      try {
+        final tokens = await connection.execute(
+          '''SELECT id_alteracao FROM alteracao_email_token
+             WHERE id_usuario = :id_usuario
+               AND novo_email = :novo_email
+               AND token_hash = :token_hash
+               AND usado_em IS NULL AND expira_em > NOW()
+             ORDER BY id_alteracao DESC LIMIT 1''',
+          {
+            'id_usuario': idUsuario,
+            'novo_email': novoEmail,
+            'token_hash': _hashToken(codigo),
+          },
+        );
+        if (tokens.rows.isEmpty) {
+          return _json(422, {'message': 'Código inválido ou expirado.'});
+        }
+
+        final emailEmUso = await connection.execute(
+          'SELECT id_usuario FROM usuario WHERE email = :email LIMIT 1',
+          {'email': novoEmail},
+        );
+        if (emailEmUso.rows.isNotEmpty) {
+          return _json(409, {'message': 'Este e-mail já está cadastrado.'});
+        }
+
+        final idAlteracao =
+            int.parse(tokens.rows.first.assoc()['id_alteracao']!);
+        final resultado = await connection.execute(
+          '''UPDATE usuario u
+             JOIN alteracao_email_token t ON t.id_usuario = u.id_usuario
+             SET u.email = t.novo_email, t.usado_em = NOW()
+             WHERE u.id_usuario = :id_usuario
+               AND t.id_alteracao = :id_alteracao
+               AND t.novo_email = :novo_email
+               AND t.token_hash = :token_hash
+               AND t.usado_em IS NULL AND t.expira_em > NOW()''',
+          {
+            'id_usuario': idUsuario,
+            'id_alteracao': idAlteracao,
+            'novo_email': novoEmail,
+            'token_hash': _hashToken(codigo),
+          },
+        );
+        if (resultado.affectedRows == 0) {
+          return _json(422, {'message': 'Código inválido ou expirado.'});
+        }
+
+        return _json(200, {
+          'success': true,
+          'message': 'E-mail alterado com sucesso.',
+          'email': novoEmail,
+        });
+      } catch (error, stackTrace) {
+        final mensagem = error.toString().toLowerCase();
+        if (mensagem.contains('duplicate') || mensagem.contains('1062')) {
+          return _json(409, {'message': 'Este e-mail já está cadastrado.'});
+        }
+
+        print('Erro ao confirmar alteração de e-mail: $error');
+        print(stackTrace);
+        return _json(500, {
+          'message': 'Não foi possível confirmar a alteração de e-mail.',
+        });
+      }
+    })
+    ..get('/api/feed', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      try {
+        final resultado = await connection.execute(
+          '''SELECT f.id_foto, f.id_usuario, f.midia_url, f.legenda,
+                    f.data_postagem, f.proporcao, u.nome, u.username,
+                    u.foto_perfil,
+                    (SELECT COUNT(*) FROM curtida c
+                     WHERE c.id_foto = f.id_foto) AS reaction_count,
+                    EXISTS (SELECT 1 FROM curtida c
+                            WHERE c.id_foto = f.id_foto
+                              AND c.id_usuario = :id_usuario) AS user_liked
+             FROM foto f
+             JOIN usuario u ON u.id_usuario = f.id_usuario
+             WHERE f.ativa = 1 AND u.ativo = 1 AND (
+               f.id_usuario = :id_usuario
+                OR EXISTS (
+                  SELECT 1 FROM amizade a
+                  WHERE a.status = 'aceito'
+                    AND ((a.id_usuario_1 = :id_usuario
+                          AND a.id_usuario_2 = f.id_usuario)
+                      OR (a.id_usuario_2 = :id_usuario
+                          AND a.id_usuario_1 = f.id_usuario))
+                ))
+             ORDER BY f.data_postagem DESC, f.id_foto DESC''',
+          {'id_usuario': idUsuario},
+        );
+
+        final publicacoes = resultado.rows.map((row) {
+          final foto = row.assoc();
+          return <String, Object?>{
+            'id': foto['id_foto'] ?? '',
+            'userId': foto['id_usuario'] ?? '',
+            'imageUrl': foto['midia_url'] ?? '',
+            'caption': foto['legenda'] ?? '',
+            'createdAt': foto['data_postagem'] ?? '',
+            'aspectRatio': foto['proporcao'],
+            'authorName': foto['nome'] ?? '',
+            'authorUsername': foto['username'] ?? '',
+            'authorAvatar': foto['foto_perfil'] ?? '',
+            'reactionCount': foto['reaction_count'] ?? '0',
+            'userReaction': foto['user_liked'] == true ||
+                    foto['user_liked']?.toString() == '1'
+                ? 'HEART'
+                : null,
+          };
+        }).toList();
+
+        return _json(200, {'success': true, 'posts': publicacoes});
+      } catch (error, stackTrace) {
+        print('Erro ao carregar feed: $error');
+        print(stackTrace);
+        return _json(500, {'message': 'Erro ao carregar o feed.'});
+      }
+    })
+    ..get('/api/fotos/minhas', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null)
+        return _json(401, {'message': 'Não há publicações para serem vistas.'});
+
+      try {
+        final resultado = await connection.execute(
+          '''SELECT f.id_foto, f.id_usuario, f.midia_url, f.legenda,
+                f.filtro_aplicado, f.data_postagem, f.proporcao,
+                (SELECT COUNT(*) FROM curtida c
+                 WHERE c.id_foto = f.id_foto) AS reaction_count,
+                EXISTS (SELECT 1 FROM curtida c
+                        WHERE c.id_foto = f.id_foto
+                          AND c.id_usuario = :id_usuario) AS user_liked
+             FROM foto f
+         WHERE f.ativa = 1 AND f.id_usuario = :id_usuario
+             ORDER BY f.data_postagem DESC, f.id_foto DESC''',
+          {'id_usuario': idUsuario},
+        );
+
+        return _json(200, {
+          'success': true,
+          'fotos': resultado.rows.map((row) => row.assoc()).toList(),
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao buscar fotos: $error');
+        print(stackTrace);
+        return _json(500, {'message': 'Erro ao carregar galeria.'});
+      }
+    })
+    ..put('/api/dumps/<year>/<month>', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+      final year = int.tryParse(request.params['year'] ?? '');
+      final month = int.tryParse(request.params['month'] ?? '');
+      if (year == null || month == null || month < 1 || month > 12) {
+        return _json(422, {'message': 'Mês inválido.'});
+      }
+      try {
+        final body =
+            jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+        final visible = body['visible'] == true;
+        final coverUrl = body['coverUrl']?.toString();
+        await connection.execute(
+          '''INSERT INTO dump_visibilidade (id_usuario, ano, mes, visivel, capa_url)
+             VALUES (:id_usuario, :ano, :mes, :visivel, :capa_url)
+             ON DUPLICATE KEY UPDATE visivel = :visivel, capa_url = COALESCE(:capa_url, capa_url)''',
+          {
+            'id_usuario': idUsuario,
+            'ano': year,
+            'mes': month,
+            'visivel': visible ? 1 : 0,
+            'capa_url': coverUrl
+          },
+        );
+        return _json(200, {'success': true});
+      } catch (_) {
+        return _json(500, {'message': 'Não foi possível salvar o dump.'});
+      }
+    })
+    ..post('/api/dumps/<year>/<month>/cover', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+      if (!request.isMultipart)
+        return _json(
+            422, {'message': 'Envie a capa como multipart/form-data.'});
+      final year = int.tryParse(request.params['year'] ?? '');
+      final month = int.tryParse(request.params['month'] ?? '');
+      if (year == null || month == null || month < 1 || month > 12) {
+        return _json(422, {'message': 'Mês inválido.'});
+      }
+      File? tempFile;
+      await for (final formData in request.multipartFormData) {
+        if (formData.name == 'capa') {
+          final bytes = await _coletarBytes(formData.part);
+          final extension =
+              _extensaoPorContentType(formData.part.headers['content-type']);
+          tempFile = File(
+              '${Directory.systemTemp.path}/dump_${DateTime.now().microsecondsSinceEpoch}$extension');
+          await tempFile.writeAsBytes(bytes);
+        }
+      }
+      if (tempFile == null)
+        return _json(422, {'message': 'Envie o arquivo no campo "capa".'});
+      String? coverUrl;
+      try {
+        final upload = await cloudinary
+            .uploader()
+            .upload(tempFile, params: UploadParams(folder: 'dump_covers'));
+        coverUrl = upload?.data?.secureUrl;
+      } catch (error) {
+        return _json(502, {'message': 'Falha ao enviar a capa.'});
+      } finally {
+        if (await tempFile.exists()) await tempFile.delete();
+      }
+      if (coverUrl == null)
+        return _json(502, {'message': 'Falha ao processar a capa.'});
+      await connection.execute(
+        '''INSERT INTO dump_visibilidade (id_usuario, ano, mes, visivel, capa_url)
+           VALUES (:id_usuario, :ano, :mes, FALSE, :capa_url)
+           ON DUPLICATE KEY UPDATE capa_url = :capa_url''',
+        {
+          'id_usuario': idUsuario,
+          'ano': year,
+          'mes': month,
+          'capa_url': coverUrl
+        },
+      );
+      return _json(200, {'success': true, 'coverUrl': coverUrl});
+    })
+    ..get('/api/dumps/settings', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) {
+        return _json(401, {'message': 'Sessão inválida.'});
+      }
+      try {
+        final result = await connection.execute(
+          '''SELECT ano, mes, visivel, capa_url
+             FROM dump_visibilidade
+             WHERE id_usuario = :id_usuario''',
+          {'id_usuario': idUsuario},
+        );
+        final settings = result.rows.map((row) {
+          final dump = row.assoc();
+          return {
+            ...dump,
+            'visivel': dump['visivel'].toString() == '1' ||
+                dump['visivel'].toString().toLowerCase() == 'true',
+          };
+        }).toList();
+        return _json(200, {'success': true, 'settings': settings});
+      } catch (_) {
+        return _json(
+            500, {'message': 'Erro ao carregar configurações dos dumps.'});
+      }
+    })
+    ..get('/api/dumps/friends', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+      try {
+        final result = await connection.execute(
+          '''SELECT dv.id_usuario, dv.ano, dv.mes, dv.capa_url,
+                    u.nome, u.username, u.foto_perfil
+             FROM dump_visibilidade dv
+             JOIN usuario u ON u.id_usuario = dv.id_usuario
+             JOIN amizade a ON a.status = 'aceito'
+               AND ((a.id_usuario_1 = :id_usuario AND a.id_usuario_2 = dv.id_usuario)
+                 OR (a.id_usuario_2 = :id_usuario AND a.id_usuario_1 = dv.id_usuario))
+             WHERE dv.visivel = TRUE
+             ORDER BY dv.ano DESC, dv.mes DESC''',
+          {'id_usuario': idUsuario},
+        );
+        final dumps = <Map<String, dynamic>>[];
+        for (final row in result.rows) {
+          final dump = row.assoc();
+          final friendId = int.parse(dump['id_usuario'].toString());
+          final year = int.parse(dump['ano'].toString());
+          final month = int.parse(dump['mes'].toString());
+          final photos = await connection.execute(
+            '''SELECT id_foto, midia_url, legenda, data_postagem, proporcao
+               FROM foto WHERE ativa = 1 AND id_usuario = :friend_id
+                 AND YEAR(data_postagem) = :year AND MONTH(data_postagem) = :month
+               ORDER BY data_postagem ASC''',
+            {'friend_id': friendId, 'year': year, 'month': month},
+          );
+          dumps.add({
+            ...dump,
+            'photos': photos.rows.map((photo) => photo.assoc()).toList()
+          });
+        }
+        return _json(200, {'success': true, 'dumps': dumps});
+      } catch (error) {
+        return _json(500, {'message': 'Erro ao carregar dumps dos amigos.'});
+      }
+    })
+    ..get('/api/friends/<friendId>/fotos', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null)
+        return _json(401, {'message': 'Não há publicações para serem vistas.'});
+
+      final idAmigo = int.tryParse(request.params['friendId'] ?? '');
+      if (idAmigo == null || idAmigo == idUsuario) {
+        return _json(422, {'message': 'Amigo inválido.'});
+      }
+
+      try {
+        final amizade = await connection.execute(
+          '''SELECT id_amizade FROM amizade
+             WHERE ((id_usuario_1 = :id_usuario AND id_usuario_2 = :id_amigo)
+                 OR (id_usuario_1 = :id_amigo AND id_usuario_2 = :id_usuario))
+               AND status = 'aceito'
+             LIMIT 1''',
+          {'id_usuario': idUsuario, 'id_amigo': idAmigo},
+        );
+        if (amizade.rows.isEmpty) {
+          return _json(403,
+              {'message': 'Este usuário não está na sua lista de amigos.'});
+        }
+
+        final resultado = await connection.execute(
+          '''SELECT f.id_foto, f.id_usuario, f.midia_url, f.legenda,
+                    f.data_postagem, f.proporcao, u.nome, u.foto_perfil,
+                    (SELECT COUNT(*) FROM curtida c
+                     WHERE c.id_foto = f.id_foto) AS reaction_count,
+                    EXISTS (SELECT 1 FROM curtida c
+                            WHERE c.id_foto = f.id_foto
+                              AND c.id_usuario = :id_usuario) AS user_liked
+             FROM foto f
+             JOIN usuario u ON u.id_usuario = f.id_usuario
+             WHERE f.ativa = 1 AND f.id_usuario = :id_amigo AND u.ativo = 1
+             ORDER BY f.data_postagem DESC, f.id_foto DESC''',
+          {'id_amigo': idAmigo, 'id_usuario': idUsuario},
+        );
+
+        return _json(200, {
+          'success': true,
+          'fotos': resultado.rows.map((row) => row.assoc()).toList(),
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao buscar fotos do amigo: $error');
+        print(stackTrace);
+        return _json(500, {'message': 'Erro ao carregar fotos do amigo.'});
+      }
+    })
+    ..put('/api/posts/<postId>', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final idFoto = int.tryParse(request.params['postId'] ?? '');
+      if (idFoto == null) {
+        return _json(422, {'message': 'Publicação inválida.'});
+      }
+      if (!request.isMultipart) {
+        return _json(422, {'message': 'Envie como multipart/form-data.'});
+      }
+
+      final publicacoes = await connection.execute(
+        '''SELECT id_foto FROM foto
+           WHERE id_foto = :id_foto AND id_usuario = :id_usuario AND ativa = 1
+           LIMIT 1''',
+        {'id_foto': idFoto, 'id_usuario': idUsuario},
+      );
+      if (publicacoes.rows.isEmpty) {
+        return _json(404, {'message': 'Publicação não encontrada.'});
+      }
+
+      String? legenda;
+      File? tempFile;
+      await for (final formData in request.multipartFormData) {
+        if (formData.name == 'legenda') {
+          legenda = await _coletarString(formData.part);
+        } else if (formData.name == 'midia') {
+          final bytes = await _coletarBytes(formData.part);
+          final contentType = formData.part.headers['content-type'];
+          final extensao = _extensaoPorContentType(contentType);
+          tempFile = File(
+            '${Directory.systemTemp.path}/update_${DateTime.now().microsecondsSinceEpoch}$extensao',
+          );
+          await tempFile.writeAsBytes(bytes);
+        }
+      }
+
+      if (legenda == null && tempFile == null) {
+        return _json(422, {'message': 'Informe uma legenda ou uma nova foto.'});
+      }
+
+      String? midiaUrl;
+      if (tempFile != null) {
+        try {
+          final response = await cloudinary.uploader().upload(
+                tempFile,
+                params: UploadParams(folder: 'fotos'),
+              );
+          midiaUrl = response?.data?.secureUrl;
+        } catch (error, stackTrace) {
+          print('Erro ao substituir a foto da publicação: $error');
+          print(stackTrace);
+          return _json(502, {'message': 'Falha ao enviar a nova foto.'});
+        } finally {
+          if (await tempFile.exists()) await tempFile.delete();
+        }
+
+        if (midiaUrl == null) {
+          return _json(502, {'message': 'Falha ao processar a nova foto.'});
+        }
+      }
+
+      try {
+        if (midiaUrl != null) {
+          await connection.execute(
+            '''UPDATE foto
+               SET legenda = COALESCE(:legenda, legenda), midia_url = :midia_url
+               WHERE id_foto = :id_foto AND id_usuario = :id_usuario
+                 AND ativa = 1''',
+            {
+              'legenda': legenda,
+              'midia_url': midiaUrl,
+              'id_foto': idFoto,
+              'id_usuario': idUsuario,
+            },
+          );
+        } else {
+          await connection.execute(
+            '''UPDATE foto SET legenda = :legenda
+               WHERE id_foto = :id_foto AND id_usuario = :id_usuario
+                 AND ativa = 1''',
+            {
+              'legenda': legenda,
+              'id_foto': idFoto,
+              'id_usuario': idUsuario,
+            },
+          );
+        }
+
+        final atualizada = await connection.execute(
+          '''SELECT legenda, midia_url FROM foto
+             WHERE id_foto = :id_foto AND id_usuario = :id_usuario
+               AND ativa = 1
+             LIMIT 1''',
+          {'id_foto': idFoto, 'id_usuario': idUsuario},
+        );
+        if (atualizada.rows.isEmpty) {
+          return _json(404, {'message': 'Publicação não encontrada.'});
+        }
+        final dados = atualizada.rows.first.assoc();
+        return _json(200, {
+          'success': true,
+          'caption': dados['legenda'] ?? '',
+          'imageUrl': dados['midia_url'] ?? '',
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao editar publicação: $error');
+        print(stackTrace);
+        return _json(500, {'message': 'Não foi possível editar a publicação.'});
+      }
+    })
+    ..post('/api/fotos', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      if (!request.isMultipart) {
+        return _json(422, {'message': 'Envie como multipart/form-data.'});
+      }
+
+      String? legenda;
+      String? filtroAplicado;
+      double? proporcao;
+      File? tempFile;
+
+      await for (final formData in request.multipartFormData) {
+        if (formData.name == 'legenda') {
+          legenda = await _coletarString(formData.part);
+        } else if (formData.name == 'filtro_aplicado') {
+          final valor = (await _coletarString(formData.part)).trim();
+          filtroAplicado = valor.isEmpty ? null : valor;
+        } else if (formData.name == 'proporcao') {
+          final valor = (await _coletarString(formData.part)).trim();
+          proporcao = double.tryParse(valor);
+        } else if (formData.name == 'midia') {
+          final bytes = await _coletarBytes(formData.part);
+          final contentType = formData.part.headers['content-type'];
+          final extensao = _extensaoPorContentType(contentType);
+          tempFile = File(
+              '${Directory.systemTemp.path}/upload_${DateTime.now().microsecondsSinceEpoch}$extensao');
+          await tempFile.writeAsBytes(bytes);
+        }
+      }
+
+      if (tempFile == null) {
+        return _json(422, {
+          'message': 'Envie o arquivo no campo "midia" (multipart/form-data).'
+        });
+      }
+
+      String? midiaUrl;
+      try {
+        final response = await cloudinary.uploader().upload(
+              tempFile,
+              params: UploadParams(folder: 'fotos'),
+            );
+        midiaUrl = response?.data?.secureUrl;
+      } catch (error, stackTrace) {
+        print('Erro no upload da foto: $error');
+        print(stackTrace);
+        return _json(
+            502, {'message': 'Falha ao enviar a foto para o Cloudinary.'});
+      } finally {
+        if (await tempFile.exists()) await tempFile.delete();
+      }
+
+      if (midiaUrl == null) {
+        return _json(502, {'message': 'Falha ao processar a foto.'});
+      }
+
+      try {
+        final result = await connection.execute(
+          '''INSERT INTO foto
+               (id_usuario, midia_url, legenda, filtro_aplicado, proporcao)
+             VALUES (:id_usuario, :midia_url, :legenda, :filtro_aplicado, :proporcao)''',
+          {
+            'id_usuario': idUsuario,
+            'midia_url': midiaUrl,
+            'legenda': legenda ?? '',
+            'filtro_aplicado': filtroAplicado,
+            'proporcao': proporcao,
+          },
+        );
+        final idFoto = int.parse(result.lastInsertID.toString());
+        final fotos = await connection.execute(
+          '''SELECT id_foto, id_usuario, midia_url, legenda,
+                    filtro_aplicado, data_postagem, proporcao
+             FROM foto WHERE id_foto = :id_foto LIMIT 1''',
+          {'id_foto': idFoto},
+        );
+        final foto =
+            fotos.rows.isEmpty ? <String, String?>{} : fotos.rows.first.assoc();
+
+        return _json(201, {
+          'success': true,
+          'foto': {
+            'id_foto': foto['id_foto'] ?? idFoto.toString(),
+            'id_usuario': foto['id_usuario'] ?? idUsuario.toString(),
+            'midia_url': foto['midia_url'] ?? midiaUrl,
+            'legenda': foto['legenda'] ?? legenda ?? '',
+            'filtro_aplicado': foto['filtro_aplicado'],
+            'data_postagem': foto['data_postagem'],
+            'proporcao': foto['proporcao'],
+          },
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao salvar a foto no banco: $error');
+        print(stackTrace);
+        return _json(
+            500, {'message': 'Não foi possível salvar a foto no banco.'});
+      }
+    })
+    ..post('/api/profile/foto', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      if (!request.isMultipart) {
+        return _json(
+            422, {'message': 'Envie o arquivo como multipart/form-data.'});
+      }
+
+      File? tempFile;
+
+      await for (final formData in request.multipartFormData) {
+        if (formData.name == 'foto') {
+          final bytes = await _coletarBytes(formData.part);
+          final contentType = formData.part.headers['content-type'];
+          final extensao = _extensaoPorContentType(contentType);
+          tempFile = File(
+              '${Directory.systemTemp.path}/upload_${DateTime.now().microsecondsSinceEpoch}$extensao');
+          await tempFile.writeAsBytes(bytes);
+        }
+      }
+
+      if (tempFile == null) {
+        return _json(422, {
+          'message': 'Envie o arquivo no campo "foto" (multipart/form-data).'
+        });
+      }
+
+      String? url;
+      try {
+        final response = await cloudinary.uploader().upload(
+              tempFile,
+              params: UploadParams(folder: 'perfil'),
+            );
+
+        // DEBUG TEMPORÁRIO
+        print('--- DEBUG CLOUDINARY ---');
+        print('response.error: ${response?.error?.message}');
+        print('response.data: ${response?.data}');
+        // print('response.statusCode: ${response?.statusCode}');
+        print('------------------------');
+
+        url = response?.data?.secureUrl;
+      } catch (error, stackTrace) {
+        print('Erro no upload da foto de perfil: $error');
+        print(stackTrace);
+        return _json(
+            502, {'message': 'Falha ao enviar a imagem para o Cloudinary.'});
+      } finally {
+        if (await tempFile.exists()) await tempFile.delete();
+      }
+
+      if (url == null) {
+        print('Cloudinary não retornou uma URL para a foto de perfil.');
+        return _json(502, {'message': 'Falha ao processar a imagem.'});
+      }
+
+      await connection.execute(
+        'UPDATE usuario SET foto_perfil = :url WHERE id_usuario = :id_usuario AND ativo = 1',
+        {'url': url, 'id_usuario': idUsuario},
+      );
+
+      return _json(200, {'success': true, 'foto_perfil': url});
+    })
+    ..delete('/api/profile/foto', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      try {
+        await connection.execute(
+          'UPDATE usuario SET foto_perfil = NULL WHERE id_usuario = :id_usuario AND ativo = 1',
+          {'id_usuario': idUsuario},
+        );
+        return _json(200, {'success': true, 'foto_perfil': null});
+      } catch (error, stackTrace) {
+        print('Erro ao remover a foto de perfil: $error');
+        print(stackTrace);
+        return _json(500, {
+          'message': 'Não foi possível remover a foto de perfil.',
+        });
+      }
+    })
+    ..put('/api/profile/password', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'message': 'JSON inválido.'});
+
+      final senhaAtual = (dados['currentPassword'] ?? '').toString();
+      final novaSenha = (dados['newPassword'] ?? '').toString();
+      final confirmacaoSenha = (dados['confirmPassword'] ?? '').toString();
+
+      if (senhaAtual.isEmpty || !_senhaValida(novaSenha)) {
+        return _json(422, {
+          'message':
+              'A nova senha deve ter 8 caracteres, uma maiúscula, uma minúscula, um número e um caractere especial.'
+        });
+      }
+      if (novaSenha != confirmacaoSenha) {
+        return _json(422, {'message': 'As senhas novas não conferem.'});
+      }
+
+      final usuarios = await connection.execute(
+        'SELECT senha_hash FROM usuario WHERE id_usuario = :id_usuario AND ativo = 1 LIMIT 1',
+        {'id_usuario': idUsuario},
+      );
+      if (usuarios.rows.isEmpty) {
+        return _json(404, {'message': 'Usuário não encontrado.'});
+      }
+
+      final senhaHash = usuarios.rows.first.assoc()['senha_hash'];
+      if (senhaHash == null || !BCrypt.checkpw(senhaAtual, senhaHash)) {
+        return _json(401, {'message': 'A senha atual está incorreta.'});
+      }
+
+      await connection.execute(
+        'UPDATE usuario SET senha_hash = :senha_hash WHERE id_usuario = :id_usuario AND ativo = 1',
+        {
+          'senha_hash': BCrypt.hashpw(novaSenha, BCrypt.gensalt()),
+          'id_usuario': idUsuario,
+        },
+      );
+
+      return _json(200, {
+        'success': true,
+        'message': 'Senha alterada com sucesso.',
+      });
+    })
+    ..delete('/api/profile', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      try {
+        final resultado = await connection.execute(
+          'UPDATE usuario SET ativo = 0 WHERE id_usuario = :id_usuario AND ativo = 1',
+          {'id_usuario': idUsuario},
+        );
+        if (resultado.affectedRows == 0) {
+          return _json(404, {'message': 'Usuário não encontrado.'});
+        }
+
+        sessoes.removeWhere((_, usuarioId) => usuarioId == idUsuario);
+        return _json(200, {
+          'success': true,
+          'message': 'Conta desativada com sucesso.',
+        });
+      } catch (error, stackTrace) {
+        print('Erro ao desativar conta: $error');
+        print(stackTrace);
+        return _json(500, {
+          'message': 'Não foi possível desativar a conta.',
+        });
+      }
+    })
+    ..put('/api/profile', (Request request) async {
+      final idUsuario = _idUsuarioAutenticado(request, sessoes);
+      if (idUsuario == null) return _json(401, {'message': 'Sessão inválida.'});
+
+      final dados = await _lerJson(request);
+      if (dados == null) return _json(400, {'message': 'JSON inválido.'});
+
+      final nome = (dados['name'] ?? '').toString().trim();
+      final username =
+          (dados['username'] ?? '').toString().trim().toLowerCase();
+      final biografia = (dados['bio'] ?? '').toString().trim();
+      if (nome.isEmpty ||
+          nome.length > 100 ||
+          !_usernameValido(username) ||
+          biografia.length > 500) {
+        return _json(422, {'message': 'Confira os dados do perfil.'});
+      }
+
+      final usernameExistente = await connection.execute(
+        '''SELECT id_usuario FROM usuario
+           WHERE username = :username AND id_usuario <> :id_usuario
+           LIMIT 1''',
+        {'username': username, 'id_usuario': idUsuario},
+      );
+      if (usernameExistente.rows.isNotEmpty) {
+        return _json(409, {'message': 'Este username já está em uso.'});
+      }
+
+      await connection.execute(
+        '''UPDATE usuario
+             SET nome = :nome,
+               username = :username,
+               biografia = :biografia
+           WHERE id_usuario = :id_usuario AND ativo = 1''',
+        {
+          'nome': nome,
+          'username': username,
+          'biografia': biografia,
+          'id_usuario': idUsuario,
+        },
+      );
+
+      final usuarios = await connection.execute(
+        '''SELECT id_usuario, nome, username, email, biografia, foto_perfil
+           FROM usuario WHERE id_usuario = :id_usuario LIMIT 1''',
+        {'id_usuario': idUsuario},
+      );
+      if (usuarios.rows.isEmpty)
+        return _json(404, {'message': 'Usuário não encontrado.'});
+      final usuario = usuarios.rows.first.assoc();
+      return _json(200, {
+        'success': true,
+        'user': _usuarioPublico(usuario),
+      });
+    });
+
+  final handler = const Pipeline()
+      .addMiddleware(logRequests())
+      .addMiddleware(_cors())
+      .addHandler(router.call);
+  final server = await shelf_io.serve(handler, InternetAddress.anyIPv4,
+      int.tryParse(env['PORT'] ?? '3000') ?? 3000);
+  print('SnapLock API em http://${server.address.host}:${server.port}');
+}
+
+Middleware _cors() => (handler) => (request) async {
+      if (request.method == 'OPTIONS') {
+        return Response(204, headers: _corsHeaders);
+      }
+      final response = await handler(request);
+      return response.change(headers: {...response.headers, ..._corsHeaders});
+    };
+
+const _corsHeaders = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-headers': 'Content-Type, Authorization',
+  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
+};
+
+Future<Map<String, dynamic>?> _lerJson(Request request) => readJson(request);
+
+Future<List<int>> _coletarBytes(Stream<List<int>> stream) async {
+  final bytes = <int>[];
+  await for (final chunk in stream) {
+    bytes.addAll(chunk);
+  }
+  return bytes;
+}
+
+Future<String> _coletarString(Stream<List<int>> stream) =>
+    utf8.decoder.bind(stream).join();
+
+String _extensaoPorContentType(String? contentType) =>
+    extensionForContentType(contentType);
+
+Response _json(int status, Map<String, Object?> body) =>
+    jsonResponse(status, body, jsonHeaders);
+
+Map<String, String> _usuarioPublico(Map<String, String?> usuario) =>
+    publicUser(usuario);
+
+bool _emailValido(String email) => validEmail(email);
+
+bool _usernameValido(String username) => validUsername(username);
+
+bool _senhaValida(String senha) => validPassword(senha);
+
+String _gerarToken() => generateRecoveryToken();
+
+String _hashToken(String token) => hashToken(token);
+
+int? _idUsuarioAutenticado(Request request, Map<String, int> sessoes) =>
+    authenticatedUserId(request, sessoes);
+
+Future<void> _enviarToken(
+  String email,
+  String nomeUsuario,
+  String token,
+) =>
+    sendRecoveryToken(email, nomeUsuario, token);
+
+bool _dataValida(String value) => validDate(value);
+
+bool _idadeMinimaValida(String value) => validMinimumAge(value);
