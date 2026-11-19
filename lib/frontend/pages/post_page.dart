@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:snaplock/frontend/widgets/logo_sobre_nos_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,9 +11,9 @@ import 'package:snaplock/frontend/pages/inicio_page.dart';
 import 'package:snaplock/models/post_model.dart';
 import 'package:snaplock/services/api_service.dart';
 import 'package:snaplock/theme/app_theme.dart';
+import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
 import 'ajudaESuporte_page.dart';
 import 'configuracoes_page.dart';
-import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
 
 class PostMaximizadoPage extends StatefulWidget {
   const PostMaximizadoPage({
@@ -377,6 +379,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
     if (_editing) return;
     final captionController = TextEditingController(text: _caption);
     XFile? selectedImage;
+    final ImagePicker picker = ImagePicker();
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -420,6 +423,26 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              TextButton.icon(
+                onPressed: () async {
+                  final image = await picker.pickImage(
+                    source: ImageSource.gallery,
+                    imageQuality: 85,
+                  );
+                  if (image != null) {
+                    setDialogState(() => selectedImage = image);
+                  }
+                },
+                icon: const Icon(Icons.image_outlined),
+                label: Text(
+                  selectedImage == null ? 'Adicionar imagem' : 'Trocar imagem',
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.mediumBrown,
+                  textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                ),
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: captionController,
                 maxLines: 4,
@@ -477,11 +500,15 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
 
     setState(() => _editing = true);
     try {
+      Uint8List? imageBytes;
+      if (selectedImage != null) {
+        imageBytes = await selectedImage!.readAsBytes();
+      }
+
       final response = await ApiService.updatePost(
         postId: widget.post.id,
         caption: captionController.text.trim(),
-        imageBytes:
-            selectedImage == null ? null : await selectedImage!.readAsBytes(),
+        imageBytes: imageBytes,
         fileName: selectedImage?.name ?? 'publicacao.jpg',
       );
       if (!mounted) return;
@@ -493,7 +520,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppTheme.mediumBrown,
-          content: Text('Publicação atualizada.'),
+          content: const Text('Publicação atualizada.'),
         ),
       );
     } catch (error) {
@@ -707,7 +734,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
         messenger.showSnackBar(
           SnackBar(
             backgroundColor: AppTheme.mediumBrown,
-            content: Text('Denúncia enviada para análise da administração.'),
+            content: const Text('Denúncia enviada para análise da administração.'),
           ),
         );
       } catch (error) {
