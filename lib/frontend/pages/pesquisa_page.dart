@@ -218,6 +218,7 @@ class _PesquisaPage extends State<PesquisaPage> {
           Padding(
             padding: const EdgeInsets.all(24),
             child: TextField(
+              hintLocales: const [Locale('pt', 'BR')],
               controller: pesquisaController,
               onChanged: aoAlterarBusca,
               decoration: InputDecoration(

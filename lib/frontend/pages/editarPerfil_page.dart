@@ -33,6 +33,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
   final TextEditingController usuarioController = TextEditingController();
   final TextEditingController biografiaController = TextEditingController();
   Uint8List? fotoPerfil;
+  bool removendoFoto = false;
   bool salvando = false;
 
   @override
@@ -134,6 +135,8 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
       // Se o usuário escolheu uma nova foto, envia primeiro
       if (fotoPerfil != null) {
         novaFotoUrl = await LoginController.atualizarFotoPerfil(fotoPerfil!);
+      } else if (removendoFoto) {
+        await LoginController.removerFotoPerfil();
       }
 
       final resposta = await LoginController.atualizarPerfil(
@@ -150,6 +153,8 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
         // O endpoint de nome/bio não sabe da nova foto, então mesclamos aqui
         if (novaFotoUrl != null) {
           usuarioAtualizado['avatarUrl'] = novaFotoUrl;
+        } else if (removendoFoto) {
+          usuarioAtualizado['avatarUrl'] = '';
         }
 
         Navigator.pop(context, usuarioAtualizado);
@@ -174,14 +179,24 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
     final ajustada = await abrirEditorFotoPerfil(context, bytes);
     if (ajustada == null || !mounted) return;
 
-    setState(() => fotoPerfil = ajustada);
+    setState(() {
+      fotoPerfil = ajustada;
+      removendoFoto = false;
+    });
+  }
+
+  void removerFoto() {
+    setState(() {
+      fotoPerfil = null;
+      removendoFoto = widget.fotoPerfilUrlInicial.isNotEmpty;
+    });
   }
 
   ImageProvider<Object> get imagemPerfil {
     if (fotoPerfil != null) {
       return MemoryImage(fotoPerfil!);
     }
-    if (widget.fotoPerfilUrlInicial.isNotEmpty) {
+    if (!removendoFoto && widget.fotoPerfilUrlInicial.isNotEmpty) {
       return NetworkImage(widget.fotoPerfilUrlInicial);
     }
     return const AssetImage('assets/images/monalisaPerfil.png');
@@ -198,6 +213,9 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final usandoImagemPadrao = fotoPerfil == null &&
+        (removendoFoto || widget.fotoPerfilUrlInicial.isEmpty);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -233,7 +251,7 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                 borderRadius: BorderRadius.circular(14),
                 onTap: () => mostrarImagemPerfilMaximizada(
                   context,
-                  imageUrl: widget.fotoPerfilUrlInicial,
+                  imageUrl: removendoFoto ? '' : widget.fotoPerfilUrlInicial,
                   memoryBytes: fotoPerfil,
                 ),
                 child: ClipRRect(
@@ -241,9 +259,13 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                   child: Image(
                     image: imagemPerfil,
                     fit: BoxFit.cover,
+                    color: isDark && usandoImagemPadrao ? Colors.white : null,
+                    colorBlendMode: BlendMode.srcIn,
                     errorBuilder: (context, error, stackTrace) => Image.asset(
                       'assets/images/monalisaPerfil.png',
                       fit: BoxFit.cover,
+                      color: isDark ? Colors.white : null,
+                      colorBlendMode: BlendMode.srcIn,
                     ),
                   ),
                 ),
@@ -259,6 +281,18 @@ class _EditarPerfilPageState extends State<EditarPerfilPage> {
                 foregroundColor: const Color(0xFFF3E9DC),
               ),
             ),
+            if (fotoPerfil != null ||
+                (widget.fotoPerfilUrlInicial.isNotEmpty && !removendoFoto)) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: salvando ? null : removerFoto,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Remover foto'),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             InputWidget(
               controller: nomeController,

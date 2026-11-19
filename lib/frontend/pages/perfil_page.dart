@@ -206,10 +206,16 @@ class _PerfilPage extends State<PerfilPage> {
                           child: Image(
                             image: imagemPerfil,
                             fit: BoxFit.cover,
+                            color: fotoPerfilUrl.isEmpty && isDark
+                                ? Colors.white
+                                : null,
+                            colorBlendMode: BlendMode.srcIn,
                             errorBuilder: (context, error, stackTrace) =>
                                 Image.asset(
                               'assets/images/monalisaPerfil.png',
                               fit: BoxFit.cover,
+                              color: isDark ? Colors.white : null,
+                              colorBlendMode: BlendMode.srcIn,
                             ),
                           ),
                         ),
@@ -274,6 +280,7 @@ class _PerfilPage extends State<PerfilPage> {
             SizedBox(
               width: double.infinity,
               child: TextField(
+                hintLocales: const [Locale('pt', 'BR')],
                 controller: biografiaController,
                 readOnly: true,
                 showCursor: false,

@@ -27,6 +27,7 @@ class InputWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return TextField(
+      hintLocales: const [Locale('pt', 'BR')],
       controller: controller,
       keyboardType: keyboardType,
       maxLength: maximoCaracteres,

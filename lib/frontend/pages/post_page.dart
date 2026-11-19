@@ -444,6 +444,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
               ),
               const SizedBox(height: 12),
               TextField(
+                hintLocales: const [Locale('pt', 'BR')],
                 controller: captionController,
                 maxLines: 4,
                 style: GoogleFonts.poppins(
@@ -647,6 +648,7 @@ class _PostMaximizadoPageState extends State<PostMaximizadoPage> {
                       children: [
                         Expanded(
                           child: TextField(
+                            hintLocales: const [Locale('pt', 'BR')],
                             controller: _reportReasonController,
                             autofocus: true,
                             minLines: 3,

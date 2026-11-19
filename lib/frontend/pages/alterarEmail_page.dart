@@ -162,6 +162,7 @@ class _AlterarEmailPageState extends State<AlterarEmailPage> {
               ),
             ] else ...[
               TextField(
+                hintLocales: const [Locale('pt', 'BR')],
                 controller: _codigoController,
                 enabled: !_carregando,
                 keyboardType: TextInputType.number,
