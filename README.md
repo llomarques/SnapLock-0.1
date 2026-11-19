@@ -1,168 +1,169 @@
 # SnapLock
 
-Aplicativo Flutter com backend Dart, MariaDB e recuperação de senha por e-mail.
+SnapLock é uma rede social móvel e desktop para compartilhar fotos, acompanhar amigos e organizar memórias por mês. O projeto combina um aplicativo Flutter com uma API em Dart/Shelf e banco de dados MySQL ou MariaDB.
 
-## Requisitos
+## Funcionalidades
 
-- Flutter SDK
-- Dart SDK compatível com `^3.0.0`
-- MariaDB/MySQL
-- Conta de e-mail com SMTP configurável
-- Thunder Client, para testar a API
+- Cadastro com verificação por e-mail e confirmação de conta
+- Login, recuperação e alteração de senha
+- Alteração de e-mail com código de confirmação
+- Feed de publicações e envio de fotos
+- Curtidas, notificações e denúncias
+- Pesquisa de usuários e solicitações de amizade
+- Perfil pessoal e perfil de amigos
+- Galeria em grade, proporções originais e visualização ampliada
+- Dumps mensais, capa personalizada e controle de visibilidade
+- Personalização de perfil, temas claro/escuro e suporte multilíngue
+- Upload e armazenamento de imagens com Cloudinary
 
-## Estrutura
+## Tecnologias
 
-- `lib/frontend/`: telas do aplicativo.
-- `lib/controller/controller.cadastrar.dart`: chamadas de cadastro e recuperação.
-- `lib/services/api_service.dart`: chamadas gerais do frontend.
-- `backend/bin/server.dart`: API Dart com Shelf.
-- `backend/pubspec.yaml`: dependências do backend.
-- `snaplock_db.sql`: criação e migração do banco.
+- Flutter e Dart
+- Dart Shelf e Shelf Router
+- MySQL ou MariaDB
+- SMTP para envio de e-mails
+- Cloudinary para upload de imagens
+- bcrypt para armazenamento seguro de senhas
 
-## Banco de dados
+## Estrutura do projeto
 
-Execute `snaplock_db.sql` no MariaDB. A biografia fica na coluna `usuario.biografia`. Para uma instalação já existente, confira se a tabela `usuario` tem `username`, `biografia` e os índices únicos:
+```text
+lib/
+├── config/       # configuração das URLs da API
+├── controller/   # controladores de autenticação e conta
+├── frontend/     # páginas, componentes e utilitários da interface
+├── models/       # modelos usados pelo aplicativo
+├── services/     # serviços de API e configuração do app
+├── theme/        # temas, fontes e controle de tema
+└── main.dart     # inicialização do aplicativo
 
-```sql
-USE snaplock_db;
+backend/
+├── bin/server.dart  # API HTTP em Dart/Shelf
+├── lib/             # configuração, utilitários e serviço de e-mail
+├── .env             # variáveis locais (não versionar)
+└── pubspec.yaml
 
-SHOW COLUMNS FROM usuario;
-SHOW INDEX FROM usuario;
+assets/images/       # logos, ícones e recursos visuais
+snaplock_db.sql      # estrutura e migrações do banco
 ```
 
-Se a coluna ainda não existir, execute:
+## Pré-requisitos
 
-```sql
-ALTER TABLE usuario
-ADD COLUMN username VARCHAR(30) NULL AFTER nome;
+- Flutter SDK compatível com Dart `^3.0.0`
+- Dart SDK
+- MySQL ou MariaDB
+- Conta SMTP
+- Conta Cloudinary
 
-UPDATE usuario
-SET username = CONCAT('usuario_', id_usuario)
-WHERE username IS NULL OR TRIM(username) = '';
+## Configuração do banco
 
-ALTER TABLE usuario
-MODIFY username VARCHAR(30) NOT NULL;
-
-ALTER TABLE usuario
-ADD UNIQUE KEY uq_usuario_username (username);
-```
-
-## Iniciar a API no CMD
-
-Abra o CMD e execute os comandos na ordem, na mesma janela:
+Crie o banco e execute o script SQL na raiz do projeto:
 
 ```cmd
-cd /d C:\Users\25162850\Documents\SnapLock-0.1\backend
+mysql -u root -p < snaplock_db.sql
+```
+
+O script cria o banco `snaplock_db`, tabelas de usuários, fotos, amizade, curtidas, denúncias, recuperação de senha, dumps e demais recursos utilizados pela aplicação.
+
+Na inicialização, a API também verifica e cria/atualiza algumas tabelas e colunas necessárias.
+
+## Configuração da API
+
+Na pasta `backend`, crie o arquivo `.env` com base nestas variáveis:
+
+```dotenv
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=snaplock_db
+DB_USER=root
+DB_PASSWORD=sua_senha
+
+PORT=3000
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=seuemail@gmail.com
+SMTP_PASSWORD=sua_senha_de_aplicativo
+SMTP_SSL=true
+
+CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
+```
+
+Não versione credenciais reais. O arquivo `.env` já está incluído no `.gitignore`. Para contas do Gmail, use uma senha de aplicativo no campo `SMTP_PASSWORD`.
+
+Instale as dependências e execute o servidor:
+
+```cmd
+cd backend
 dart pub get
-
-set "DB_HOST=127.0.0.1"
-set "DB_PORT=3306"
-set "DB_NAME=snaplock_db"
-set "DB_USER=root"
-set "DB_PASSWORD=senha-do-mariadb"
-
-set "SMTP_HOST=smtp.gmail.com"
-set "SMTP_USER=seuemail@gmail.com"
-set "SMTP_PASSWORD=senha-de-aplicativo-do-google"
-set "SMTP_PORT=587"
-
 dart run bin\server.dart
 
 ```
 
-Para Gmail, `SMTP_USER` é o e-mail que enviará as mensagens. `SMTP_PASSWORD` deve ser uma senha de aplicativo de 16 caracteres, não a senha normal da conta. Crie-a em <https://myaccount.google.com/apppasswords> com a verificação em duas etapas ativada.
+A API escuta em `0.0.0.0:3000` por padrão e informa o endereço ao iniciar. A porta pode ser alterada pela variável `PORT`.
 
-Se aparecer `Authentication Failed (535)`, confira essas credenciais e reinicie a API no mesmo CMD. Não compartilhe nem comite a senha de aplicativo.
+## Executando o Flutter
 
-Quando funcionar, a API exibirá:
-
-```text
-SnapLock API em http://0.0.0.0:3000
-```
-
-## Iniciar o frontend
-
-Abra um segundo terminal, mantendo a API aberta no primeiro:
+Na raiz do projeto:
 
 ```cmd
-cd /d C:\Users\25162850\Documents\SnapLock-0.1
 flutter pub get
 flutter run
 ```
 
-O frontend usa automaticamente:
+As URLs padrão estão definidas em `lib/config/api_config.dart`:
 
-- Windows/Web: `http://localhost:3000`
-- Emulador Android: `http://10.0.2.2:3000`
+| Ambiente | API | Arquivos |
+| --- | --- | --- |
+| Web ou Windows | `http://localhost:3000/api` | `http://localhost:3000` |
+| Emulador Android | `http://10.0.2.2:3000/api` | `http://10.0.2.2:3000` |
 
-O Android precisa ser executado com a API rodando no computador. Se necessário, faça um reinício completo do app após alterar a URL.
+Para um dispositivo físico ou servidor remoto, substitua os endereços por um IP acessível no local em que o app estiver sendo executado.
 
-## Regras de cadastro
+## Autenticação da API
 
-O cadastro exige `nome`, `username`, `email`, `senha`, `confirmacao_senha` e `data_nascimento`.
+Após o login, o servidor retorna um token de sessão. As rotas protegidas recebem o token no cabeçalho:
 
-- Username: de 3 a 30 caracteres, usando letras minúsculas, números ou `_`, e único.
-- Senha: no mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial.
-- Idade: mínimo de 16 anos.
-
-## Testar no Thunder Client
-
-Com a API rodando, use `POST http://localhost:3000/api/usuarios`, header `Content-Type: application/json` e este body:
-
-```json
-{
-	"nome": "Maria Teste",
-	"username": "maria_teste",
-	"email": "maria.teste@example.com",
-	"senha": "Maria@123456",
-	"confirmacao_senha": "Maria@123456",
-	"data_nascimento": "2000-01-31"
-}
+```http
+Authorization: Bearer <token>
 ```
 
-Sucesso retorna `201`:
+Os tokens são mantidos em memória pelo processo da API. Reiniciar o servidor invalida as sessões atuais.
 
-```json
-{
-	"id_usuario": 1
-}
-```
+## Principais endpoints
 
-Repetir o mesmo username retorna `409`:
+| Área | Métodos e rotas |
+| --- | --- |
+| Autenticação | `POST /api/login`, `POST /api/usuarios`, `POST /api/usuarios/verificar-email` |
+| Recuperação | `POST /api/recuperacao/solicitar`, `POST /api/recuperacao/validar-token`, `POST /api/recuperacao/redefinir` |
+| Perfil | `PUT /api/profile`, `PUT /api/profile/password`, `POST /api/profile/foto`, `DELETE /api/profile/foto`, `DELETE /api/profile` |
+| E-mail do perfil | `POST /api/profile/email/request`, `POST /api/profile/email/confirm` |
+| Feed e fotos | `GET /api/feed`, `GET /api/fotos/minhas`, `POST /api/fotos`, `DELETE /api/fotos/<id>`, `PUT /api/posts/<id>` |
+| Interações | `POST/DELETE /api/posts/<id>/reactions`, `POST /api/posts/<id>/report` |
+| Amizades | `GET /api/friends`, `GET /api/friends/search?q=<termo>`, `POST /api/friends/request`, `POST /api/friends/accept`, `POST /api/friends/decline`, `DELETE /api/friends/<id>` |
+| Notificações | `GET /api/friends/pending`, `GET /api/friends/accepted-notifications`, `GET /api/notifications/likes` |
+| Dumps | `GET /api/dumps/settings`, `GET /api/dumps/friends`, `PUT /api/dumps/<ano>/<mes>`, `POST /api/dumps/<ano>/<mes>/cover` |
+| Galeria de amigo | `GET /api/friends/<id>/fotos` |
 
-```json
-{
-	"erro": "Este username já está em uso."
-}
-```
+Consulte `backend/bin/server.dart` para parâmetros, respostas e regras de validação de cada rota.
 
-## Recuperação de senha
+## Qualidade e análise
 
-Solicite o token com `POST http://localhost:3000/api/recuperacao/solicitar`:
-
-```json
-{
-	"email": "maria.teste@example.com"
-}
-```
-
-O token expira em 15 minutos. Um novo token só pode ser solicitado após 30 segundos.
-
-Redefina a senha com `POST http://localhost:3000/api/recuperacao/redefinir`:
-
-```json
-{
-	"email": "maria.teste@example.com",
-	"token": "123456",
-	"nova_senha": "Nova@123456",
-	"confirmacao_senha": "Nova@123456"
-}
-```
-
-## Verificação
+Na raiz do projeto:
 
 ```cmd
 flutter analyze
+```
+
+No backend:
+
+```cmd
 cd backend
 dart analyze
+```
+
+Para executar os testes Flutter existentes:
+
+```cmd
+flutter test
 ```

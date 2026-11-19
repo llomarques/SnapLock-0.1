@@ -57,12 +57,17 @@ CREATE TABLE IF NOT EXISTS `foto` (
   `midia_url` varchar(255) NOT NULL,
   `legenda` text DEFAULT NULL,
   `filtro_aplicado` varchar(50) DEFAULT NULL,
+  `proporcao` double DEFAULT NULL,
+  `ativa` tinyint(1) NOT NULL DEFAULT 1,
   `data_postagem` datetime NOT NULL DEFAULT current_timestamp(),
-  `visibilidade` enum('amigos','privado') NOT NULL DEFAULT 'amigos',
   PRIMARY KEY (`id_foto`),
   KEY `idx_foto_usuario_data` (`id_usuario`,`data_postagem`),
   CONSTRAINT `fk_foto_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+ALTER TABLE `foto`
+  ADD COLUMN IF NOT EXISTS `proporcao` double DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `ativa` tinyint(1) NOT NULL DEFAULT 1;
 
 -- Copiando dados para a tabela snaplock_db.foto: ~0 rows (aproximadamente)
 
@@ -70,18 +75,121 @@ CREATE TABLE IF NOT EXISTS `foto` (
 CREATE TABLE IF NOT EXISTS `usuario` (
   `id_usuario` int(11) NOT NULL AUTO_INCREMENT,
   `nome` varchar(100) NOT NULL,
+  `username` varchar(30) NOT NULL,
   `email` varchar(150) NOT NULL,
   `senha_hash` varchar(255) NOT NULL,
   `foto_perfil` varchar(255) DEFAULT NULL,
+  `biografia` text DEFAULT NULL,
   `data_nascimento` date NOT NULL,
   `ativo` tinyint(1) NOT NULL DEFAULT 1,
+  `email_ativo` varchar(150) GENERATED ALWAYS AS (
+    CASE WHEN `ativo` = 1 THEN `email` ELSE NULL END
+  ) PERSISTENT,
   `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_usuario`),
-  UNIQUE KEY `email` (`email`),
+  UNIQUE KEY `username` (`username`),
+  UNIQUE KEY `uq_usuario_email_ativo` (`email_ativo`),
   KEY `idx_usuario_ativo` (`ativo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+-- Migração para bancos criados antes da coluna username.
+-- Execute uma vez se a tabela usuario já existir sem essa coluna.
+ALTER TABLE `usuario`
+  ADD COLUMN IF NOT EXISTS `username` varchar(30) NOT NULL AFTER `nome`,
+  ADD UNIQUE KEY IF NOT EXISTS `username` (`username`);
+
+-- Migração para bancos criados antes da coluna biografia.
+ALTER TABLE `usuario`
+  ADD COLUMN IF NOT EXISTS `biografia` text DEFAULT NULL AFTER `foto_perfil`;
+
+-- Migração para permitir reutilizar e-mails de contas desativadas.
+ALTER TABLE `usuario`
+  DROP INDEX IF EXISTS `email`,
+  ADD COLUMN IF NOT EXISTS `email_ativo` varchar(150) GENERATED ALWAYS AS (
+    CASE WHEN `ativo` = 1 THEN `email` ELSE NULL END
+  ) PERSISTENT,
+  ADD UNIQUE KEY IF NOT EXISTS `uq_usuario_email_ativo` (`email_ativo`);
+
+CREATE TABLE IF NOT EXISTS `postagem` (
+  `id_postagem` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) NOT NULL,
+  `midia_url` varchar(500) NOT NULL,
+  `legenda` text DEFAULT NULL,
+  `filtro_aplicado` varchar(50) DEFAULT NULL,
+  `data_postagem` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_postagem`),
+  KEY `idx_postagem_usuario_data` (`id_usuario`,`data_postagem`),
+  CONSTRAINT `fk_postagem_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `recuperacao_senha` (
+  `id_recuperacao` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expira_em` datetime NOT NULL,
+  `enviado_em` datetime NOT NULL DEFAULT current_timestamp(),
+  `usado_em` datetime DEFAULT NULL,
+  PRIMARY KEY (`id_recuperacao`),
+  KEY `idx_recuperacao_usuario` (`id_usuario`),
+  KEY `idx_recuperacao_token` (`token_hash`),
+  CONSTRAINT `fk_recuperacao_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `alteracao_email_token` (
+  `id_alteracao` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) NOT NULL,
+  `novo_email` varchar(150) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expira_em` datetime NOT NULL,
+  `enviado_em` datetime NOT NULL DEFAULT current_timestamp(),
+  `usado_em` datetime DEFAULT NULL,
+  PRIMARY KEY (`id_alteracao`),
+  KEY `idx_alteracao_email_usuario` (`id_usuario`),
+  KEY `idx_alteracao_email_token` (`token_hash`),
+  CONSTRAINT `fk_alteracao_email_usuario`
+    FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `cadastro_email_verificacao` (
+  `id_verificacao` int(11) NOT NULL AUTO_INCREMENT,
+  `nome` varchar(100) NOT NULL,
+  `username` varchar(30) NOT NULL,
+  `email` varchar(150) NOT NULL,
+  `senha_hash` varchar(255) NOT NULL,
+  `data_nascimento` date NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expira_em` datetime NOT NULL,
+  `tentativas` int(11) NOT NULL DEFAULT 0,
+  `criado_em` datetime NOT NULL DEFAULT current_timestamp(),
+  `verificado_em` datetime DEFAULT NULL,
+  PRIMARY KEY (`id_verificacao`),
+  KEY `idx_cadastro_verificacao_email` (`email`),
+  KEY `idx_cadastro_verificacao_token` (`token_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 -- Copiando dados para a tabela snaplock_db.usuario: ~0 rows (aproximadamente)
+
+CREATE TABLE IF NOT EXISTS `denuncia` (
+  `id_foto` int(11) NOT NULL,
+  `quantidade_denuncias` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id_foto`),
+  CONSTRAINT `fk_denuncia_foto`
+    FOREIGN KEY (`id_foto`) REFERENCES `foto` (`id_foto`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `denuncia_detalhe` (
+  `id_denuncia` int(11) NOT NULL AUTO_INCREMENT,
+  `id_foto` int(11) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `motivo` text NOT NULL,
+  `data_denuncia` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_denuncia`),
+  UNIQUE KEY `uq_denuncia_detalhe_foto_usuario` (`id_foto`, `id_usuario`),
+  KEY `idx_denuncia_detalhe_usuario` (`id_usuario`),
+  CONSTRAINT `fk_denuncia_detalhe_foto`
+    FOREIGN KEY (`id_foto`) REFERENCES `foto` (`id_foto`),
+  CONSTRAINT `fk_denuncia_detalhe_usuario`
+    FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;

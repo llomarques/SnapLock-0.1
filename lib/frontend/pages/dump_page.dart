@@ -1,0 +1,957 @@
+import 'package:flutter/material.dart';
+import 'package:snaplock/theme/app_theme.dart';
+import 'package:snaplock/models/post_model.dart';
+import 'package:snaplock/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:snaplock/frontend/utils/perfil_usuario_helper.dart';
+import 'package:snaplock/frontend/widgets/dump_photo_carousel.dart';
+
+class DumpPage extends StatefulWidget {
+  const DumpPage({super.key});
+
+  @override
+  State<DumpPage> createState() => _DumpPage();
+}
+
+class _DumpPage extends State<DumpPage> {
+  static const _months = [
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro'
+  ];
+
+  bool _loading = true;
+  String? _error;
+  final Map<String, List<PostModel>> _monthlyAlbums = {};
+  final Map<String, String> _coverPhotoIds = {};
+  final Map<String, bool> _visibleToFriends = {};
+  List<Map<String, dynamic>> _friendDumps = [];
+  bool _loadingFriends = false;
+  static const _coverPreferencePrefix = 'dump_cover_';
+  static const _visiblePreferencePrefix = 'dump_visible_';
+  static const _legacyDeletedDumpPrefix = 'dump_deleted_';
+
+  String _preferenceKey(String prefix, String dumpKey) {
+    final userId = ApiService.currentUser?.id ?? 'current';
+    return '$prefix${userId}_$dumpKey';
+  }
+
+  Future<void> _removeLegacyDeletionFlags(SharedPreferences preferences) async {
+    final keys = preferences
+        .getKeys()
+        .where((key) => key.startsWith(_legacyDeletedDumpPrefix));
+    for (final key in keys.toList()) {
+      await preferences.remove(key);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAlbums();
+    _loadFriendDumps();
+  }
+
+  Future<void> _loadFriendDumps() async {
+    setState(() => _loadingFriends = true);
+    try {
+      final dumps = await ApiService.getFriendDumps();
+      if (!mounted) return;
+      setState(() {
+        _friendDumps = dumps;
+        _loadingFriends = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingFriends = false);
+    }
+  }
+
+  Future<void> _loadAlbums() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final photos = await ApiService.getMyGallery();
+      final preferences = await SharedPreferences.getInstance();
+      await _removeLegacyDeletionFlags(preferences);
+      final serverVisibility = <String, bool>{};
+      var serverVisibilityLoaded = false;
+      try {
+        final settings = await ApiService.getMyDumpSettings();
+        serverVisibilityLoaded = true;
+        for (final dump in settings) {
+          final year = dump['ano']?.toString() ?? '';
+          final month = dump['mes']?.toString() ?? '';
+          if (year.isEmpty || month.isEmpty) continue;
+          final monthNumber = int.tryParse(month);
+          if (monthNumber == null) continue;
+          final value = dump['visivel'];
+          final isVisible = value == true ||
+              value?.toString() == '1' ||
+              value?.toString().toLowerCase() == 'true';
+          serverVisibility['$year-${monthNumber.toString().padLeft(2, '0')}'] =
+              isVisible;
+        }
+      } catch (_) {
+        // Mantém as preferências locais quando o servidor estiver indisponível.
+      }
+      final albums = <String, List<PostModel>>{};
+      final now = DateTime.now();
+      final currentMonth = DateTime(now.year, now.month);
+
+      for (final photo in photos) {
+        final date = DateTime.tryParse(photo.createdAt);
+        if (date == null) continue;
+
+        final photoMonth = DateTime(date.year, date.month);
+        if (!photoMonth.isBefore(currentMonth)) {
+          continue;
+        }
+
+        final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
+        albums.putIfAbsent(key, () => []).add(photo);
+      }
+
+      final sortedKeys = albums.keys.toList()..sort((a, b) => b.compareTo(a));
+      final sortedAlbums = <String, List<PostModel>>{};
+      _coverPhotoIds.clear();
+      for (final key in sortedKeys) {
+        sortedAlbums[key] = albums[key]!;
+        final savedPhotoId =
+            preferences.getString(_preferenceKey(_coverPreferencePrefix, key));
+        if (savedPhotoId != null) {
+          _coverPhotoIds[key] = savedPhotoId;
+        }
+        final isVisible = serverVisibilityLoaded
+            ? serverVisibility[key] ?? false
+            : preferences
+                    .getBool(_preferenceKey(_visiblePreferencePrefix, key)) ??
+                false;
+        _visibleToFriends[key] = isVisible;
+        await preferences.setBool(
+          _preferenceKey(_visiblePreferencePrefix, key),
+          isVisible,
+        );
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _monthlyAlbums
+          ..clear()
+          ..addAll(sortedAlbums);
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString().replaceAll('Exception: ', '');
+        _loading = false;
+      });
+    }
+  }
+
+  String _albumTitle(String key) {
+    final parts = key.split('-');
+    final year = parts[0];
+    final month = int.parse(parts[1]);
+    return '${_months[month - 1]} $year';
+  }
+
+  String _monthName(String key) {
+    final month = int.parse(key.split('-')[1]);
+    return _months[month - 1].toUpperCase();
+  }
+
+  Future<void> _editCover(String key, List<PostModel> photos) async {
+    var visible = _visibleToFriends[key] ?? false;
+    final parts = key.split('-');
+    final year = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+
+    final selected = await showModalBottomSheet<dynamic>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(sheetContext).height * 0.72,
+            child: Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text('Editar capa do dump',
+                      style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.photo_library_outlined),
+                      label: const Text('Escolher foto da galeria do celular'),
+                      onPressed: () async {
+                        final file = await ImagePicker().pickImage(
+                            source: ImageSource.gallery, imageQuality: 90);
+                        if (file != null && sheetContext.mounted) {
+                          Navigator.pop(sheetContext, file);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Divider(height: 1),
+                Expanded(
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8),
+                    itemCount: photos.length,
+                    itemBuilder: (context, index) {
+                      final photo = photos[index];
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => Navigator.pop(sheetContext, photo),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(photo.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => ColoredBox(
+                                  color: AppTheme.surface,
+                                  child: Icon(Icons.broken_image_outlined))),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(
+        _preferenceKey(_visiblePreferencePrefix, key), visible);
+    if (!mounted) return;
+    setState(() => _visibleToFriends[key] = visible);
+
+    if (selected is PostModel) {
+      await preferences.setString(
+          _preferenceKey(_coverPreferencePrefix, key), selected.id);
+      if (mounted) setState(() => _coverPhotoIds[key] = selected.id);
+      try {
+        await ApiService.setDumpVisibility(
+          year: year,
+          month: month,
+          visible: visible,
+          coverUrl: selected.imageUrl,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Capa do dump atualizada.')),
+          );
+        }
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(error.toString().replaceAll('Exception: ', ''))));
+        }
+      }
+    } else if (selected is XFile) {
+      try {
+        final bytes = await selected.readAsBytes();
+        final coverUrl = await ApiService.uploadDumpCover(
+          year: year,
+          month: month,
+          imageBytes: bytes,
+          fileName: selected.name,
+        );
+        await ApiService.setDumpVisibility(
+          year: year,
+          month: month,
+          visible: visible,
+          coverUrl: coverUrl,
+        );
+        await preferences.setString(
+            _preferenceKey(_coverPreferencePrefix, key), coverUrl);
+        if (mounted) {
+          setState(() => _coverPhotoIds[key] = coverUrl);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Capa do dump atualizada.')),
+          );
+        }
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(error.toString().replaceAll('Exception: ', ''))));
+        }
+      }
+    }
+  }
+
+  Future<void> _toggleVisibility(String key, List<PostModel> photos) async {
+    final parts = key.split('-');
+    final year = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+    final visible = !(_visibleToFriends[key] ?? false);
+
+    String? coverUrl;
+    final coverPhotoId = _coverPhotoIds[key];
+    if (coverPhotoId != null && coverPhotoId.startsWith('http')) {
+      coverUrl = coverPhotoId;
+    } else if (coverPhotoId != null) {
+      final matchingPhoto = photos.where((photo) => photo.id == coverPhotoId);
+      if (matchingPhoto.isNotEmpty) {
+        coverUrl = matchingPhoto.first.imageUrl;
+      }
+    } else if (photos.isNotEmpty) {
+      coverUrl = photos.first.imageUrl;
+    }
+
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(
+        _preferenceKey(_visiblePreferencePrefix, key), visible);
+    if (!mounted) return;
+    setState(() => _visibleToFriends[key] = visible);
+
+    try {
+      await ApiService.setDumpVisibility(
+        year: year,
+        month: month,
+        visible: visible,
+        coverUrl: coverUrl,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(visible
+                ? 'Dump agora está visível para os amigos.'
+                : 'Dump ocultado dos amigos.'),
+          ),
+        );
+      }
+    } catch (error) {
+      await preferences.setBool(
+        _preferenceKey(_visiblePreferencePrefix, key),
+        !visible,
+      );
+      if (mounted) setState(() => _visibleToFriends[key] = !visible);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceAll('Exception: ', '')),
+        ),
+      );
+    }
+  }
+
+  void _openAlbum(String title, List<PostModel> photos) {
+    final theme = Theme.of(context);
+    showDialog<void>(
+      context: context,
+      barrierColor: theme.brightness == Brightness.dark
+          ? Colors.black.withValues(alpha: 0.72)
+          : const Color(0xFFF3E9DC).withValues(alpha: 0.96),
+      builder: (dialogContext) => DumpPhotoCarousel(
+        title: title,
+        photos: photos,
+      ),
+    );
+  }
+
+  Widget _buildFriendDumps() {
+    if (_loadingFriends) {
+      return Center(
+          child: CircularProgressIndicator(color: AppTheme.mediumBrown));
+    }
+    if (_friendDumps.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        children: [
+          _buildEmptyState(
+            icon: Icons.people_outline_rounded,
+            title: 'Seus amigos ainda não compartilharam',
+            message:
+                'Quando alguém compartilhar um dump com você, ele vai aparecer aqui.',
+          ),
+        ],
+      );
+    }
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 0.78),
+      itemCount: _friendDumps.length,
+      itemBuilder: (context, index) {
+        final dump = _friendDumps[index];
+        final cover = dump['capa_url']?.toString();
+        final month = int.parse(dump['mes'].toString());
+        final username = dump['username']?.toString().trim() ?? '';
+        final displayUsername =
+            username.isEmpty ? 'usuario' : username.replaceFirst('@', '');
+        final photos = (dump['photos'] as List)
+            .map((item) => PostModel.fromJson({
+                  'id': item['id_foto'],
+                  'userId': item['id_usuario'] ?? dump['id_usuario'],
+                  'imageUrl': item['midia_url'],
+                  'caption': item['legenda'] ?? '',
+                  'createdAt': item['data_postagem'] ?? '',
+                }))
+            .toList();
+        return Material(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => _openAlbum(_months[month - 1], photos),
+            child: Stack(fit: StackFit.expand, children: [
+              if (cover == null || cover.isEmpty)
+                Center(
+                    child: Icon(Icons.photo_library_outlined,
+                        size: 42, color: AppTheme.mediumBrown))
+              else
+                Image.network(cover,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        ColoredBox(color: AppTheme.surface)),
+              const DecoratedBox(
+                  decoration: BoxDecoration(color: Colors.black26)),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _months[month - 1],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontFamily: 'serif',
+                        fontWeight: FontWeight.w700,
+                        shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    InkWell(
+                      onTap: () => abrirPerfilUsuario(
+                        context,
+                        username: username,
+                        userId: dump['id_usuario']?.toString(),
+                        name: dump['nome']?.toString(),
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.account_circle_outlined,
+                              color: Colors.white, size: 16),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              '@$displayUsername',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${photos.length} ${photos.length == 1 ? 'foto' : 'fotos'}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              shadows: [
+                                Shadow(color: Colors.black54, blurRadius: 3)
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String message,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 32, color: colorScheme.primary),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlbumCard({
+    required String key,
+    required List<PostModel> photos,
+    required bool featured,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final menuTextStyle = TextStyle(
+      color: isDark ? colorScheme.onSurface : const Color(0xFFF3E9DC),
+    );
+    final coverPhotoId = _coverPhotoIds[key];
+    String cover = '';
+    if (coverPhotoId != null && coverPhotoId.startsWith('http')) {
+      cover = coverPhotoId;
+    } else {
+      final coverPhoto = coverPhotoId == null
+          ? photos.first
+          : photos.cast<PostModel?>().firstWhere(
+                (photo) => photo?.id == coverPhotoId,
+                orElse: () => photos.first,
+              );
+      cover = coverPhoto?.imageUrl ?? '';
+    }
+
+    return Material(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(featured ? 24 : 20),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _openAlbum(_albumTitle(key), photos),
+        child: AspectRatio(
+          aspectRatio: featured ? 1.55 : 0.82,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (cover.isEmpty)
+                Center(
+                  child: Icon(
+                    Icons.photo_library_outlined,
+                    size: 42,
+                    color: colorScheme.primary,
+                  ),
+                )
+              else
+                Image.network(
+                  cover,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Center(
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      size: 42,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black87],
+                    stops: [0.35, 1],
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 10,
+                left: 10,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.42),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        (_visibleToFriends[key] ?? false)
+                            ? Icons.people_alt_outlined
+                            : Icons.lock_outline,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        (_visibleToFriends[key] ?? false)
+                            ? 'Com amigos'
+                            : 'Só você',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Material(
+                  color: Colors.black38,
+                  shape: const CircleBorder(),
+                  child: PopupMenuButton<String>(
+                    tooltip: 'Opções do dump',
+                    color: isDark ? colorScheme.surface : AppTheme.textPrimary,
+                    surfaceTintColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    icon: const Icon(Icons.more_horiz,
+                        color: Colors.white, size: 22),
+                    onSelected: (option) {
+                      if (option == 'edit') {
+                        _editCover(key, photos);
+                      } else if (option == 'visibility') {
+                        _toggleVisibility(key, photos);
+                      }
+                    },
+                    itemBuilder: (menuContext) {
+                      final isVisible = _visibleToFriends[key] ?? false;
+                      return [
+                        PopupMenuItem<String>(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.photo_library_outlined,
+                                  size: 20, color: menuTextStyle.color),
+                              const SizedBox(width: 10),
+                              Text('Editar capa', style: menuTextStyle),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'visibility',
+                          child: Row(
+                            children: [
+                              Icon(
+                                isVisible
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                size: 20,
+                                color: menuTextStyle.color,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                isVisible
+                                    ? 'Ocultar Dump'
+                                    : 'Mostrar para amigos',
+                                style: menuTextStyle,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ];
+                    },
+                  ),
+                ),
+              ),
+              if (featured)
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _albumTitle(key),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'serif',
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          shadows: [
+                            Shadow(color: Colors.black54, blurRadius: 4)
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      _buildPhotoCount(photos.length),
+                    ],
+                  ),
+                )
+              else
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 12,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _monthName(key),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'serif',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          shadows: [
+                            Shadow(color: Colors.black54, blurRadius: 4)
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      _buildPhotoCount(photos.length),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoCount(int count) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.photo_library_outlined, color: Colors.white, size: 15),
+        const SizedBox(width: 5),
+        Text(
+          '$count ${count == 1 ? 'foto' : 'fotos'}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            shadows: [Shadow(color: Colors.black54, blurRadius: 3)],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMyDumpTab() {
+    final keys = _monthlyAlbums.keys.toList();
+    return RefreshIndicator(
+      onRefresh: _loadAlbums,
+      color: AppTheme.mediumBrown,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        children: [
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.only(top: 56),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_error != null)
+            _buildEmptyState(
+              icon: Icons.cloud_off_outlined,
+              title: 'Não foi possível carregar seus dumps',
+              message: _error!,
+            )
+          else if (keys.isEmpty)
+            _buildEmptyState(
+              icon: Icons.auto_awesome_outlined,
+              title: 'Cada mês vira uma lembrança',
+              message:
+                  'No início do próximo mês, suas fotos publicadas ficarão reunidas aqui.',
+            )
+          else ...[
+            _buildAlbumCard(
+              key: keys.first,
+              photos: _monthlyAlbums[keys.first]!,
+              featured: true,
+            ),
+            if (keys.length > 1) const SizedBox(height: 16),
+            if (keys.length > 1)
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.82,
+                ),
+                itemCount: keys.length - 1,
+                itemBuilder: (context, index) {
+                  final key = keys[index + 1];
+                  return _buildAlbumCard(
+                    key: key,
+                    photos: _monthlyAlbums[key]!,
+                    featured: false,
+                  );
+                },
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Suas memórias',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Seus momentos reunidos, mês a mês.',
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 320),
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colorScheme.outlineVariant),
+                  ),
+                  child: TabBar(
+                    dividerColor: Colors.transparent,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicatorPadding: const EdgeInsets.all(1),
+                    indicator: BoxDecoration(
+                      color: colorScheme.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    labelColor: colorScheme.onPrimary,
+                    unselectedLabelColor: colorScheme.onSurfaceVariant,
+                    labelStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    tabs: const [
+                      Tab(text: 'Meus dumps'),
+                      Tab(text: 'Amigos'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildMyDumpTab(),
+                RefreshIndicator(
+                  onRefresh: _loadFriendDumps,
+                  color: AppTheme.mediumBrown,
+                  child: _buildFriendDumps(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
